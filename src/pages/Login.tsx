@@ -4,9 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/components/ThemeProvider";
 
 const Login = () => {
   const { session } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -16,16 +18,16 @@ const Login = () => {
   }, [session, navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
-        <div className="bg-white p-8 rounded-lg shadow-lg">
-            <h2 className="text-2xl font-bold text-center mb-1">Bonafide Certificate Portal</h2>
-            <p className="text-center text-gray-500 mb-6">Sign in to continue</p>
+        <div className="bg-card p-8 rounded-lg shadow-lg">
+            <h2 className="text-2xl font-bold text-center mb-1 text-card-foreground">Bonafide Certificate Portal</h2>
+            <p className="text-center text-muted-foreground mb-6">Sign in to continue</p>
             <Auth
               supabaseClient={supabase}
               appearance={{ theme: ThemeSupa }}
               providers={[]}
-              theme="light"
+              theme={theme === 'dark' ? 'dark' : 'light'}
               localization={{
                 variables: {
                   sign_up: {
