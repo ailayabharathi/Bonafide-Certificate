@@ -1,9 +1,57 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { UserNav } from "@/components/UserNav";
+import { StaffRequestsTable } from "@/components/StaffRequestsTable";
+import { supabase } from "@/integrations/supabase/client";
+import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { showError, showSuccess } from "@/utils/toast";
 
 const TutorPortal = () => {
   const title = "Tutor Dashboard";
+  const [requests, setRequests] = useState<BonafideRequestWithProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchRequests = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("bonafide_requests")
+        .select("*, profiles(first_name, last_name)")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setRequests(data as BonafideRequestWithProfile[] || []);
+    } catch (error) {
+      console.error("Error fetching requests:", error);
+      showError("Failed to fetch requests.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const handleAction = async (requestId: string, newStatus: BonafideStatus, rejectionReason?: string) => {
+    try {
+      const { error } = await supabase
+        .from("bonafide_requests")
+        .update({ status: newStatus, rejection_reason: rejectionReason || null })
+        .eq("id", requestId);
+
+      if (error) throw error;
+      showSuccess("Request updated successfully!");
+      fetchRequests(); // Refresh the data
+    } catch (error: any) {
+      showError(error.message || "Failed to update request.");
+    }
+  };
+
+  const pendingRequests = requests.filter(r => r.status === 'pending');
+  const otherRequests = requests.filter(r => r.status !== 'pending');
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <header className="sticky top-0 z-40 w-full border-b bg-background">
@@ -23,7 +71,26 @@ const TutorPortal = () => {
       </header>
       <main className="flex-1 container py-8">
         <h1 className="text-3xl font-bold tracking-tight mb-6">{title}</h1>
-        <p className="text-lg text-muted-foreground mb-6">Welcome, Tutor!</p>
+        
+        {loading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-48 w-full" />
+          </div>
+        ) : (
+          <div className="space-y-8">
+            <StaffRequestsTable
+              requests={pendingRequests}
+              title="Pending Action"
+              onAction={handleAction}
+            />
+            <StaffRequestsTable
+              requests={otherRequests}
+              title="All Other Requests"
+              onAction={handleAction}
+            />
+          </div>
+        )}
       </main>
     </div>
   );
