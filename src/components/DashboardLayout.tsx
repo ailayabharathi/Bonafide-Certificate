@@ -61,4 +61,4 @@ const DashboardLayout = ({ children, title, role }: DashboardLayoutProps) => {
   );
 };
 
-export default DashboardLayout;
+export { DashboardLayout };
