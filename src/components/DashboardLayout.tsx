@@ -4,13 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Bell, Home, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
-interface AppShellProps {
+interface DashboardLayoutProps {
   children: ReactNode;
   title: string;
   role: string;
 }
 
-const AppShell = ({ children, title, role }: AppShellProps) => {
+const DashboardLayout = ({ children, title, role }: DashboardLayoutProps) => {
   const { signOut } = useAuth();
 
   const handleLogout = async () => {
@@ -61,4 +61,4 @@ const AppShell = ({ children, title, role }: AppShellProps) => {
   );
 };
 
-export default AppShell;
+export default DashboardLayout;
