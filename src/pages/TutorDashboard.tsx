@@ -1,4 +1,4 @@
-import { AppShell } from "@/components/AppShell";
+import AppShell from "@/components/AppShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const TutorDashboard = () => {
@@ -14,7 +14,7 @@ const TutorDashboard = () => {
         </Header>
         <CardContent>
           <p>There are no pending applications for your review.</p>
-        </Content>
+        </CardContent>
       </Card>
     </AppShell>
   );

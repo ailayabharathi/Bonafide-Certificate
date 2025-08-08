@@ -1,4 +1,4 @@
-import { AppShell } from "@/components/AppShell";
+import AppShell from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -16,7 +16,7 @@ const StudentDashboard = () => {
         </Header>
         <CardContent>
           <p>You have no active applications.</p>
-        </Content>
+        </CardContent>
       </Card>
     </AppShell>
   );

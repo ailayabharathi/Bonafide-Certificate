@@ -61,4 +61,4 @@ const AppShell = ({ children, title, role }: AppShellProps) => {
   );
 };
 
-export { AppShell };
+export default AppShell;
