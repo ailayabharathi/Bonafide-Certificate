@@ -9,6 +9,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { BonafideRequest } from "@/types";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface RequestsTableProps {
   requests: BonafideRequest[];
@@ -41,6 +47,7 @@ export function RequestsTable({ requests }: RequestsTableProps) {
       <div className="flex items-center justify-center h-40 border rounded-md">
         <p className="text-muted-foreground">You haven't made any requests yet.</p>
       </div>
+    </div>
     );
   }
 
@@ -61,9 +68,20 @@ export function RequestsTable({ requests }: RequestsTableProps) {
               <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
               <TableCell className="max-w-xs truncate">{request.reason}</TableCell>
               <TableCell>
-                <Badge variant={getStatusVariant(request.status)} className={cn(request.status === 'completed' && 'bg-green-500 text-white')}>
-                  {formatStatus(request.status)}
-                </Badge>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Badge variant={getStatusVariant(request.status)} className={cn(request.status === 'completed' && 'bg-green-500 text-white')}>
+                        {formatStatus(request.status)}
+                      </Badge>
+                    </TooltipTrigger>
+                    {request.rejection_reason && (
+                      <TooltipContent>
+                        <p>Reason: {request.rejection_reason}</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
               </TableCell>
               <TableCell>{new Date(request.updated_at).toLocaleDateString()}</TableCell>
             </TableRow>
