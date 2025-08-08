@@ -30,7 +30,7 @@ export const UserNav = () => {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src="#" alt="User avatar" />
+            <AvatarImage src={profile.avatar_url || undefined} alt="User avatar" />
             <AvatarFallback>{getInitials()}</AvatarFallback>
           </Avatar>
         </Button>

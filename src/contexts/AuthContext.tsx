@@ -7,6 +7,7 @@ export interface Profile {
   role: 'student' | 'tutor' | 'hod' | 'admin';
   first_name: string | null;
   last_name: string | null;
+  avatar_url: string | null;
 }
 
 interface AuthContextType {

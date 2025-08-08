@@ -12,9 +12,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth, Profile } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { showSuccess, showError } from "@/utils/toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   first_name: z.string().min(2, {
@@ -32,6 +34,9 @@ interface ProfileFormProps {
 export function ProfileForm({ onSuccess }: ProfileFormProps) {
   const { user, profile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(profile?.avatar_url || null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -41,22 +46,60 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
     },
   });
 
+  useEffect(() => {
+    if (profile?.avatar_url) {
+      setAvatarPreview(profile.avatar_url);
+    }
+  }, [profile]);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
       showError("You must be logged in to update your profile.");
       return;
     }
     setIsSubmitting(true);
+
     try {
-      const { error } = await supabase
+      let avatarUrl = profile?.avatar_url;
+
+      if (avatarFile) {
+        setIsUploading(true);
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, avatarFile, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+        
+        avatarUrl = publicUrl;
+        setIsUploading(false);
+      }
+
+      const { error: updateError } = await supabase
         .from("profiles")
         .update({
           first_name: values.first_name,
           last_name: values.last_name,
+          avatar_url: avatarUrl,
         })
         .eq("id", user.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       showSuccess("Profile updated successfully!");
       onSuccess();
@@ -64,12 +107,46 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
       showError(error.message || "Failed to update profile.");
     } finally {
       setIsSubmitting(false);
+      setIsUploading(false);
     }
   }
+
+  const getInitials = () => {
+    const firstName = form.getValues().first_name || '';
+    const lastName = form.getValues().last_name || '';
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <FormField
+          name="avatar"
+          render={() => (
+            <FormItem className="flex flex-col items-center">
+              <FormLabel>
+                <Avatar className="h-24 w-24 cursor-pointer">
+                  <AvatarImage src={avatarPreview || undefined} alt="User avatar" />
+                  <AvatarFallback>{getInitials()}</AvatarFallback>
+                </Avatar>
+              </FormLabel>
+              <FormControl>
+                <Input
+                  type="file"
+                  className="hidden"
+                  id="avatar-upload"
+                  accept="image/png, image/jpeg"
+                  onChange={handleAvatarChange}
+                  disabled={isSubmitting}
+                />
+              </FormControl>
+              <Button asChild variant="link">
+                <label htmlFor="avatar-upload">Change Avatar</label>
+              </Button>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="first_name"
@@ -98,7 +175,8 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
         />
         <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Save Changes"}
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isUploading ? "Uploading..." : isSubmitting ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </form>
