@@ -1,4 +1,4 @@
-import DashboardLayout from "@/components/DashboardLayout";
+import DashboardLayout from "../components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const TutorDashboard = () => {
@@ -11,7 +11,7 @@ const TutorDashboard = () => {
         <CardHeader>
           <CardTitle>Pending Applications</CardTitle>
           <CardDescription>Review applications from students assigned to you.</CardDescription>
-        </CardHeader>
+        </Header>
         <CardContent>
           <p>There are no pending applications for your review.</p>
         </Content>

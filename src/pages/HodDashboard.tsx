@@ -1,4 +1,4 @@
-import DashboardLayout from "@/components/DashboardLayout";
+import DashboardLayout from "../components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const HodDashboard = () => {
@@ -11,7 +11,7 @@ const HodDashboard = () => {
         <CardHeader>
           <CardTitle>Department Applications</CardTitle>
           <CardDescription>Review applications approved by tutors in your department.</CardDescription>
-        </CardHeader>
+        </Header>
         <CardContent>
           <p>There are no pending applications for your approval.</p>
         </Content>
