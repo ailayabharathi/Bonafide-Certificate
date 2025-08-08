@@ -1,19 +1,19 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { AuthProvider } from "./contexts/AuthContext";
+import HomeRedirect from "./components/HomeRedirect";
+import Login from "./pages/Login";
 import StudentPortal from "./pages/StudentPortal";
-import { BrowserRouter, Routes, Route } from "react-router-dom"; // Keep router for components that need it like Link
+import TutorPortal from "./pages/TutorPortal";
+import HodPortal from "./pages/HodPortal";
+import PrincipalDashboard from "./pages/PrincipalDashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
-
-// Dummy component to wrap StudentPortal in a route context if needed
-const AppWrapper = () => (
-  <BrowserRouter>
-    <StudentPortal />
-  </BrowserRouter>
-)
 
 function App() {
   return (
@@ -21,10 +21,47 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <AuthProvider>
-          {/* Directly rendering StudentPortal to isolate the issue */}
-          <AppWrapper />
-        </AuthProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              <Route path="/" element={<HomeRedirect />} />
+              <Route path="/login" element={<Login />} />
+              <Route
+                path="/student/dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={["student"]}>
+                    <StudentPortal />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tutor/dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={["tutor"]}>
+                    <TutorPortal />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/hod/dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={["hod"]}>
+                    <HodPortal />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/principal/dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <PrincipalDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );
