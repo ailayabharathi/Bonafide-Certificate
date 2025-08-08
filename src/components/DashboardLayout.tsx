@@ -9,7 +9,7 @@ interface DashboardLayoutProps {
   role: string;
 }
 
-const DashboardLayout = ({ children, title, role }: DashboardLayoutProps) => {
+export const DashboardLayout = ({ children, title, role }: DashboardLayoutProps) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -60,5 +60,3 @@ const DashboardLayout = ({ children, title, role }: DashboardLayoutProps) => {
     </div>
   );
 };
-
-export default DashboardLayout;

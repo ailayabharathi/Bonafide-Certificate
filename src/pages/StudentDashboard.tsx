@@ -1,4 +1,4 @@
-import DashboardLayout from "@/components/DashboardLayout";
+import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -16,7 +16,7 @@ const StudentDashboard = () => {
         </CardHeader>
         <CardContent>
           <p>You have no active applications.</p>
-        </CardContent>
+        </Content>
       </Card>
     </DashboardLayout>
   );

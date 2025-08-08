@@ -1,4 +1,4 @@
-import DashboardLayout from "@/components/DashboardLayout";
+import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const HodDashboard = () => {
@@ -14,7 +14,7 @@ const HodDashboard = () => {
         </CardHeader>
         <CardContent>
           <p>There are no pending applications for your approval.</p>
-        </CardContent>
+        </Content>
       </Card>
     </DashboardLayout>
   );
