@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Profile } from "@/contexts/AuthContext";
 import {
   Table,
@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Pencil } from "lucide-react";
@@ -39,6 +40,10 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
   const [newRole, setNewRole] = useState<UserRole | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const openDialog = (user: Profile) => {
     setSelectedUser(user);
@@ -72,32 +77,109 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
     }
   };
 
+  const filteredUsers = useMemo(() => {
+    return users
+      .filter(user => {
+        const name = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
+        return name.includes(searchQuery.toLowerCase());
+      })
+      .filter(user => {
+        if (roleFilter === "all") return true;
+        return user.role === roleFilter;
+      });
+  }, [users, searchQuery, roleFilter]);
+
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   return (
     <>
-      <div className="border rounded-md">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>{user.first_name} {user.last_name}</TableCell>
-                <TableCell className="capitalize">{user.role}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="outline" size="sm" onClick={() => openDialog(user)}>
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edit Role
-                  </Button>
-                </TableCell>
+      <div className="p-4 border rounded-md bg-background">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
+          <Input
+            placeholder="Search by name..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="max-w-sm"
+          />
+          <Select value={roleFilter} onValueChange={(value: UserRole | "all") => {
+            setRoleFilter(value);
+            setCurrentPage(1);
+          }}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Roles</SelectItem>
+              <SelectItem value="student">Student</SelectItem>
+              <SelectItem value="tutor">Tutor</SelectItem>
+              <SelectItem value="hod">HOD</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="border rounded-md">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {paginatedUsers.length > 0 ? (
+                paginatedUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>{user.first_name} {user.last_name}</TableCell>
+                    <TableCell className="capitalize">{user.role}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="outline" size="sm" onClick={() => openDialog(user)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit Role
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={3} className="h-24 text-center">
+                    No users found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="flex items-center justify-end space-x-2 py-4">
+          <div className="flex-1 text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages || 1}
+          </div>
+          <div className="space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
       </div>
 
       <Dialog open={!!selectedUser} onOpenChange={closeDialog}>
