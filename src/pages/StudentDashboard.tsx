@@ -1,4 +1,3 @@
-import React from "react";
 import { UserNav } from "@/components/UserNav";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";

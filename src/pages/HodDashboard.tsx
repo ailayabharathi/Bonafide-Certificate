@@ -1,4 +1,3 @@
-import React from "react";
 import { UserNav } from "@/components/UserNav";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,7 +31,7 @@ const HodDashboard = () => {
           </Header>
           <CardContent>
             <p>There are no pending applications for your approval.</p>
-          </Content>
+          </CardContent>
         </Card>
       </main>
     </div>
