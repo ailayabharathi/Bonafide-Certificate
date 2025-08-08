@@ -73,8 +73,23 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
       if (avatarFile) {
         setIsUploading(true);
         const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
+        const fileName = `avatar.${fileExt}`;
         const filePath = `${user.id}/${fileName}`;
+
+        // Clean up old avatars before uploading a new one to prevent orphans
+        const { data: files, error: listError } = await supabase.storage
+          .from('avatars')
+          .list(user.id);
+        
+        if (listError) console.error("Error listing old avatars:", listError);
+
+        if (files && files.length > 0) {
+            const filesToRemove = files.map(file => `${user.id}/${file.name}`);
+            const { error: removeError } = await supabase.storage
+                .from('avatars')
+                .remove(filesToRemove);
+            if (removeError) console.error("Error removing old avatars:", removeError);
+        }
 
         const { error: uploadError } = await supabase.storage
           .from('avatars')
