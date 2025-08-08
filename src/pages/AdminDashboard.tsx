@@ -92,7 +92,7 @@ const AdminDashboard = () => {
                 <StatsCard title="Total Requests" value={stats.total} icon={ClipboardList} />
                 <StatsCard title="Pending Final Processing" value={stats.pending} icon={Clock} />
                 <StatsCard title="Completed Certificates" value={stats.completed} icon={CheckCircle} />
-                <StatsC<ctrl63>ard title="Total Rejected" value={stats.totalRejected} icon={XCircle} />
+                <StatsCard title="Total Rejected" value={stats.totalRejected} icon={XCircle} />
             </div>
             <StaffRequestsTable
               requests={pendingFinalApproval}
