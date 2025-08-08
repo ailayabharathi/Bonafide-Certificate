@@ -27,7 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
-import { Pencil } from "lucide-react";
+import { Pencil, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 interface UserManagementTableProps {
   users: Profile[];
@@ -35,6 +35,7 @@ interface UserManagementTableProps {
 }
 
 type UserRole = 'student' | 'tutor' | 'hod' | 'admin';
+type SortableKey = 'name' | 'email' | 'role';
 
 export function UserManagementTable({ users, onUserUpdate }: UserManagementTableProps) {
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
@@ -43,7 +44,17 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'ascending' | 'descending' }>({ key: 'name', direction: 'ascending' });
   const ITEMS_PER_PAGE = 10;
+
+  const handleSort = (key: SortableKey) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+    setCurrentPage(1);
+  };
 
   const openDialog = (user: Profile) => {
     setSelectedUser(user);
@@ -77,30 +88,74 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
     }
   };
 
-  const filteredUsers = useMemo(() => {
-    return users
+  const processedUsers = useMemo(() => {
+    let filteredUsers = users
       .filter(user => {
         const name = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
-        return name.includes(searchQuery.toLowerCase());
+        const email = user.email?.toLowerCase() || '';
+        const query = searchQuery.toLowerCase();
+        return name.includes(query) || email.includes(query);
       })
       .filter(user => {
         if (roleFilter === "all") return true;
         return user.role === roleFilter;
       });
-  }, [users, searchQuery, roleFilter]);
 
-  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
-  const paginatedUsers = filteredUsers.slice(
+    filteredUsers.sort((a, b) => {
+      let aValue: string, bValue: string;
+      switch (sortConfig.key) {
+        case 'name':
+          aValue = `${a.first_name || ''} ${a.last_name || ''}`.toLowerCase();
+          bValue = `${b.first_name || ''} ${b.last_name || ''}`.toLowerCase();
+          break;
+        case 'email':
+          aValue = a.email?.toLowerCase() || '';
+          bValue = b.email?.toLowerCase() || '';
+          break;
+        case 'role':
+          aValue = a.role.toLowerCase();
+          bValue = b.role.toLowerCase();
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+      return 0;
+    });
+
+    return filteredUsers;
+  }, [users, searchQuery, roleFilter, sortConfig]);
+
+  const totalPages = Math.ceil(processedUsers.length / ITEMS_PER_PAGE);
+  const paginatedUsers = processedUsers.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
+
+  const SortableHeader = ({ columnKey, title }: { columnKey: SortableKey, title: string }) => {
+    const isSorted = sortConfig.key === columnKey;
+    return (
+      <TableHead>
+        <Button variant="ghost" onClick={() => handleSort(columnKey)}>
+          {title}
+          {isSorted ? (
+            sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+          ) : (
+            <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />
+          )}
+        </Button>
+      </TableHead>
+    );
+  };
 
   return (
     <>
       <div className="p-4 border rounded-md bg-background">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
           <Input
-            placeholder="Search by name..."
+            placeholder="Search by name or email..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -128,8 +183,9 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Role</TableHead>
+                <SortableHeader columnKey="name" title="Name" />
+                <SortableHeader columnKey="email" title="Email" />
+                <SortableHeader columnKey="role" title="Role" />
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -138,6 +194,7 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
                 paginatedUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>{user.first_name} {user.last_name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
                     <TableCell className="capitalize">{user.role}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="outline" size="sm" onClick={() => openDialog(user)}>
@@ -149,7 +206,7 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center">
+                  <TableCell colSpan={4} className="h-24 text-center">
                     No users found.
                   </TableCell>
                 </TableRow>
