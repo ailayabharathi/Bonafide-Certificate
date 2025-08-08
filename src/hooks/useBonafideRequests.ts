@@ -4,11 +4,17 @@ import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
 import { useEffect } from "react";
 import { showError, showSuccess } from "@/utils/toast";
 
-const fetchRequests = async (): Promise<BonafideRequestWithProfile[]> => {
-  const { data, error } = await supabase
+const fetchRequests = async (userId?: string): Promise<BonafideRequestWithProfile[]> => {
+  let query = supabase
     .from("bonafide_requests")
     .select("*, profiles(first_name, last_name)")
     .order("created_at", { ascending: false });
+
+  if (userId) {
+    query = query.eq("user_id", userId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     showError("Failed to fetch requests.");
@@ -37,9 +43,9 @@ const updateRequestStatus = async ({
   }
 };
 
-export const useBonafideRequests = (channelName: string) => {
+export const useBonafideRequests = (channelName: string, userId?: string) => {
   const queryClient = useQueryClient();
-  const queryKey = ["bonafide_requests"];
+  const queryKey = ["bonafide_requests", userId || "all"];
 
   useEffect(() => {
     const channel = supabase
@@ -60,7 +66,7 @@ export const useBonafideRequests = (channelName: string) => {
 
   const { data: requests, isLoading } = useQuery<BonafideRequestWithProfile[]>({
     queryKey,
-    queryFn: fetchRequests,
+    queryFn: () => fetchRequests(userId),
     initialData: [],
   });
 
