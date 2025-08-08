@@ -6,7 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { AuthProvider } from "./contexts/AuthContext";
 import HomeRedirect from "./components/HomeRedirect";
 import Login from "./pages/Login";
-import StudentPortal from "./pages/StudentPortal";
+import StudentPortal from "./pages/StudentPortal.jsx";
 import TutorPortal from "./pages/TutorPortal";
 import HodPortal from "./pages/HodPortal";
 import PrincipalDashboard from "./pages/PrincipalDashboard";
