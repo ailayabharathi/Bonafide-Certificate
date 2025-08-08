@@ -1,8 +1,55 @@
 import { Link } from "react-router-dom";
 import { UserNav } from "@/components/UserNav";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { ApplyCertificateForm } from "@/components/ApplyCertificateForm";
+import { RequestsTable } from "@/components/RequestsTable";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { BonafideRequest } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PlusCircle } from "lucide-react";
 
 const StudentPortal = () => {
   const title = "Student Dashboard";
+  const { user } = useAuth();
+  const [requests, setRequests] = useState<BonafideRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const fetchRequests = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("bonafide_requests")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setRequests(data || []);
+    } catch (error) {
+      console.error("Error fetching requests:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchRequests();
+    }
+  }, [user]);
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <header className="sticky top-0 z-40 w-full border-b bg-background">
@@ -21,8 +68,39 @@ const StudentPortal = () => {
         </div>
       </header>
       <main className="flex-1 container py-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-6">{title}</h1>
-        <p className="text-lg text-muted-foreground">Welcome, Student! Here you can manage your bonafide certificate requests.</p>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Apply for Certificate
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>New Bonafide Certificate Request</DialogTitle>
+                <DialogDescription>
+                  Fill out the form below to submit your request.
+                </DialogDescription>
+              </DialogHeader>
+              <ApplyCertificateForm onSuccess={fetchRequests} setOpen={setIsDialogOpen} />
+            </DialogContent>
+          </Dialog>
+        </div>
+        
+        <div className="space-y-4">
+            <h2 className="text-2xl font-semibold tracking-tight">Your Requests</h2>
+            {loading ? (
+                <div className="space-y-2">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+            ) : (
+                <RequestsTable requests={requests} />
+            )}
+        </div>
       </main>
     </div>
   );
