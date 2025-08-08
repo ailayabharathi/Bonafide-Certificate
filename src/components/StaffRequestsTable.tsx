@@ -26,6 +26,12 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface StaffRequestsTableProps {
   requests: BonafideRequestWithProfile[];
@@ -216,9 +222,20 @@ export function StaffRequestsTable({ requests, onAction }: StaffRequestsTablePro
                 <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
                 <TableCell className="max-w-xs truncate">{request.reason}</TableCell>
                 <TableCell>
-                  <Badge variant={getStatusVariant(request.status)} className={cn(request.status === 'completed' && 'bg-green-500 text-white')}>
-                    {formatStatus(request.status)}
-                  </Badge>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Badge variant={getStatusVariant(request.status)} className={cn(request.status === 'completed' && 'bg-green-500 text-white')}>
+                          {formatStatus(request.status)}
+                        </Badge>
+                      </TooltipTrigger>
+                      {request.rejection_reason && (
+                        <TooltipContent>
+                          <p>Reason: {request.rejection_reason}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
                 </TableCell>
                 <TableCell>
                   {getActionability(request.status) ? (
