@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -55,6 +55,12 @@ export function StaffRequestsTable({ requests, onAction }: StaffRequestsTablePro
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("actionable");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchQuery]);
 
   const openDialog = (request: BonafideRequestWithProfile, type: 'approve' | 'reject') => {
     setActionRequest(request);
@@ -132,6 +138,13 @@ export function StaffRequestsTable({ requests, onAction }: StaffRequestsTablePro
   }, [requests, searchQuery, profile]);
 
   const renderTable = (requestsToRender: BonafideRequestWithProfile[]) => {
+    const totalItems = requestsToRender.length;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    const paginatedRequests = requestsToRender.slice(
+      (currentPage - 1) * ITEMS_PER_PAGE,
+      currentPage * ITEMS_PER_PAGE
+    );
+
     if (requestsToRender.length === 0) {
       return (
         <div className="flex items-center justify-center h-24 p-4">
@@ -140,41 +153,66 @@ export function StaffRequestsTable({ requests, onAction }: StaffRequestsTablePro
       );
     }
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Student Name</TableHead>
-            <TableHead>Submitted</TableHead>
-            <TableHead>Reason</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {requestsToRender.map((request) => (
-            <TableRow key={request.id}>
-              <TableCell>{request.profiles?.first_name} {request.profiles?.last_name}</TableCell>
-              <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
-              <TableCell className="max-w-xs truncate">{request.reason}</TableCell>
-              <TableCell>
-                <Badge variant={getStatusVariant(request.status)} className={cn(request.status === 'completed' && 'bg-green-500 text-white')}>
-                  {formatStatus(request.status)}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                {getActionability(request.status) ? (
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => openDialog(request, 'approve')}>{getApproveButtonText()}</Button>
-                    {profile?.role !== 'admin' && <Button size="sm" variant="destructive" onClick={() => openDialog(request, 'reject')}>Reject</Button>}
-                  </div>
-                ) : (
-                  <span className="text-xs text-muted-foreground">No action needed</span>
-                )}
-              </TableCell>
+      <>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Student Name</TableHead>
+              <TableHead>Submitted</TableHead>
+              <TableHead>Reason</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {paginatedRequests.map((request) => (
+              <TableRow key={request.id}>
+                <TableCell>{request.profiles?.first_name} {request.profiles?.last_name}</TableCell>
+                <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
+                <TableCell className="max-w-xs truncate">{request.reason}</TableCell>
+                <TableCell>
+                  <Badge variant={getStatusVariant(request.status)} className={cn(request.status === 'completed' && 'bg-green-500 text-white')}>
+                    {formatStatus(request.status)}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {getActionability(request.status) ? (
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => openDialog(request, 'approve')}>{getApproveButtonText()}</Button>
+                      {profile?.role !== 'admin' && <Button size="sm" variant="destructive" onClick={() => openDialog(request, 'reject')}>Reject</Button>}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No action needed</span>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <div className="flex items-center justify-end space-x-2 py-4 px-4 border-t">
+            <div className="flex-1 text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages || 1}
+            </div>
+            <div className="space-x-2">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => p - 1)}
+                    disabled={currentPage === 1}
+                >
+                    Previous
+                </Button>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => p + 1)}
+                    disabled={currentPage >= totalPages}
+                >
+                    Next
+                </Button>
+            </div>
+        </div>
+      </>
     );
   };
 
