@@ -7,7 +7,8 @@ import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { showError, showSuccess } from "@/utils/toast";
 import { StatsCard } from "@/components/StatsCard";
-import { ClipboardList, Clock, CheckCircle, XCircle } from "lucide-react";
+import { ClipboardList, Clock, CheckCircle, XCircle, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const AdminDashboard = () => {
   const title = "Admin Dashboard";
@@ -79,7 +80,15 @@ const AdminDashboard = () => {
         </div>
       </header>
       <main className="flex-1 container py-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-6">{title}</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+          <Link to="/admin/user-management">
+            <Button variant="outline">
+              <Users className="mr-2 h-4 w-4" />
+              Manage Users
+            </Button>
+          </Link>
+        </div>
         
         {loading ? (
           <div className="space-y-4">
