@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { ApplyCertificateForm } from "@/components/ApplyCertificateForm";
 import { RequestsTable } from "@/components/RequestsTable";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { BonafideRequest } from "@/types";
@@ -25,9 +25,13 @@ const StudentPortal = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     if (!user) return;
-    setLoading(true);
+    // Keep loading state true only on initial fetch
+    // Subsequent fetches from real-time updates shouldn't show a full loader
+    if (requests.length === 0) {
+        setLoading(true);
+    }
     try {
       const { data, error } = await supabase
         .from("bonafide_requests")
@@ -42,13 +46,33 @@ const StudentPortal = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, requests.length]);
 
   useEffect(() => {
     if (user) {
       fetchRequests();
+
+      const channel = supabase
+        .channel(`student-requests:${user.id}`)
+        .on(
+          'postgres_changes',
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'bonafide_requests',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            fetchRequests();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
-  }, [user]);
+  }, [user, fetchRequests]);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -84,7 +108,10 @@ const StudentPortal = () => {
                   Fill out the form below to submit your request.
                 </DialogDescription>
               </DialogHeader>
-              <ApplyCertificateForm onSuccess={fetchRequests} setOpen={setIsDialogOpen} />
+              <ApplyCertificateForm onSuccess={() => {
+                // No need to call fetchRequests here anymore, real-time will handle it
+                setIsDialogOpen(false);
+              }} setOpen={setIsDialogOpen} />
             </DialogContent>
           </Dialog>
         </div>

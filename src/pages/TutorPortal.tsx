@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { UserNav } from "@/components/UserNav";
 import { StaffRequestsTable } from "@/components/StaffRequestsTable";
@@ -14,8 +14,11 @@ const TutorPortal = () => {
   const [requests, setRequests] = useState<BonafideRequestWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchRequests = async () => {
-    setLoading(true);
+  const fetchRequests = useCallback(async () => {
+    // Keep loading state true only on initial fetch
+    if (requests.length === 0) {
+        setLoading(true);
+    }
     try {
       const { data, error } = await supabase
         .from("bonafide_requests")
@@ -30,11 +33,26 @@ const TutorPortal = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [requests.length]);
 
   useEffect(() => {
     fetchRequests();
-  }, []);
+
+    const channel = supabase
+      .channel('public:bonafide_requests:tutor')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bonafide_requests' },
+        () => {
+          fetchRequests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchRequests]);
 
   const handleAction = async (requestId: string, newStatus: BonafideStatus, rejectionReason?: string) => {
     try {
@@ -45,7 +63,7 @@ const TutorPortal = () => {
 
       if (error) throw error;
       showSuccess("Request updated successfully!");
-      fetchRequests(); // Refresh the data
+      // No need to call fetchRequests here, real-time will handle it.
     } catch (error: any) {
       showError(error.message || "Failed to update request.");
     }
