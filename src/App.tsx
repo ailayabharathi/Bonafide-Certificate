@@ -12,6 +12,7 @@ import HodPortal from "./pages/HodPortal";
 import PrincipalDashboard from "./pages/PrincipalDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
+import ProfilePage from "./pages/ProfilePage";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,14 @@ function App() {
             <Routes>
               <Route path="/" element={<HomeRedirect />} />
               <Route path="/login" element={<Login />} />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute allowedRoles={["student", "tutor", "hod", "admin"]}>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/student/dashboard"
                 element={
