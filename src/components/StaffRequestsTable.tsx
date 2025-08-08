@@ -20,12 +20,11 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import {
   Tooltip,
@@ -33,6 +32,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { StaffRequestsToolbar } from "./StaffRequestsToolbar";
 
 interface StaffRequestsTableProps {
   requests: BonafideRequestWithProfile[];
@@ -187,6 +187,14 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
     };
   }, [requests, searchQuery, profile, sortConfig]);
 
+  const tabsInfo = useMemo(() => [
+    { value: 'actionable', label: 'Action Required', count: categorizedRequests.actionable.length },
+    { value: 'inProgress', label: 'In Progress', count: categorizedRequests.inProgress.length },
+    { value: 'completed', label: 'Completed', count: categorizedRequests.completed.length },
+    { value: 'rejected', label: 'Rejected', count: categorizedRequests.rejected.length },
+    { value: 'all', label: 'All', count: categorizedRequests.all.length },
+  ], [categorizedRequests]);
+
   const SortableHeader = ({ columnKey, title }: { columnKey: SortableKey, title: string }) => {
     const isSorted = sortConfig.key === columnKey;
     return (
@@ -323,45 +331,22 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
     );
   };
 
-  const tabs = [
-    { value: 'actionable', label: 'Action Required', data: categorizedRequests.actionable },
-    { value: 'inProgress', label: 'In Progress', data: categorizedRequests.inProgress },
-    { value: 'completed', label: 'Completed', data: categorizedRequests.completed },
-    { value: 'rejected', label: 'Rejected', data: categorizedRequests.rejected },
-    { value: 'all', label: 'All', data: categorizedRequests.all },
-  ];
-
   return (
     <div className="border rounded-md bg-background">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="p-4 border-b space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-                <TabsList>
-                    {tabs.map(tab => (
-                    <TabsTrigger key={tab.value} value={tab.value}>
-                        {tab.label} ({tab.data.length})
-                    </TabsTrigger>
-                    ))}
-                </TabsList>
-                <Input
-                    placeholder="Search by student name..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="max-w-xs"
-                />
-            </div>
-            {selectedIds.length > 0 && (
-                <div className="flex items-center gap-4 p-2 bg-secondary rounded-md">
-                    <p className="text-sm font-medium">{selectedIds.length} selected</p>
-                    <Button size="sm" onClick={() => openDialog('approve', true)}>{getApproveButtonText()} Selected</Button>
-                    {profile?.role !== 'admin' && <Button size="sm" variant="destructive" onClick={() => openDialog('reject', true)}>Reject Selected</Button>}
-                    <Button size="sm" variant="ghost" onClick={() => setSelectedIds([])}>Clear selection</Button>
-                </div>
-            )}
-        </div>
-        {tabs.map(tab => (
+        <StaffRequestsToolbar
+          tabs={tabsInfo}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          selectedIdsCount={selectedIds.length}
+          onBulkAction={(type) => openDialog(type, true)}
+          onClearSelection={() => setSelectedIds([])}
+          getApproveButtonText={getApproveButtonText}
+          profile={profile}
+        />
+        {tabsInfo.map(tab => (
           <TabsContent key={tab.value} value={tab.value} className="m-0">
-            {renderTable(tab.data)}
+            {renderTable(categorizedRequests[tab.value as keyof typeof categorizedRequests])}
           </TabsContent>
         ))}
       </Tabs>
