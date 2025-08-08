@@ -1,5 +1,4 @@
 import React from "react";
-import { UserNav } from "@/components/UserNav";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +17,7 @@ const StudentPortal = () => {
           </div>
           <div className="flex flex-1 items-center justify-end space-x-4">
             <nav className="flex items-center space-x-1">
-              <UserNav />
+              {/* UserNav component removed for debugging */}
             </nav>
           </div>
         </div>
@@ -36,7 +35,7 @@ const StudentPortal = () => {
           </Header>
           <CardContent>
             <p>You have no active applications.</p>
-          </CardContent>
+          </Content>
         </Card>
       </main>
     </div>
