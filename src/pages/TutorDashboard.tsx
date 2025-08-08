@@ -14,7 +14,7 @@ const TutorDashboard = () => {
         </CardHeader>
         <CardContent>
           <p>There are no pending applications for your review.</p>
-        </Content>
+        </CardContent>
       </Card>
     </DashboardLayout>
   );

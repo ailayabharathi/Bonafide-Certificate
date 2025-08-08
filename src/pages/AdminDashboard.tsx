@@ -14,7 +14,7 @@ const AdminDashboard = () => {
         </CardHeader>
         <CardContent>
           <p>There are no applications pending final approval.</p>
-        </Content>
+        </CardContent>
       </Card>
     </DashboardLayout>
   );

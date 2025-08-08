@@ -14,7 +14,7 @@ const HodDashboard = () => {
         </CardHeader>
         <CardContent>
           <p>There are no pending applications for your approval.</p>
-        </Content>
+        </CardContent>
       </Card>
     </DashboardLayout>
   );
