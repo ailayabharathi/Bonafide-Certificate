@@ -1,11 +1,10 @@
 import React from "react";
 import { UserNav } from "@/components/UserNav";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-const StudentDashboard = () => {
-  const title = "Student Dashboard";
+const HodPortal = () => {
+  const title = "HOD Dashboard";
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <header className="sticky top-0 z-40 w-full border-b bg-background">
@@ -25,17 +24,14 @@ const StudentDashboard = () => {
       </header>
       <main className="flex-1 container py-8">
         <h1 className="text-3xl font-bold tracking-tight mb-6">{title}</h1>
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-lg text-muted-foreground">Welcome, Student!</p>
-          <Button>Apply for New Certificate</Button>
-        </div>
+        <p className="text-lg text-muted-foreground mb-6">Welcome, HOD!</p>
         <Card>
           <CardHeader>
-            <CardTitle>My Applications</CardTitle>
-            <CardDescription>Track the status of your bonafide certificate applications.</CardDescription>
+            <CardTitle>Department Applications</CardTitle>
+            <CardDescription>Review applications approved by tutors in your department.</CardDescription>
           </Header>
           <CardContent>
-            <p>You have no active applications.</p>
+            <p>There are no pending applications for your approval.</p>
           </CardContent>
         </Card>
       </main>
@@ -43,4 +39,4 @@ const StudentDashboard = () => {
   );
 };
 
-export default StudentDashboard;
+export default HodPortal;

@@ -1,10 +1,11 @@
 import React from "react";
 import { UserNav } from "@/components/UserNav";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-const TutorDashboard = () => {
-  const title = "Tutor Dashboard";
+const StudentPortal = () => {
+  const title = "Student Dashboard";
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <header className="sticky top-0 z-40 w-full border-b bg-background">
@@ -24,14 +25,17 @@ const TutorDashboard = () => {
       </header>
       <main className="flex-1 container py-8">
         <h1 className="text-3xl font-bold tracking-tight mb-6">{title}</h1>
-        <p className="text-lg text-muted-foreground mb-6">Welcome, Tutor!</p>
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-lg text-muted-foreground">Welcome, Student!</p>
+          <Button>Apply for New Certificate</Button>
+        </div>
         <Card>
           <CardHeader>
-            <CardTitle>Pending Applications</CardTitle>
-            <CardDescription>Review applications from students assigned to you.</CardDescription>
+            <CardTitle>My Applications</CardTitle>
+            <CardDescription>Track the status of your bonafide certificate applications.</CardDescription>
           </Header>
           <CardContent>
-            <p>There are no pending applications for your review.</p>
+            <p>You have no active applications.</p>
           </CardContent>
         </Card>
       </main>
@@ -39,4 +43,4 @@ const TutorDashboard = () => {
   );
 };
 
-export default TutorDashboard;
+export default StudentPortal;

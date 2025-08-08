@@ -3,8 +3,8 @@ import { UserNav } from "@/components/UserNav";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-const HodDashboard = () => {
-  const title = "HOD Dashboard";
+const TutorPortal = () => {
+  const title = "Tutor Dashboard";
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <header className="sticky top-0 z-40 w-full border-b bg-background">
@@ -24,14 +24,14 @@ const HodDashboard = () => {
       </header>
       <main className="flex-1 container py-8">
         <h1 className="text-3xl font-bold tracking-tight mb-6">{title}</h1>
-        <p className="text-lg text-muted-foreground mb-6">Welcome, HOD!</p>
+        <p className="text-lg text-muted-foreground mb-6">Welcome, Tutor!</p>
         <Card>
           <CardHeader>
-            <CardTitle>Department Applications</CardTitle>
-            <CardDescription>Review applications approved by tutors in your department.</CardDescription>
+            <CardTitle>Pending Applications</CardTitle>
+            <CardDescription>Review applications from students assigned to you.</CardDescription>
           </Header>
           <CardContent>
-            <p>There are no pending applications for your approval.</p>
+            <p>There are no pending applications for your review.</p>
           </CardContent>
         </Card>
       </main>
@@ -39,4 +39,4 @@ const HodDashboard = () => {
   );
 };
 
-export default HodDashboard;
+export default TutorPortal;

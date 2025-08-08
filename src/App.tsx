@@ -10,10 +10,10 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
-import AdminDashboard from "./pages/AdminDashboard";
-import HodDashboard from "./pages/HodDashboard";
-import TutorDashboard from "./pages/TutorDashboard";
-import StudentDashboard from "./pages/StudentDashboard";
+import PrincipalDashboard from "./pages/PrincipalDashboard";
+import HodPortal from "./pages/HodPortal";
+import TutorPortal from "./pages/TutorPortal";
+import StudentPortal from "./pages/StudentPortal";
 
 const queryClient = new QueryClient();
 
@@ -33,7 +33,7 @@ function App() {
                 path="/admin/dashboard" 
                 element={
                   <ProtectedRoute allowedRoles={['admin']}>
-                    <AdminDashboard />
+                    <PrincipalDashboard />
                   </ProtectedRoute>
                 } 
               />
@@ -41,7 +41,7 @@ function App() {
                 path="/hod/dashboard" 
                 element={
                   <ProtectedRoute allowedRoles={['hod', 'admin']}>
-                    <HodDashboard />
+                    <HodPortal />
                   </ProtectedRoute>
                 } 
               />
@@ -49,7 +49,7 @@ function App() {
                 path="/tutor/dashboard" 
                 element={
                   <ProtectedRoute allowedRoles={['tutor', 'hod', 'admin']}>
-                    <TutorDashboard />
+                    <TutorPortal />
                   </ProtectedRoute>
                 } 
               />
@@ -57,7 +57,7 @@ function App() {
                 path="/student/dashboard" 
                 element={
                   <ProtectedRoute allowedRoles={['student', 'tutor', 'hod', 'admin']}>
-                    <StudentDashboard />
+                    <StudentPortal />
                   </ProtectedRoute>
                 } 
               />

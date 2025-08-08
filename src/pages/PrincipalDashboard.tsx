@@ -3,7 +3,7 @@ import { UserNav } from "@/components/UserNav";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-const AdminDashboard = () => {
+const PrincipalDashboard = () => {
   const title = "Principal Dashboard";
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -39,4 +39,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default PrincipalDashboard;
