@@ -26,6 +26,16 @@ const Login = () => {
               appearance={{ theme: ThemeSupa }}
               providers={[]}
               theme="light"
+              localization={{
+                variables: {
+                  sign_up: {
+                    additional_data: {
+                      first_name: 'First Name',
+                      last_name: 'Last Name',
+                    }
+                  }
+                }
+              }}
             />
         </div>
       </div>
