@@ -25,11 +25,14 @@ import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 interface StaffRequestsTableProps {
   requests: BonafideRequestWithProfile[];
   onAction: (requestId: string, newStatus: BonafideStatus, rejectionReason?: string) => Promise<void>;
 }
+
+type SortableKey = keyof BonafideRequestWithProfile | 'studentName';
 
 const getStatusVariant = (status: BonafideStatus) => {
   switch (status) {
@@ -56,11 +59,20 @@ export function StaffRequestsTable({ requests, onAction }: StaffRequestsTablePro
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("actionable");
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'ascending' | 'descending' }>({ key: 'created_at', direction: 'descending' });
   const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, searchQuery]);
+  }, [activeTab, searchQuery, sortConfig]);
+
+  const handleSort = (key: SortableKey) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
 
   const openDialog = (request: BonafideRequestWithProfile, type: 'approve' | 'reject') => {
     setActionRequest(request);
@@ -114,7 +126,24 @@ export function StaffRequestsTable({ requests, onAction }: StaffRequestsTablePro
   }
 
   const categorizedRequests = useMemo(() => {
-    const source = requests.filter(request => {
+    let sortedRequests = [...requests];
+    sortedRequests.sort((a, b) => {
+        let aValue: any, bValue: any;
+
+        if (sortConfig.key === 'studentName') {
+            aValue = `${a.profiles?.first_name || ''} ${a.profiles?.last_name || ''}`.toLowerCase();
+            bValue = `${b.profiles?.first_name || ''} ${b.profiles?.last_name || ''}`.toLowerCase();
+        } else {
+            aValue = a[sortConfig.key as keyof BonafideRequestWithProfile];
+            bValue = b[sortConfig.key as keyof BonafideRequestWithProfile];
+        }
+
+        if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+        return 0;
+    });
+
+    const source = sortedRequests.filter(request => {
       const studentName = `${request.profiles?.first_name || ''} ${request.profiles?.last_name || ''}`.toLowerCase();
       return studentName.includes(searchQuery.toLowerCase());
     });
@@ -135,7 +164,23 @@ export function StaffRequestsTable({ requests, onAction }: StaffRequestsTablePro
       rejected: source.filter(r => ['rejected_by_tutor', 'rejected_by_hod'].includes(r.status)),
       all: source,
     };
-  }, [requests, searchQuery, profile]);
+  }, [requests, searchQuery, profile, sortConfig]);
+
+  const SortableHeader = ({ columnKey, title }: { columnKey: SortableKey, title: string }) => {
+    const isSorted = sortConfig.key === columnKey;
+    return (
+      <TableHead>
+        <Button variant="ghost" onClick={() => handleSort(columnKey)}>
+          {title}
+          {isSorted ? (
+            sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
+          ) : (
+            <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />
+          )}
+        </Button>
+      </TableHead>
+    );
+  };
 
   const renderTable = (requestsToRender: BonafideRequestWithProfile[]) => {
     const totalItems = requestsToRender.length;
@@ -157,10 +202,10 @@ export function StaffRequestsTable({ requests, onAction }: StaffRequestsTablePro
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Student Name</TableHead>
-              <TableHead>Submitted</TableHead>
+              <SortableHeader columnKey="studentName" title="Student Name" />
+              <SortableHeader columnKey="created_at" title="Submitted" />
               <TableHead>Reason</TableHead>
-              <TableHead>Status</TableHead>
+              <SortableHeader columnKey="status" title="Status" />
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
