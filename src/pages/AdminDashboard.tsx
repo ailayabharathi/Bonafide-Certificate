@@ -1,4 +1,4 @@
-import AppShell from "@/components/AppShell";
+import AppShell from "../components/AppShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const AdminDashboard = () => {
@@ -11,7 +11,7 @@ const AdminDashboard = () => {
         <CardHeader>
           <CardTitle>Final Approvals</CardTitle>
           <CardDescription>Review applications approved by HODs for final sign-off.</CardDescription>
-        </CardHeader>
+        </Header>
         <CardContent>
           <p>There are no applications pending final approval.</p>
         </Content>
