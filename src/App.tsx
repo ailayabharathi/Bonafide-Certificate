@@ -9,7 +9,7 @@ import Login from "./pages/Login";
 import StudentPortal from "./pages/StudentPortal";
 import TutorPortal from "./pages/TutorPortal";
 import HodPortal from "./pages/HodPortal";
-import PrincipalDashboard from "./pages/PrincipalDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 import ProfilePage from "./pages/ProfilePage";
@@ -60,10 +60,10 @@ function App() {
                 }
               />
               <Route
-                path="/principal/dashboard"
+                path="/admin/dashboard"
                 element={
                   <ProtectedRoute allowedRoles={["admin"]}>
-                    <PrincipalDashboard />
+                    <AdminDashboard />
                   </ProtectedRoute>
                 }
               />

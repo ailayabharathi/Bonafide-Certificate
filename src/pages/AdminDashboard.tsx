@@ -6,9 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { showError, showSuccess } from "@/utils/toast";
+import { StatsCard } from "@/components/StatsCard";
+import { ClipboardList, Clock, CheckCircle, XCircle } from "lucide-react";
 
-const PrincipalDashboard = () => {
-  const title = "Principal Dashboard";
+const AdminDashboard = () => {
+  const title = "Admin Dashboard";
   const [requests, setRequests] = useState<BonafideRequestWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -49,6 +51,13 @@ const PrincipalDashboard = () => {
     }
   };
 
+  const stats = {
+    total: requests.length,
+    pending: requests.filter(r => r.status === 'approved_by_hod').length,
+    completed: requests.filter(r => r.status === 'completed').length,
+    totalRejected: requests.filter(r => ['rejected_by_tutor', 'rejected_by_hod'].includes(r.status)).length,
+  };
+
   const pendingFinalApproval = requests.filter(r => r.status === 'approved_by_hod');
   const otherRequests = requests.filter(r => r.status !== 'approved_by_hod');
 
@@ -79,6 +88,12 @@ const PrincipalDashboard = () => {
           </div>
         ) : (
           <div className="space-y-8">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <StatsCard title="Total Requests" value={stats.total} icon={ClipboardList} />
+                <StatsCard title="Pending Final Processing" value={stats.pending} icon={Clock} />
+                <StatsCard title="Completed Certificates" value={stats.completed} icon={CheckCircle} />
+                <StatsC<ctrl63>ard title="Total Rejected" value={stats.totalRejected} icon={XCircle} />
+            </div>
             <StaffRequestsTable
               requests={pendingFinalApproval}
               title="Ready for Final Processing"
@@ -96,4 +111,4 @@ const PrincipalDashboard = () => {
   );
 };
 
-export default PrincipalDashboard;
+export default AdminDashboard;

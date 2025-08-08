@@ -7,6 +7,8 @@ import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { showError, showSuccess } from "@/utils/toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { StatsCard } from "@/components/StatsCard";
+import { ClipboardList, Clock, CheckCircle, XCircle } from "lucide-react";
 
 const HodPortal = () => {
   const title = "HOD Dashboard";
@@ -51,6 +53,13 @@ const HodPortal = () => {
     }
   };
 
+  const stats = {
+    total: requests.length,
+    pending: requests.filter(r => r.status === 'approved_by_tutor').length,
+    approved: requests.filter(r => r.status === 'approved_by_hod').length,
+    rejected: requests.filter(r => r.status === 'rejected_by_hod').length,
+  };
+
   // HODs should act on requests approved by tutors.
   const pendingHodRequests = requests.filter(r => r.status === 'approved_by_tutor');
   const otherRequests = requests.filter(r => r.status !== 'approved_by_tutor');
@@ -82,6 +91,12 @@ const HodPortal = () => {
           </div>
         ) : (
           <div className="space-y-8">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <StatsCard title="Total Requests" value={stats.total} icon={ClipboardList} />
+              <StatsCard title="Pending Your Approval" value={stats.pending} icon={Clock} />
+              <StatsCard title="Approved by You" value={stats.approved} icon={CheckCircle} />
+              <StatsCard title="Rejected by You" value={stats.rejected} icon={XCircle} />
+            </div>
             <StaffRequestsTable
               requests={pendingHodRequests}
               title="Pending Your Approval"

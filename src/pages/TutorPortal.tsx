@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { showError, showSuccess } from "@/utils/toast";
+import { StatsCard } from "@/components/StatsCard";
+import { ClipboardList, Clock, CheckCircle, XCircle } from "lucide-react";
 
 const TutorPortal = () => {
   const title = "Tutor Dashboard";
@@ -49,6 +51,13 @@ const TutorPortal = () => {
     }
   };
 
+  const stats = {
+    total: requests.length,
+    pending: requests.filter(r => r.status === 'pending').length,
+    approved: requests.filter(r => r.status === 'approved_by_tutor').length,
+    rejected: requests.filter(r => r.status === 'rejected_by_tutor').length,
+  };
+
   const pendingRequests = requests.filter(r => r.status === 'pending');
   const otherRequests = requests.filter(r => r.status !== 'pending');
 
@@ -79,6 +88,12 @@ const TutorPortal = () => {
           </div>
         ) : (
           <div className="space-y-8">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <StatsCard title="Total Requests" value={stats.total} icon={ClipboardList} />
+              <StatsCard title="Pending Your Action" value={stats.pending} icon={Clock} />
+              <StatsCard title="Approved by You" value={stats.approved} icon={CheckCircle} />
+              <StatsCard title="Rejected by You" value={stats.rejected} icon={XCircle} />
+            </div>
             <StaffRequestsTable
               requests={pendingRequests}
               title="Pending Action"
