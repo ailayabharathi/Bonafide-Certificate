@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
+import { BonafideRequest, BonafideRequestWithProfile, BonafideStatus } from "@/types";
 import { useEffect } from "react";
 import { showError, showSuccess } from "@/utils/toast";
+import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 const fetchRequests = async (userId?: string): Promise<BonafideRequestWithProfile[]> => {
   let query = supabase
@@ -43,18 +44,23 @@ const updateRequestStatus = async ({
   }
 };
 
-export const useBonafideRequests = (channelName: string, userId?: string) => {
+export const useBonafideRequests = (
+  channelName: string,
+  userId?: string,
+  onRealtimeEvent?: (payload: RealtimePostgresChangesPayload<BonafideRequest>) => void
+) => {
   const queryClient = useQueryClient();
   const queryKey = ["bonafide_requests", userId || "all"];
 
   useEffect(() => {
     const channel = supabase
       .channel(channelName)
-      .on(
+      .on<BonafideRequest>(
         "postgres_changes",
         { event: "*", schema: "public", table: "bonafide_requests" },
-        () => {
+        (payload) => {
           queryClient.invalidateQueries({ queryKey });
+          onRealtimeEvent?.(payload);
         },
       )
       .subscribe();
@@ -62,7 +68,7 @@ export const useBonafideRequests = (channelName: string, userId?: string) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient, channelName, queryKey]);
+  }, [queryClient, channelName, queryKey, onRealtimeEvent]);
 
   const { data: requests, isLoading } = useQuery<BonafideRequestWithProfile[]>({
     queryKey,

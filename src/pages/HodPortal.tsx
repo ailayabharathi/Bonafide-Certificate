@@ -1,14 +1,24 @@
 import { StaffRequestsTable } from "@/components/StaffRequestsTable";
-import { BonafideStatus } from "@/types";
+import { BonafideRequest, BonafideStatus } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatsCard } from "@/components/StatsCard";
 import { ClipboardList, Clock, CheckCircle, XCircle } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useBonafideRequests } from "@/hooks/useBonafideRequests";
+import { showSuccess } from "@/utils/toast";
+import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 const HodPortal = () => {
+  const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
+    if (payload.eventType === 'UPDATE' && payload.new.status === 'approved_by_tutor') {
+      showSuccess("A request requires your approval.");
+    }
+  };
+
   const { requests, isLoading, updateRequest } = useBonafideRequests(
     "public:bonafide_requests:hod",
+    undefined,
+    handleRealtimeEvent
   );
 
   const handleAction = async (

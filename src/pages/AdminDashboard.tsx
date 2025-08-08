@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { StaffRequestsTable } from "@/components/StaffRequestsTable";
-import { BonafideStatus } from "@/types";
+import { BonafideRequest, BonafideStatus } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatsCard } from "@/components/StatsCard";
 import {
@@ -13,10 +13,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useBonafideRequests } from "@/hooks/useBonafideRequests";
+import { showSuccess } from "@/utils/toast";
+import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 const AdminDashboard = () => {
+  const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
+    if (payload.eventType === 'UPDATE' && payload.new.status === 'approved_by_hod') {
+      showSuccess("A request is ready for final processing.");
+    }
+  };
+
   const { requests, isLoading, updateRequest } = useBonafideRequests(
     "public:bonafide_requests:admin",
+    undefined,
+    handleRealtimeEvent
   );
 
   const handleAction = async (

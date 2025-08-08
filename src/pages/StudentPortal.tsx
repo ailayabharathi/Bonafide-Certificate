@@ -4,12 +4,10 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { ApplyCertificateForm } from "@/components/ApplyCertificateForm";
 import { RequestsTable } from "@/components/RequestsTable";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { BonafideRequest } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,62 +16,46 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { showSuccess, showError } from "@/utils/toast";
 import { useBonafideRequests } from "@/hooks/useBonafideRequests";
+import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 const StudentPortal = () => {
   const { user } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [requestToEdit, setRequestToEdit] = useState<BonafideRequest | null>(null);
 
+  const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
+    if (payload.eventType !== 'UPDATE' || !user || payload.new.user_id !== user.id) return;
+
+    const oldStatus = (payload.old as BonafideRequest)?.status;
+    const newStatus = payload.new.status;
+    const rejectionReason = payload.new.rejection_reason;
+
+    if (oldStatus !== newStatus) {
+        switch(newStatus) {
+            case 'approved_by_tutor':
+                showSuccess("Approved by Tutor! Your request is now with the HOD.");
+                break;
+            case 'rejected_by_tutor':
+                showError(`Request Rejected by Tutor. Reason: ${rejectionReason || 'No reason provided.'}`);
+                break;
+            case 'approved_by_hod':
+                showSuccess("Approved by HOD! Your request is being processed by the office.");
+                break;
+            case 'rejected_by_hod':
+                showError(`Request Rejected by HOD. Reason: ${rejectionReason || 'No reason provided.'}`);
+                break;
+            case 'completed':
+                showSuccess("Certificate Ready! Your bonafide certificate is now available.");
+                break;
+        }
+    }
+  };
+
   const { requests, isLoading } = useBonafideRequests(
     `student-requests:${user?.id}`,
     user?.id,
+    handleRealtimeEvent,
   );
-
-  useEffect(() => {
-    if (user) {
-      const channel = supabase
-        .channel(`student-notifications:${user.id}`)
-        .on<BonafideRequest>(
-          'postgres_changes',
-          { 
-            event: 'UPDATE', 
-            schema: 'public', 
-            table: 'bonafide_requests',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            const oldStatus = payload.old.status;
-            const newStatus = payload.new.status;
-            const rejectionReason = payload.new.rejection_reason;
-
-            if (oldStatus !== newStatus) {
-                switch(newStatus) {
-                    case 'approved_by_tutor':
-                        showSuccess("Approved by Tutor! Your request is now with the HOD.");
-                        break;
-                    case 'rejected_by_tutor':
-                        showError(`Request Rejected by Tutor. Reason: ${rejectionReason || 'No reason provided.'}`);
-                        break;
-                    case 'approved_by_hod':
-                        showSuccess("Approved by HOD! Your request is being processed by the office.");
-                        break;
-                    case 'rejected_by_hod':
-                        showError(`Request Rejected by HOD. Reason: ${rejectionReason || 'No reason provided.'}`);
-                        break;
-                    case 'completed':
-                        showSuccess("Certificate Ready! Your bonafide certificate is now available.");
-                        break;
-                }
-            }
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [user]);
 
   const handleNewRequestClick = () => {
     setRequestToEdit(null);

@@ -1,14 +1,24 @@
 import { StaffRequestsTable } from "@/components/StaffRequestsTable";
-import { BonafideStatus } from "@/types";
+import { BonafideRequest, BonafideStatus } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatsCard } from "@/components/StatsCard";
 import { ClipboardList, Clock, CheckCircle, XCircle } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useBonafideRequests } from "@/hooks/useBonafideRequests";
+import { showSuccess } from "@/utils/toast";
+import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 const TutorPortal = () => {
+  const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
+    if (payload.eventType === 'INSERT' && payload.new.status === 'pending') {
+      showSuccess("New request received for your review.");
+    }
+  };
+
   const { requests, isLoading, updateRequest } = useBonafideRequests(
     "public:bonafide_requests:tutor",
+    undefined,
+    handleRealtimeEvent
   );
 
   const handleAction = async (
