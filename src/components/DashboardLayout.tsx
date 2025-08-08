@@ -1,7 +1,8 @@
 import { ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Bell, Home, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -10,11 +11,10 @@ interface DashboardLayoutProps {
 }
 
 export const DashboardLayout = ({ children, title, role }: DashboardLayoutProps) => {
-  const navigate = useNavigate();
+  const { signOut } = useAuth();
 
-  const handleLogout = () => {
-    // In a real app, clear session/token
-    navigate("/login");
+  const handleLogout = async () => {
+    await signOut();
   };
 
   return (

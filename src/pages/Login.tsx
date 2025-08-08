@@ -3,19 +3,17 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
+  const { session } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate('/'); // Redirect to home, router will handle role-based redirect
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    if (session) {
+      navigate('/');
+    }
+  }, [session, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
