@@ -44,6 +44,31 @@ const updateRequestStatus = async ({
   }
 };
 
+const bulkUpdateRequestStatus = async ({
+  requestIds,
+  newStatus,
+  rejectionReason,
+}: {
+  requestIds: string[];
+  newStatus: BonafideStatus;
+  rejectionReason?: string;
+}) => {
+    const updates = requestIds.map(id => 
+        supabase
+            .from("bonafide_requests")
+            .update({ status: newStatus, rejection_reason: rejectionReason || null })
+            .eq("id", id)
+    );
+
+    const results = await Promise.all(updates);
+    const firstError = results.find(res => res.error);
+
+    if (firstError?.error) {
+        showError(firstError.error.message || "An error occurred during bulk update.");
+        throw new Error(firstError.error.message);
+    }
+};
+
 export const useBonafideRequests = (
   channelName: string,
   userId?: string,
@@ -84,9 +109,18 @@ export const useBonafideRequests = (
     },
   });
 
+  const bulkUpdateMutation = useMutation({
+    mutationFn: bulkUpdateRequestStatus,
+    onSuccess: (data, variables) => {
+        showSuccess(`${variables.requestIds.length} requests updated successfully!`);
+        queryClient.invalidateQueries({ queryKey });
+    }
+  });
+
   return {
     requests: requests || [],
     isLoading: isLoading && (!requests || requests.length === 0),
     updateRequest: mutation.mutateAsync,
+    bulkUpdateRequest: bulkUpdateMutation.mutateAsync,
   };
 };

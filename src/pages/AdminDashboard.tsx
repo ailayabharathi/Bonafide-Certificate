@@ -23,7 +23,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const { requests, isLoading, updateRequest } = useBonafideRequests(
+  const { requests, isLoading, updateRequest, bulkUpdateRequest } = useBonafideRequests(
     "public:bonafide_requests:admin",
     undefined,
     handleRealtimeEvent
@@ -35,6 +35,14 @@ const AdminDashboard = () => {
     rejectionReason?: string,
   ) => {
     await updateRequest({ requestId, newStatus, rejectionReason });
+  };
+
+  const handleBulkAction = async (
+    requestIds: string[],
+    newStatus: BonafideStatus,
+    rejectionReason?: string,
+  ) => {
+    await bulkUpdateRequest({ requestIds, newStatus, rejectionReason });
   };
 
   const stats = {
@@ -86,7 +94,7 @@ const AdminDashboard = () => {
               icon={XCircle}
             />
           </div>
-          <StaffRequestsTable requests={requests} onAction={handleAction} />
+          <StaffRequestsTable requests={requests} onAction={handleAction} onBulkAction={handleBulkAction} />
         </div>
       )}
     </DashboardLayout>

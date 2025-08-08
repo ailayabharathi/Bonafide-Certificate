@@ -15,7 +15,7 @@ const HodPortal = () => {
     }
   };
 
-  const { requests, isLoading, updateRequest } = useBonafideRequests(
+  const { requests, isLoading, updateRequest, bulkUpdateRequest } = useBonafideRequests(
     "public:bonafide_requests:hod",
     undefined,
     handleRealtimeEvent
@@ -27,6 +27,14 @@ const HodPortal = () => {
     rejectionReason?: string,
   ) => {
     await updateRequest({ requestId, newStatus, rejectionReason });
+  };
+
+  const handleBulkAction = async (
+    requestIds: string[],
+    newStatus: BonafideStatus,
+    rejectionReason?: string,
+  ) => {
+    await bulkUpdateRequest({ requestIds, newStatus, rejectionReason });
   };
 
   const stats = {
@@ -67,7 +75,7 @@ const HodPortal = () => {
               icon={XCircle}
             />
           </div>
-          <StaffRequestsTable requests={requests} onAction={handleAction} />
+          <StaffRequestsTable requests={requests} onAction={handleAction} onBulkAction={handleBulkAction} />
         </div>
       )}
     </DashboardLayout>

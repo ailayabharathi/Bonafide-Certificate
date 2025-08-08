@@ -15,7 +15,7 @@ const TutorPortal = () => {
     }
   };
 
-  const { requests, isLoading, updateRequest } = useBonafideRequests(
+  const { requests, isLoading, updateRequest, bulkUpdateRequest } = useBonafideRequests(
     "public:bonafide_requests:tutor",
     undefined,
     handleRealtimeEvent
@@ -27,6 +27,14 @@ const TutorPortal = () => {
     rejectionReason?: string,
   ) => {
     await updateRequest({ requestId, newStatus, rejectionReason });
+  };
+
+  const handleBulkAction = async (
+    requestIds: string[],
+    newStatus: BonafideStatus,
+    rejectionReason?: string,
+  ) => {
+    await bulkUpdateRequest({ requestIds, newStatus, rejectionReason });
   };
 
   const stats = {
@@ -67,7 +75,7 @@ const TutorPortal = () => {
               icon={XCircle}
             />
           </div>
-          <StaffRequestsTable requests={requests} onAction={handleAction} />
+          <StaffRequestsTable requests={requests} onAction={handleAction} onBulkAction={handleBulkAction} />
         </div>
       )}
     </DashboardLayout>
