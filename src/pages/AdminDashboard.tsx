@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { UserNav } from "@/components/UserNav";
 import { StaffRequestsTable } from "@/components/StaffRequestsTable";
 import { supabase } from "@/integrations/supabase/client";
 import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
@@ -9,9 +8,9 @@ import { showError, showSuccess } from "@/utils/toast";
 import { StatsCard } from "@/components/StatsCard";
 import { ClipboardList, Clock, CheckCircle, XCircle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DashboardLayout } from "@/components/DashboardLayout";
 
 const AdminDashboard = () => {
-  const title = "Admin Dashboard";
   const [requests, setRequests] = useState<BonafideRequestWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -75,55 +74,37 @@ const AdminDashboard = () => {
     totalRejected: requests.filter(r => ['rejected_by_tutor', 'rejected_by_hod'].includes(r.status)).length,
   };
 
+  const headerActions = (
+    <Link to="/admin/user-management">
+      <Button variant="outline">
+        <Users className="mr-2 h-4 w-4" />
+        Manage Users
+      </Button>
+    </Link>
+  );
+
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-40 w-full border-b bg-background">
-        <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
-          <div className="flex gap-6 md:gap-10">
-            <Link to="/" className="flex items-center space-x-2">
-               <img src="/placeholder.svg" alt="College Logo" className="h-8 w-8" />
-              <span className="inline-block font-bold">ACE Portal</span>
-            </Link>
-          </div>
-          <div className="flex flex-1 items-center justify-end space-x-4">
-            <nav className="flex items-center space-x-1">
-              <UserNav />
-            </nav>
-          </div>
+    <DashboardLayout title="Admin Dashboard" headerActions={headerActions}>
+      {loading ? (
+        <div className="space-y-4">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-64 w-full" />
         </div>
-      </header>
-      <main className="flex-1 container py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-          <Link to="/admin/user-management">
-            <Button variant="outline">
-              <Users className="mr-2 h-4 w-4" />
-              Manage Users
-            </Button>
-          </Link>
+      ) : (
+        <div className="space-y-8">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <StatsCard title="Total Requests" value={stats.total} icon={ClipboardList} />
+              <StatsCard title="Pending Final Processing" value={stats.pending} icon={Clock} />
+              <StatsCard title="Completed Certificates" value={stats.completed} icon={CheckCircle} />
+              <StatsCard title="Total Rejected" value={stats.totalRejected} icon={XCircle} />
+          </div>
+          <StaffRequestsTable
+            requests={requests}
+            onAction={handleAction}
+          />
         </div>
-        
-        {loading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-64 w-full" />
-          </div>
-        ) : (
-          <div className="space-y-8">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <StatsCard title="Total Requests" value={stats.total} icon={ClipboardList} />
-                <StatsCard title="Pending Final Processing" value={stats.pending} icon={Clock} />
-                <StatsCard title="Completed Certificates" value={stats.completed} icon={CheckCircle} />
-                <StatsCard title="Total Rejected" value={stats.totalRejected} icon={XCircle} />
-            </div>
-            <StaffRequestsTable
-              requests={requests}
-              onAction={handleAction}
-            />
-          </div>
-        )}
-      </main>
-    </div>
+      )}
+    </DashboardLayout>
   );
 };
 
