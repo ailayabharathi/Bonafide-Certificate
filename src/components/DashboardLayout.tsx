@@ -2,12 +2,12 @@ import React from "react";
 import { UserNav } from "@/components/UserNav";
 import { Link } from "react-router-dom";
 
-interface AppLayoutProps {
+interface DashboardLayoutProps {
   children: React.ReactNode;
   title: string;
 }
 
-const AppLayout = ({ children, title }: AppLayoutProps) => {
+const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <header className="sticky top-0 z-40 w-full border-b bg-background">
@@ -33,4 +33,4 @@ const AppLayout = ({ children, title }: AppLayoutProps) => {
   );
 };
 
-export { AppLayout };
+export { DashboardLayout };

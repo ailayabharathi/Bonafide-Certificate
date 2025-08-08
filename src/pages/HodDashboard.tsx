@@ -1,9 +1,9 @@
-import { AppLayout } from "@/components/AppLayout";
+import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const HodDashboard = () => {
   return (
-    <AppLayout title="HOD Dashboard">
+    <DashboardLayout title="HOD Dashboard">
       <p className="text-lg text-muted-foreground mb-6">Welcome, HOD!</p>
       <Card>
         <CardHeader>
@@ -14,7 +14,7 @@ const HodDashboard = () => {
           <p>There are no pending applications for your approval.</p>
         </CardContent>
       </Card>
-    </AppLayout>
+    </DashboardLayout>
   );
 };
 
