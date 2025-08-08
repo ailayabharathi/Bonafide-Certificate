@@ -1,9 +1,9 @@
-import { DashboardLayout } from "@/components/DashboardLayout";
+import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const TutorDashboard = () => {
   return (
-    <DashboardLayout title="Tutor Dashboard" role="tutor">
+    <AppShell title="Tutor Dashboard" role="tutor">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Welcome, Tutor!</h1>
       </div>
@@ -16,7 +16,7 @@ const TutorDashboard = () => {
           <p>There are no pending applications for your review.</p>
         </Content>
       </Card>
-    </DashboardLayout>
+    </AppShell>
   );
 };
 

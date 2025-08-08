@@ -1,9 +1,9 @@
-import { DashboardLayout } from "@/components/DashboardLayout";
+import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const AdminDashboard = () => {
   return (
-    <DashboardLayout title="Admin Dashboard" role="admin">
+    <AppShell title="Admin Dashboard" role="admin">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Welcome, Principal!</h1>
       </div>
@@ -14,9 +14,9 @@ const AdminDashboard = () => {
         </Header>
         <CardContent>
           <p>There are no applications pending final approval.</p>
-        </Content>
+        </-content>
       </Card>
-    </DashboardLayout>
+    </AppShell>
   );
 };
 
