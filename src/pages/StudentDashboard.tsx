@@ -1,10 +1,10 @@
-import DashboardLayout from "../components/DashboardLayout";
+import AppShell from "../components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const StudentDashboard = () => {
   return (
-    <DashboardLayout title="Student Dashboard">
+    <AppShell title="Student Dashboard">
       <div className="flex items-center justify-between mb-6">
         <p className="text-lg text-muted-foreground">Welcome, Student!</p>
         <Button>Apply for New Certificate</Button>
@@ -18,7 +18,7 @@ const StudentDashboard = () => {
           <p>You have no active applications.</p>
         </CardContent>
       </Card>
-    </DashboardLayout>
+    </AppShell>
   );
 };
 

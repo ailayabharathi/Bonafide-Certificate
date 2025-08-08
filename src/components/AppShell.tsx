@@ -2,12 +2,12 @@ import React from "react";
 import { UserNav } from "@/components/UserNav";
 import { Link } from "react-router-dom";
 
-interface DashboardLayoutProps {
+interface AppShellProps {
   children: React.ReactNode;
   title: string;
 }
 
-const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
+const AppShell = ({ children, title }: AppShellProps) => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <header className="sticky top-0 z-40 w-full border-b bg-background">
@@ -33,4 +33,4 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   );
 };
 
-export default DashboardLayout;
+export default AppShell;
