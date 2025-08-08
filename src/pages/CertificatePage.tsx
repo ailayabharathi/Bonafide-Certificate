@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,16 +6,20 @@ import { BonafideRequestWithProfile } from "@/types";
 import { Certificate } from "@/components/Certificate";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Printer, ArrowLeft } from "lucide-react";
+import { Download, ArrowLeft, Loader2 } from "lucide-react";
 import { showError } from "@/utils/toast";
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const CertificatePage = () => {
   const { requestId } = useParams<{ requestId: string }>();
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [request, setRequest] = useState<BonafideRequestWithProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const certificateRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -44,7 +48,6 @@ const CertificatePage = () => {
           throw new Error("Certificate not found.");
         }
 
-        // Authorization check
         if (data.user_id !== user.id) {
           throw new Error("You are not authorized to view this certificate.");
         }
@@ -65,8 +68,44 @@ const CertificatePage = () => {
     fetchCertificate();
   }, [requestId, user, authLoading, navigate]);
 
-  const handlePrint = () => {
-    window.print();
+  const handleDownloadPDF = async () => {
+    if (!certificateRef.current) return;
+    
+    setIsDownloading(true);
+    try {
+      const canvas = await html2canvas(certificateRef.current, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      
+      // A4 dimensions in points: 595.28 x 841.89. We'll use a similar aspect ratio.
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const canvasAspectRatio = canvasWidth / canvasHeight;
+      const pdfAspectRatio = pdfWidth / pdfHeight;
+
+      let finalWidth, finalHeight;
+
+      if (canvasAspectRatio > pdfAspectRatio) {
+        finalWidth = pdfWidth;
+        finalHeight = pdfWidth / canvasAspectRatio;
+      } else {
+        finalHeight = pdfHeight;
+        finalWidth = pdfHeight * canvasAspectRatio;
+      }
+      
+      const x = (pdfWidth - finalWidth) / 2;
+      const y = (pdfHeight - finalHeight) / 2;
+
+      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+      pdf.save(`Bonafide_Certificate_${profile?.first_name || 'Student'}.pdf`);
+    } catch (err) {
+      console.error("Error generating PDF:", err);
+      showError("Could not generate PDF. Please try again.");
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   if (loading || authLoading) {
@@ -98,12 +137,23 @@ const CertificatePage = () => {
             Back to Dashboard
           </Link>
         </Button>
-        <Button onClick={handlePrint}>
-          <Printer className="mr-2 h-4 w-4" />
-          Print Certificate
+        <Button onClick={handleDownloadPDF} disabled={isDownloading}>
+          {isDownloading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Downloading...
+            </>
+          ) : (
+            <>
+              <Download className="mr-2 h-4 w-4" />
+              Download PDF
+            </>
+          )}
         </Button>
       </div>
-      {request && <Certificate request={request} />}
+      <div ref={certificateRef}>
+        {request && <Certificate request={request} />}
+      </div>
     </div>
   );
 };
