@@ -70,15 +70,22 @@ export function StaffRequestsTable({ requests, title, onAction }: StaffRequestsT
 
     setIsSubmitting(true);
     let newStatus: BonafideStatus;
+
     if (actionType === 'approve') {
-      newStatus = profile.role === 'tutor' ? 'approved_by_tutor' : 'approved_by_hod';
-    } else {
+      if (profile.role === 'tutor') newStatus = 'approved_by_tutor';
+      else if (profile.role === 'hod') newStatus = 'approved_by_hod';
+      else if (profile.role === 'admin') newStatus = 'completed';
+      else return;
+    } else { // reject
       if (rejectionReason.trim().length < 10) {
         alert("Rejection reason must be at least 10 characters.");
         setIsSubmitting(false);
         return;
       }
-      newStatus = profile.role === 'tutor' ? 'rejected_by_tutor' : 'rejected_by_hod';
+      if (profile.role === 'tutor') newStatus = 'rejected_by_tutor';
+      else if (profile.role === 'hod') newStatus = 'rejected_by_hod';
+      // Admin rejection can be handled here if needed in future
+      else return;
     }
 
     await onAction(actionRequest.id, newStatus, rejectionReason);
@@ -93,12 +100,16 @@ export function StaffRequestsTable({ requests, title, onAction }: StaffRequestsT
     if (profile?.role === 'hod') {
       return status === 'approved_by_tutor';
     }
-    // Admins can complete the process
     if (profile?.role === 'admin') {
         return status === 'approved_by_hod';
     }
     return false;
   };
+  
+  const getApproveButtonText = () => {
+      if (profile?.role === 'admin') return 'Mark as Completed';
+      return 'Approve';
+  }
 
   if (requests.length === 0) {
     return (
@@ -135,8 +146,8 @@ export function StaffRequestsTable({ requests, title, onAction }: StaffRequestsT
               <TableCell>
                 {getActionability(request.status) ? (
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => openDialog(request, 'approve')}>Approve</Button>
-                    <Button size="sm" variant="destructive" onClick={() => openDialog(request, 'reject')}>Reject</Button>
+                    <Button size="sm" variant="outline" onClick={() => openDialog(request, 'approve')}>{getApproveButtonText()}</Button>
+                    {profile?.role !== 'admin' && <Button size="sm" variant="destructive" onClick={() => openDialog(request, 'reject')}>Reject</Button>}
                   </div>
                 ) : (
                   <span className="text-xs text-muted-foreground">No action needed</span>
@@ -150,7 +161,7 @@ export function StaffRequestsTable({ requests, title, onAction }: StaffRequestsT
       <Dialog open={!!actionRequest} onOpenChange={closeDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Action: {actionType === 'approve' ? 'Approve' : 'Reject'} Request</DialogTitle>
+            <DialogTitle>Confirm Action: {actionType === 'approve' ? getApproveButtonText() : 'Reject'} Request</DialogTitle>
             <DialogDescription>
               You are about to {actionType} a request from {actionRequest?.profiles?.first_name} {actionRequest?.profiles?.last_name}.
             </DialogDescription>
