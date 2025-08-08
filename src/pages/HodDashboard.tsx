@@ -1,4 +1,4 @@
-import AppShell from "../components/AppShell";
+import { AppShell } from "../components/AppShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const HodDashboard = () => {

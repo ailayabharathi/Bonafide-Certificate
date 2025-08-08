@@ -7,7 +7,7 @@ interface AppShellProps {
   title: string;
 }
 
-const AppShell = ({ children, title }: AppShellProps) => {
+export function AppShell({ children, title }: AppShellProps) {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <header className="sticky top-0 z-40 w-full border-b bg-background">
@@ -31,6 +31,4 @@ const AppShell = ({ children, title }: AppShellProps) => {
       </main>
     </div>
   );
-};
-
-export default AppShell;
+}
