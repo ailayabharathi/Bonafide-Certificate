@@ -33,4 +33,4 @@ const AppLayout = ({ children, title }: AppLayoutProps) => {
   );
 };
 
-export default AppLayout;
+export { AppLayout };
