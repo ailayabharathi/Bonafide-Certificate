@@ -22,6 +22,7 @@ import { useBonafideRequests } from "@/hooks/useBonafideRequests";
 const StudentPortal = () => {
   const { user } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [requestToEdit, setRequestToEdit] = useState<BonafideRequest | null>(null);
 
   const { requests, isLoading } = useBonafideRequests(
     `student-requests:${user?.id}`,
@@ -74,24 +75,21 @@ const StudentPortal = () => {
     }
   }, [user]);
 
+  const handleNewRequestClick = () => {
+    setRequestToEdit(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleEditRequest = (request: BonafideRequest) => {
+    setRequestToEdit(request);
+    setIsDialogOpen(true);
+  };
+
   const headerActions = (
-    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Apply for Certificate
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>New Bonafide Certificate Request</DialogTitle>
-          <DialogDescription>
-            Fill out the form below to submit your request.
-          </DialogDescription>
-        </DialogHeader>
-        <ApplyCertificateForm onSuccess={() => setIsDialogOpen(false)} setOpen={setIsDialogOpen} />
-      </DialogContent>
-    </Dialog>
+    <Button onClick={handleNewRequestClick}>
+      <PlusCircle className="mr-2 h-4 w-4" />
+      Apply for Certificate
+    </Button>
   );
 
   return (
@@ -105,9 +103,24 @@ const StudentPortal = () => {
             <Skeleton className="h-10 w-full" />
           </div>
         ) : (
-          <RequestsTable requests={requests} />
+          <RequestsTable requests={requests} onEdit={handleEditRequest} />
         )}
       </div>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{requestToEdit ? 'Edit and Resubmit Request' : 'New Bonafide Certificate Request'}</DialogTitle>
+            <DialogDescription>
+              {requestToEdit ? 'Update the reason below and resubmit your request for approval.' : 'Fill out the form below to submit your request.'}
+            </DialogDescription>
+          </DialogHeader>
+          <ApplyCertificateForm 
+            onSuccess={() => setIsDialogOpen(false)} 
+            setOpen={setIsDialogOpen}
+            existingRequest={requestToEdit}
+          />
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };

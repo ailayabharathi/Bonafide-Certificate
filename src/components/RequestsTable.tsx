@@ -17,10 +17,11 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from "./ui/button";
 import { Link } from "react-router-dom";
-import { Eye } from "lucide-react";
+import { Eye, Edit } from "lucide-react";
 
 interface RequestsTableProps {
   requests: BonafideRequest[];
+  onEdit: (request: BonafideRequest) => void;
 }
 
 const getStatusVariant = (status: BonafideRequest['status']) => {
@@ -44,7 +45,7 @@ const formatStatus = (status: string) => {
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
-export function RequestsTable({ requests }: RequestsTableProps) {
+export function RequestsTable({ requests, onEdit }: RequestsTableProps) {
   if (requests.length === 0) {
     return (
       <div className="flex items-center justify-center h-40 border rounded-md">
@@ -52,6 +53,9 @@ export function RequestsTable({ requests }: RequestsTableProps) {
       </div>
     );
   }
+
+  const isRejected = (status: BonafideRequest['status']) => 
+    status === 'rejected_by_tutor' || status === 'rejected_by_hod';
 
   return (
     <div className="border rounded-md">
@@ -93,6 +97,12 @@ export function RequestsTable({ requests }: RequestsTableProps) {
                       View
                     </Link>
                   </Button>
+                )}
+                {isRejected(request.status) && (
+                   <Button variant="secondary" size="sm" onClick={() => onEdit(request)}>
+                     <Edit className="mr-2 h-4 w-4" />
+                     Edit & Resubmit
+                   </Button>
                 )}
               </TableCell>
             </TableRow>

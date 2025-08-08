@@ -14,7 +14,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { showSuccess, showError } from "@/utils/toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { BonafideRequest } from "@/types";
 
 const formSchema = z.object({
   reason: z.string().min(10, {
@@ -25,9 +26,10 @@ const formSchema = z.object({
 interface ApplyCertificateFormProps {
   onSuccess: () => void;
   setOpen: (open: boolean) => void;
+  existingRequest?: BonafideRequest | null;
 }
 
-export function ApplyCertificateForm({ onSuccess, setOpen }: ApplyCertificateFormProps) {
+export function ApplyCertificateForm({ onSuccess, setOpen, existingRequest }: ApplyCertificateFormProps) {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -38,6 +40,14 @@ export function ApplyCertificateForm({ onSuccess, setOpen }: ApplyCertificateFor
     },
   });
 
+  useEffect(() => {
+    if (existingRequest) {
+      form.reset({ reason: existingRequest.reason });
+    } else {
+      form.reset({ reason: "" });
+    }
+  }, [existingRequest, form]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
       showError("You must be logged in to apply.");
@@ -45,14 +55,31 @@ export function ApplyCertificateForm({ onSuccess, setOpen }: ApplyCertificateFor
     }
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from("bonafide_requests").insert({
-        user_id: user.id,
-        reason: values.reason,
-      });
+      if (existingRequest) {
+        // Update existing request
+        const { error } = await supabase
+          .from("bonafide_requests")
+          .update({
+            reason: values.reason,
+            status: 'pending',
+            rejection_reason: null,
+          })
+          .eq("id", existingRequest.id);
+        
+        if (error) throw error;
+        showSuccess("Request updated and resubmitted successfully!");
 
-      if (error) throw error;
+      } else {
+        // Insert new request
+        const { error } = await supabase.from("bonafide_requests").insert({
+          user_id: user.id,
+          reason: values.reason,
+        });
 
-      showSuccess("Certificate request submitted successfully!");
+        if (error) throw error;
+        showSuccess("Certificate request submitted successfully!");
+      }
+      
       onSuccess();
       setOpen(false);
     } catch (error: any) {
@@ -83,7 +110,7 @@ export function ApplyCertificateForm({ onSuccess, setOpen }: ApplyCertificateFor
         />
         <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : "Submit Request"}
+            {isSubmitting ? "Submitting..." : existingRequest ? "Update & Resubmit" : "Submit Request"}
           </Button>
         </div>
       </form>
