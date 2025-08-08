@@ -19,14 +19,7 @@ import {
 import { Button } from "./ui/button";
 import { Link } from "react-router-dom";
 import { Eye, Edit, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input"; // Import Input component
+import { StudentRequestsToolbar } from "./StudentRequestsToolbar";
 
 interface RequestsTableProps {
   requests: BonafideRequest[];
@@ -55,7 +48,7 @@ export function RequestsTable({ requests, onEdit }: RequestsTableProps) {
   const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'descending' | 'ascending' }>({ key: 'created_at', direction: 'descending' });
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState(""); // New state for search query
+  const [searchQuery, setSearchQuery] = useState("");
   const ITEMS_PER_PAGE = 10;
 
   const handleSort = (key: SortableKey) => {
@@ -70,7 +63,6 @@ export function RequestsTable({ requests, onEdit }: RequestsTableProps) {
   const processedRequests = useMemo(() => {
     let filteredRequests = [...requests];
 
-    // Apply status filter
     if (statusFilter !== "all") {
       filteredRequests = filteredRequests.filter(r => {
         if (statusFilter === 'in_progress') {
@@ -83,7 +75,6 @@ export function RequestsTable({ requests, onEdit }: RequestsTableProps) {
       });
     }
 
-    // Apply search filter
     if (searchQuery) {
       filteredRequests = filteredRequests.filter(r =>
         r.reason.toLowerCase().includes(searchQuery.toLowerCase())
@@ -98,7 +89,7 @@ export function RequestsTable({ requests, onEdit }: RequestsTableProps) {
       return 0;
     });
     return filteredRequests;
-  }, [requests, sortConfig, statusFilter, searchQuery]); // Add searchQuery to dependencies
+  }, [requests, sortConfig, statusFilter, searchQuery]);
 
   const totalPages = Math.ceil(processedRequests.length / ITEMS_PER_PAGE);
   const paginatedRequests = processedRequests.slice(
@@ -135,31 +126,18 @@ export function RequestsTable({ requests, onEdit }: RequestsTableProps) {
 
   return (
     <div className="border rounded-md">
-      <div className="p-4 border-b flex flex-wrap gap-4 items-center justify-between">
-        <Select value={statusFilter} onValueChange={(value) => {
+      <StudentRequestsToolbar
+        statusFilter={statusFilter}
+        onStatusChange={(value) => {
           setStatusFilter(value);
           setCurrentPage(1);
-        }}>
-          <SelectTrigger className="w-[220px]">
-            <SelectValue placeholder="Filter by status..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="in_progress">In Progress</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-          </SelectContent>
-        </Select>
-        <Input
-          placeholder="Search by reason..."
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setCurrentPage(1);
-          }}
-          className="max-w-xs"
-        />
-      </div>
+        }}
+        searchQuery={searchQuery}
+        onSearchChange={(value) => {
+          setSearchQuery(value);
+          setCurrentPage(1);
+        }}
+      />
       <Table>
         <TableHeader>
           <TableRow>
