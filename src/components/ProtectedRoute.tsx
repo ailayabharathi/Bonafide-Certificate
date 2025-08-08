@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -10,6 +10,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   const { session, profile, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -23,6 +24,11 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
 
   if (!session) {
     return <Navigate to="/login" replace />;
+  }
+
+  // If profile exists but is incomplete, and we are NOT on the profile page, redirect them.
+  if (profile && (!profile.first_name || !profile.last_name) && location.pathname !== '/profile') {
+    return <Navigate to="/profile" state={{ from: location, message: "Please complete your profile to continue." }} replace />;
   }
 
   if (profile && !allowedRoles.includes(profile.role)) {
