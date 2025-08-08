@@ -1,11 +1,10 @@
+import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const AdminDashboard = () => {
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Welcome, Principal!</h1>
-      </div>
+    <AppLayout title="Principal Dashboard">
+      <p className="text-lg text-muted-foreground mb-6">Welcome, Principal!</p>
       <Card>
         <CardHeader>
           <CardTitle>Final Approvals</CardTitle>
@@ -15,7 +14,7 @@ const AdminDashboard = () => {
           <p>There are no applications pending final approval.</p>
         </CardContent>
       </Card>
-    </div>
+    </AppLayout>
   );
 };
 

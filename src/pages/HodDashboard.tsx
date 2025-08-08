@@ -1,11 +1,10 @@
+import AppLayout from "@/components/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const HodDashboard = () => {
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Welcome, HOD!</h1>
-      </div>
+    <AppLayout title="HOD Dashboard">
+      <p className="text-lg text-muted-foreground mb-6">Welcome, HOD!</p>
       <Card>
         <CardHeader>
           <CardTitle>Department Applications</CardTitle>
@@ -13,9 +12,9 @@ const HodDashboard = () => {
         </Header>
         <CardContent>
           <p>There are no pending applications for your approval.</p>
-        </Content>
+        </CrdContent>
       </Card>
-    </div>
+    </AppLayout>
   );
 };
 
