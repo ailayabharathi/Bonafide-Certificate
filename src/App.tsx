@@ -13,6 +13,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 import ProfilePage from "./pages/ProfilePage";
+import CertificatePage from "./pages/CertificatePage";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={["student"]}>
                     <StudentPortal />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/certificate/:requestId"
+                element={
+                  <ProtectedRoute allowedRoles={["student"]}>
+                    <CertificatePage />
                   </ProtectedRoute>
                 }
               />

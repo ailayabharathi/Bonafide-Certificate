@@ -15,6 +15,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Button } from "./ui/button";
+import { Link } from "react-router-dom";
+import { Eye } from "lucide-react";
 
 interface RequestsTableProps {
   requests: BonafideRequest[];
@@ -58,7 +61,7 @@ export function RequestsTable({ requests }: RequestsTableProps) {
             <TableHead>Date Submitted</TableHead>
             <TableHead>Reason</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Last Updated</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -82,7 +85,16 @@ export function RequestsTable({ requests }: RequestsTableProps) {
                   </Tooltip>
                 </TooltipProvider>
               </TableCell>
-              <TableCell>{new Date(request.updated_at).toLocaleDateString()}</TableCell>
+              <TableCell className="text-right">
+                {request.status === 'completed' && (
+                  <Button asChild variant="outline" size="sm">
+                    <Link to={`/certificate/${request.id}`}>
+                      <Eye className="mr-2 h-4 w-4" />
+                      View
+                    </Link>
+                  </Button>
+                )}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
