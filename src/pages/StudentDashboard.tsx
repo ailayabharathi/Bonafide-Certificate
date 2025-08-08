@@ -1,15 +1,15 @@
-import AppShell from "@/components/AppShell";
+import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const StudentDashboard = () => {
   return (
-    <AppShell title="Student Dashboard" role="student">
-      <div className="flex items-center justify-between">
+    <AppLayout title="Student Dashboard">
+      <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Welcome, Student!</h1>
         <Button>Apply for New Certificate</Button>
       </div>
-      <Card className="mt-6">
+      <Card>
         <CardHeader>
           <CardTitle>My Applications</CardTitle>
           <CardDescription>Track the status of your bonafide certificate applications.</CardDescription>
@@ -18,7 +18,7 @@ const StudentDashboard = () => {
           <p>You have no active applications.</p>
         </CardContent>
       </Card>
-    </AppShell>
+    </AppLayout>
   );
 };
 

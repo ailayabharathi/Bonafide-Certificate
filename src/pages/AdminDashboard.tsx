@@ -1,22 +1,21 @@
-import AppShell from "@/components/AppShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const AdminDashboard = () => {
   return (
-    <AppShell title="Admin Dashboard" role="admin">
-      <div className="flex items-center justify-between">
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Welcome, Principal!</h1>
       </div>
-      <Card className="mt-6">
+      <Card>
         <CardHeader>
           <CardTitle>Final Approvals</CardTitle>
           <CardDescription>Review applications approved by HODs for final sign-off.</CardDescription>
-        </CardHeader>
+        </Header>
         <CardContent>
           <p>There are no applications pending final approval.</p>
         </CardContent>
       </Card>
-    </AppShell>
+    </div>
   );
 };
 
