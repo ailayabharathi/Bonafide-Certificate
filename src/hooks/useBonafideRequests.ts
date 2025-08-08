@@ -69,6 +69,18 @@ const bulkUpdateRequestStatus = async ({
     }
 };
 
+const invokeEmailNotification = async (requestId: string) => {
+  try {
+    const { error } = await supabase.functions.invoke('send-status-update-email', {
+      body: { requestId },
+    });
+    if (error) throw error;
+  } catch (error) {
+    // Log the error but don't block the UI flow or show an error toast
+    console.error("Failed to send email notification:", error);
+  }
+};
+
 export const useBonafideRequests = (
   channelName: string,
   userId?: string,
@@ -103,9 +115,10 @@ export const useBonafideRequests = (
 
   const mutation = useMutation({
     mutationFn: updateRequestStatus,
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       showSuccess("Request updated successfully!");
       queryClient.invalidateQueries({ queryKey });
+      invokeEmailNotification(variables.requestId);
     },
   });
 
@@ -114,6 +127,9 @@ export const useBonafideRequests = (
     onSuccess: (data, variables) => {
         showSuccess(`${variables.requestIds.length} requests updated successfully!`);
         queryClient.invalidateQueries({ queryKey });
+        variables.requestIds.forEach(requestId => {
+          invokeEmailNotification(requestId);
+        });
     }
   });
 
