@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -52,6 +53,7 @@ export function StaffRequestsTable({ requests, title, onAction }: StaffRequestsT
   const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const openDialog = (request: BonafideRequestWithProfile, type: 'approve' | 'reject') => {
     setActionRequest(request);
@@ -84,7 +86,6 @@ export function StaffRequestsTable({ requests, title, onAction }: StaffRequestsT
       }
       if (profile.role === 'tutor') newStatus = 'rejected_by_tutor';
       else if (profile.role === 'hod') newStatus = 'rejected_by_hod';
-      // Admin rejection can be handled here if needed in future
       else return;
     }
 
@@ -94,15 +95,9 @@ export function StaffRequestsTable({ requests, title, onAction }: StaffRequestsT
   };
 
   const getActionability = (status: BonafideStatus) => {
-    if (profile?.role === 'tutor') {
-      return status === 'pending';
-    }
-    if (profile?.role === 'hod') {
-      return status === 'approved_by_tutor';
-    }
-    if (profile?.role === 'admin') {
-        return status === 'approved_by_hod';
-    }
+    if (profile?.role === 'tutor') return status === 'pending';
+    if (profile?.role === 'hod') return status === 'approved_by_tutor';
+    if (profile?.role === 'admin') return status === 'approved_by_hod';
     return false;
   };
   
@@ -111,17 +106,33 @@ export function StaffRequestsTable({ requests, title, onAction }: StaffRequestsT
       return 'Approve';
   }
 
+  const filteredRequests = requests.filter(request => {
+    const studentName = `${request.profiles?.first_name || ''} ${request.profiles?.last_name || ''}`.toLowerCase();
+    return studentName.includes(searchQuery.toLowerCase());
+  });
+
   if (requests.length === 0) {
     return (
-      <div className="flex items-center justify-center h-40 border rounded-md">
-        <p className="text-muted-foreground">No {title.toLowerCase()} requests found.</p>
+      <div className="border rounded-md">
+        <h2 className="text-2xl font-semibold tracking-tight p-4">{title}</h2>
+        <div className="flex items-center justify-center h-24">
+          <p className="text-muted-foreground">No {title.toLowerCase()} requests found.</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="border rounded-md">
-      <h2 className="text-2xl font-semibold tracking-tight p-4">{title}</h2>
+      <div className="flex items-center justify-between p-4">
+        <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
+        <Input
+          placeholder="Search by student name..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="max-w-sm"
+        />
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
@@ -133,28 +144,36 @@ export function StaffRequestsTable({ requests, title, onAction }: StaffRequestsT
           </TableRow>
         </TableHeader>
         <TableBody>
-          {requests.map((request) => (
-            <TableRow key={request.id}>
-              <TableCell>{request.profiles?.first_name} {request.profiles?.last_name}</TableCell>
-              <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
-              <TableCell className="max-w-xs truncate">{request.reason}</TableCell>
-              <TableCell>
-                <Badge variant={getStatusVariant(request.status)} className={cn(request.status === 'completed' && 'bg-green-500 text-white')}>
-                  {formatStatus(request.status)}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                {getActionability(request.status) ? (
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => openDialog(request, 'approve')}>{getApproveButtonText()}</Button>
-                    {profile?.role !== 'admin' && <Button size="sm" variant="destructive" onClick={() => openDialog(request, 'reject')}>Reject</Button>}
-                  </div>
-                ) : (
-                  <span className="text-xs text-muted-foreground">No action needed</span>
-                )}
+          {filteredRequests.length > 0 ? (
+            filteredRequests.map((request) => (
+              <TableRow key={request.id}>
+                <TableCell>{request.profiles?.first_name} {request.profiles?.last_name}</TableCell>
+                <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
+                <TableCell className="max-w-xs truncate">{request.reason}</TableCell>
+                <TableCell>
+                  <Badge variant={getStatusVariant(request.status)} className={cn(request.status === 'completed' && 'bg-green-500 text-white')}>
+                    {formatStatus(request.status)}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {getActionability(request.status) ? (
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => openDialog(request, 'approve')}>{getApproveButtonText()}</Button>
+                      {profile?.role !== 'admin' && <Button size="sm" variant="destructive" onClick={() => openDialog(request, 'reject')}>Reject</Button>}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No action needed</span>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={5} className="h-24 text-center">
+                No results found for "{searchQuery}".
               </TableCell>
             </TableRow>
-          ))}
+          )}
         </TableBody>
       </Table>
 
