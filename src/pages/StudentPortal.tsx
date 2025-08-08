@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PlusCircle } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
+import { showSuccess, showError } from "@/utils/toast";
 
 const StudentPortal = () => {
   const { user } = useAuth();
@@ -58,7 +59,32 @@ const StudentPortal = () => {
             table: 'bonafide_requests',
             filter: `user_id=eq.${user.id}`
           },
-          () => {
+          (payload) => {
+            if (payload.eventType === 'UPDATE') {
+              const oldStatus = payload.old.status;
+              const newStatus = payload.new.status;
+              const rejectionReason = payload.new.rejection_reason;
+
+              if (oldStatus !== newStatus) {
+                  switch(newStatus) {
+                      case 'approved_by_tutor':
+                          showSuccess("Approved by Tutor! Your request is now with the HOD.");
+                          break;
+                      case 'rejected_by_tutor':
+                          showError(`Request Rejected by Tutor. Reason: ${rejectionReason || 'No reason provided.'}`);
+                          break;
+                      case 'approved_by_hod':
+                          showSuccess("Approved by HOD! Your request is being processed by the office.");
+                          break;
+                      case 'rejected_by_hod':
+                          showError(`Request Rejected by HOD. Reason: ${rejectionReason || 'No reason provided.'}`);
+                          break;
+                      case 'completed':
+                          showSuccess("Certificate Ready! Your bonafide certificate is now available.");
+                          break;
+                  }
+              }
+            }
             fetchRequests();
           }
         )
