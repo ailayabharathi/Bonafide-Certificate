@@ -1,4 +1,4 @@
-import DashboardLayout from "@/components/DashboardLayout";
+import DashboardLayout from "../components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
