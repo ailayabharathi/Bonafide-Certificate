@@ -47,7 +47,6 @@ export function RequestsTable({ requests }: RequestsTableProps) {
       <div className="flex items-center justify-center h-40 border rounded-md">
         <p className="text-muted-foreground">You haven't made any requests yet.</p>
       </div>
-    </div>
     );
   }
 
