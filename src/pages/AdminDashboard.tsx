@@ -63,7 +63,6 @@ const AdminDashboard = () => {
 
       if (error) throw error;
       showSuccess("Request updated successfully!");
-      // No need to call fetchRequests here, real-time will handle it.
     } catch (error: any) {
       showError(error.message || "Failed to update request.");
     }
@@ -75,9 +74,6 @@ const AdminDashboard = () => {
     completed: requests.filter(r => r.status === 'completed').length,
     totalRejected: requests.filter(r => ['rejected_by_tutor', 'rejected_by_hod'].includes(r.status)).length,
   };
-
-  const pendingFinalApproval = requests.filter(r => r.status === 'approved_by_hod');
-  const otherRequests = requests.filter(r => r.status !== 'approved_by_hod');
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -110,7 +106,7 @@ const AdminDashboard = () => {
         {loading ? (
           <div className="space-y-4">
             <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-64 w-full" />
           </div>
         ) : (
           <div className="space-y-8">
@@ -121,13 +117,7 @@ const AdminDashboard = () => {
                 <StatsCard title="Total Rejected" value={stats.totalRejected} icon={XCircle} />
             </div>
             <StaffRequestsTable
-              requests={pendingFinalApproval}
-              title="Ready for Final Processing"
-              onAction={handleAction}
-            />
-            <StaffRequestsTable
-              requests={otherRequests}
-              title="All Other Requests"
+              requests={requests}
               onAction={handleAction}
             />
           </div>

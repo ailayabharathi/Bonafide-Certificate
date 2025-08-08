@@ -6,13 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { showError, showSuccess } from "@/utils/toast";
-import { useAuth } from "@/contexts/AuthContext";
 import { StatsCard } from "@/components/StatsCard";
 import { ClipboardList, Clock, CheckCircle, XCircle } from "lucide-react";
 
 const HodPortal = () => {
   const title = "HOD Dashboard";
-  const { profile } = useAuth();
   const [requests, setRequests] = useState<BonafideRequestWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -64,7 +62,6 @@ const HodPortal = () => {
 
       if (error) throw error;
       showSuccess("Request updated successfully!");
-      // No need to call fetchRequests here, real-time will handle it.
     } catch (error: any) {
       showError(error.message || "Failed to update request.");
     }
@@ -76,10 +73,6 @@ const HodPortal = () => {
     approved: requests.filter(r => r.status === 'approved_by_hod').length,
     rejected: requests.filter(r => r.status === 'rejected_by_hod').length,
   };
-
-  // HODs should act on requests approved by tutors.
-  const pendingHodRequests = requests.filter(r => r.status === 'approved_by_tutor');
-  const otherRequests = requests.filter(r => r.status !== 'approved_by_tutor');
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -104,7 +97,7 @@ const HodPortal = () => {
         {loading ? (
           <div className="space-y-4">
             <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-64 w-full" />
           </div>
         ) : (
           <div className="space-y-8">
@@ -115,13 +108,7 @@ const HodPortal = () => {
               <StatsCard title="Rejected by You" value={stats.rejected} icon={XCircle} />
             </div>
             <StaffRequestsTable
-              requests={pendingHodRequests}
-              title="Pending Your Approval"
-              onAction={handleAction}
-            />
-            <StaffRequestsTable
-              requests={otherRequests}
-              title="All Other Requests"
+              requests={requests}
               onAction={handleAction}
             />
           </div>

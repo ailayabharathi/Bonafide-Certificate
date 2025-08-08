@@ -15,7 +15,6 @@ const TutorPortal = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchRequests = useCallback(async () => {
-    // Keep loading state true only on initial fetch
     if (requests.length === 0) {
         setLoading(true);
     }
@@ -63,7 +62,6 @@ const TutorPortal = () => {
 
       if (error) throw error;
       showSuccess("Request updated successfully!");
-      // No need to call fetchRequests here, real-time will handle it.
     } catch (error: any) {
       showError(error.message || "Failed to update request.");
     }
@@ -75,9 +73,6 @@ const TutorPortal = () => {
     approved: requests.filter(r => r.status === 'approved_by_tutor').length,
     rejected: requests.filter(r => r.status === 'rejected_by_tutor').length,
   };
-
-  const pendingRequests = requests.filter(r => r.status === 'pending');
-  const otherRequests = requests.filter(r => r.status !== 'pending');
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -102,7 +97,7 @@ const TutorPortal = () => {
         {loading ? (
           <div className="space-y-4">
             <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-64 w-full" />
           </div>
         ) : (
           <div className="space-y-8">
@@ -113,13 +108,7 @@ const TutorPortal = () => {
               <StatsCard title="Rejected by You" value={stats.rejected} icon={XCircle} />
             </div>
             <StaffRequestsTable
-              requests={pendingRequests}
-              title="Pending Action"
-              onAction={handleAction}
-            />
-            <StaffRequestsTable
-              requests={otherRequests}
-              title="All Other Requests"
+              requests={requests}
               onAction={handleAction}
             />
           </div>
