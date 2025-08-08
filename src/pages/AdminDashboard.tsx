@@ -1,8 +1,16 @@
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { StaffRequestsTable } from "@/components/StaffRequestsTable";
 import { BonafideRequest, BonafideStatus } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatsCard } from "@/components/StatsCard";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   ClipboardList,
   Clock,
@@ -15,19 +23,27 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { useBonafideRequests } from "@/hooks/useBonafideRequests";
 import { showSuccess } from "@/utils/toast";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { RequestsChart } from "@/components/RequestsChart";
+import { format, parseISO } from "date-fns";
 
 const AdminDashboard = () => {
-  const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
-    if (payload.eventType === 'UPDATE' && payload.new.status === 'approved_by_hod') {
+  const handleRealtimeEvent = (
+    payload: RealtimePostgresChangesPayload<BonafideRequest>,
+  ) => {
+    if (
+      payload.eventType === "UPDATE" &&
+      payload.new.status === "approved_by_hod"
+    ) {
       showSuccess("A request is ready for final processing.");
     }
   };
 
-  const { requests, isLoading, updateRequest, bulkUpdateRequest } = useBonafideRequests(
-    "public:bonafide_requests:admin",
-    undefined,
-    handleRealtimeEvent
-  );
+  const { requests, isLoading, updateRequest, bulkUpdateRequest } =
+    useBonafideRequests(
+      "public:bonafide_requests:admin",
+      undefined,
+      handleRealtimeEvent,
+    );
 
   const handleAction = async (
     requestId: string,
@@ -54,6 +70,23 @@ const AdminDashboard = () => {
     ).length,
   };
 
+  const chartData = useMemo(() => {
+    const monthlyData = Array.from({ length: 12 }, (_, i) => ({
+      name: format(new Date(0, i), "MMM"),
+      total: 0,
+    }));
+
+    requests.forEach((request) => {
+      // Only count requests from the current year for this chart
+      if (new Date(request.created_at).getFullYear() === new Date().getFullYear()) {
+        const monthIndex = parseISO(request.created_at).getMonth();
+        monthlyData[monthIndex].total += 1;
+      }
+    });
+
+    return monthlyData;
+  }, [requests]);
+
   const headerActions = (
     <Link to="/admin/user-management">
       <Button variant="outline">
@@ -72,29 +105,46 @@ const AdminDashboard = () => {
         </div>
       ) : (
         <div className="space-y-8">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatsCard
-              title="Total Requests"
-              value={stats.total}
-              icon={ClipboardList}
-            />
-            <StatsCard
-              title="Pending Final Processing"
-              value={stats.pending}
-              icon={Clock}
-            />
-            <StatsCard
-              title="Completed Certificates"
-              value={stats.completed}
-              icon={CheckCircle}
-            />
-            <StatsCard
-              title="Total Rejected"
-              value={stats.totalRejected}
-              icon={XCircle}
-            />
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <Card className="col-span-full lg:col-span-4">
+              <CardHeader>
+                <CardTitle>Requests Overview</CardTitle>
+                <CardDescription>
+                  Total requests submitted per month this year.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pl-2">
+                <RequestsChart data={chartData} />
+              </CardContent>
+            </Card>
+            <div className="col-span-full lg:col-span-3 space-y-4">
+              <StatsCard
+                title="Total Requests"
+                value={stats.total}
+                icon={ClipboardList}
+              />
+              <StatsCard
+                title="Pending Final Processing"
+                value={stats.pending}
+                icon={Clock}
+              />
+              <StatsCard
+                title="Completed Certificates"
+                value={stats.completed}
+                icon={CheckCircle}
+              />
+              <StatsCard
+                title="Total Rejected"
+                value={stats.totalRejected}
+                icon={XCircle}
+              />
+            </div>
           </div>
-          <StaffRequestsTable requests={requests} onAction={handleAction} onBulkAction={handleBulkAction} />
+          <StaffRequestsTable
+            requests={requests}
+            onAction={handleAction}
+            onBulkAction={handleBulkAction}
+          />
         </div>
       )}
     </DashboardLayout>
