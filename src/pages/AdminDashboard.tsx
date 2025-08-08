@@ -1,4 +1,4 @@
-import { DashboardLayout } from "@/components/DashboardLayout";
+import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const AdminDashboard = () => {
@@ -14,7 +14,7 @@ const AdminDashboard = () => {
         </CardHeader>
         <CardContent>
           <p>There are no applications pending final approval.</p>
-        </CardContent>
+        </Content>
       </Card>
     </DashboardLayout>
   );

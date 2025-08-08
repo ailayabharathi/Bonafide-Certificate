@@ -10,7 +10,7 @@ interface DashboardLayoutProps {
   role: string;
 }
 
-export const DashboardLayout = ({ children, title, role }: DashboardLayoutProps) => {
+const DashboardLayout = ({ children, title, role }: DashboardLayoutProps) => {
   const { signOut } = useAuth();
 
   const handleLogout = async () => {
@@ -60,3 +60,5 @@ export const DashboardLayout = ({ children, title, role }: DashboardLayoutProps)
     </div>
   );
 };
+
+export default DashboardLayout;
