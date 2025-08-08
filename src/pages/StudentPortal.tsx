@@ -11,12 +11,13 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { BonafideRequest } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, ClipboardList, Clock, CheckCircle, XCircle } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { showSuccess, showError } from "@/utils/toast";
 import { useBonafideRequests } from "@/hooks/useBonafideRequests";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { StatsCard } from "@/components/StatsCard";
 
 const StudentPortal = () => {
   const { user } = useAuth();
@@ -74,19 +75,34 @@ const StudentPortal = () => {
     </Button>
   );
 
+  const stats = {
+    total: requests.length,
+    inProgress: requests.filter(r => ['pending', 'approved_by_tutor', 'approved_by_hod'].includes(r.status)).length,
+    completed: requests.filter(r => r.status === 'completed').length,
+    rejected: requests.filter(r => ['rejected_by_tutor', 'rejected_by_hod'].includes(r.status)).length,
+  };
+
   return (
     <DashboardLayout title="Student Dashboard" headerActions={headerActions}>
-      <div className="space-y-4">
-        <h2 className="text-2xl font-semibold tracking-tight">Your Requests</h2>
-        {isLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        ) : (
-          <RequestsTable requests={requests} onEdit={handleEditRequest} />
-        )}
+      <div className="space-y-8">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatsCard title="Total Requests" value={stats.total} icon={ClipboardList} />
+            <StatsCard title="In Progress" value={stats.inProgress} icon={Clock} />
+            <StatsCard title="Completed" value={stats.completed} icon={CheckCircle} />
+            <StatsCard title="Rejected" value={stats.rejected} icon={XCircle} />
+        </div>
+        <div className="space-y-4">
+          <h2 className="text-2xl font-semibold tracking-tight">Your Requests History</h2>
+          {isLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : (
+            <RequestsTable requests={requests} onEdit={handleEditRequest} />
+          )}
+        </div>
       </div>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">

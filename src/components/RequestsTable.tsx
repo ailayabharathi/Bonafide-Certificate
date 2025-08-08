@@ -19,6 +19,13 @@ import {
 import { Button } from "./ui/button";
 import { Link } from "react-router-dom";
 import { Eye, Edit, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface RequestsTableProps {
   requests: BonafideRequest[];
@@ -46,6 +53,7 @@ const formatStatus = (status: string) => {
 export function RequestsTable({ requests, onEdit }: RequestsTableProps) {
   const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'descending' | 'ascending' }>({ key: 'created_at', direction: 'descending' });
   const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const ITEMS_PER_PAGE = 10;
 
   const handleSort = (key: SortableKey) => {
@@ -58,16 +66,29 @@ export function RequestsTable({ requests, onEdit }: RequestsTableProps) {
   };
 
   const processedRequests = useMemo(() => {
-    let sortedRequests = [...requests];
-    sortedRequests.sort((a, b) => {
+    let filteredRequests = [...requests];
+
+    if (statusFilter !== "all") {
+      filteredRequests = filteredRequests.filter(r => {
+        if (statusFilter === 'in_progress') {
+          return ['pending', 'approved_by_tutor', 'approved_by_hod'].includes(r.status);
+        }
+        if (statusFilter === 'rejected') {
+          return ['rejected_by_tutor', 'rejected_by_hod'].includes(r.status);
+        }
+        return r.status === statusFilter;
+      });
+    }
+
+    filteredRequests.sort((a, b) => {
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
       if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
       if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
       return 0;
     });
-    return sortedRequests;
-  }, [requests, sortConfig]);
+    return filteredRequests;
+  }, [requests, sortConfig, statusFilter]);
 
   const totalPages = Math.ceil(processedRequests.length / ITEMS_PER_PAGE);
   const paginatedRequests = processedRequests.slice(
@@ -104,6 +125,22 @@ export function RequestsTable({ requests, onEdit }: RequestsTableProps) {
 
   return (
     <div className="border rounded-md">
+      <div className="p-4 border-b">
+        <Select value={statusFilter} onValueChange={(value) => {
+          setStatusFilter(value);
+          setCurrentPage(1);
+        }}>
+          <SelectTrigger className="w-[220px]">
+            <SelectValue placeholder="Filter by status..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="in_progress">In Progress</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
@@ -114,44 +151,52 @@ export function RequestsTable({ requests, onEdit }: RequestsTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {paginatedRequests.map((request) => (
-            <TableRow key={request.id}>
-              <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
-              <TableCell className="max-w-xs truncate">{request.reason}</TableCell>
-              <TableCell>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Badge variant={getStatusVariant(request.status)} className={cn(request.status === 'completed' && 'bg-green-500 text-white')}>
-                        {formatStatus(request.status)}
-                      </Badge>
-                    </TooltipTrigger>
-                    {request.rejection_reason && (
-                      <TooltipContent>
-                        <p>Reason: {request.rejection_reason}</p>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
-              </TableCell>
-              <TableCell className="text-right">
-                {request.status === 'completed' && (
-                  <Button asChild variant="outline" size="sm">
-                    <Link to={`/certificate/${request.id}`}>
-                      <Eye className="mr-2 h-4 w-4" />
-                      View
-                    </Link>
-                  </Button>
-                )}
-                {isRejected(request.status) && (
-                   <Button variant="secondary" size="sm" onClick={() => onEdit(request)}>
-                     <Edit className="mr-2 h-4 w-4" />
-                     Edit & Resubmit
-                   </Button>
-                )}
+          {paginatedRequests.length > 0 ? (
+            paginatedRequests.map((request) => (
+              <TableRow key={request.id}>
+                <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
+                <TableCell className="max-w-xs truncate">{request.reason}</TableCell>
+                <TableCell>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Badge variant={getStatusVariant(request.status)} className={cn(request.status === 'completed' && 'bg-green-500 text-white')}>
+                          {formatStatus(request.status)}
+                        </Badge>
+                      </TooltipTrigger>
+                      {request.rejection_reason && (
+                        <TooltipContent>
+                          <p>Reason: {request.rejection_reason}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableCell>
+                <TableCell className="text-right">
+                  {request.status === 'completed' && (
+                    <Button asChild variant="outline" size="sm">
+                      <Link to={`/certificate/${request.id}`}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View
+                      </Link>
+                    </Button>
+                  )}
+                  {isRejected(request.status) && (
+                     <Button variant="secondary" size="sm" onClick={() => onEdit(request)}>
+                       <Edit className="mr-2 h-4 w-4" />
+                       Edit & Resubmit
+                     </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={4} className="h-24 text-center">
+                No requests match the current filter.
               </TableCell>
             </TableRow>
-          ))}
+          )}
         </TableBody>
       </Table>
       <div className="flex items-center justify-end space-x-2 py-4 px-4 border-t">
