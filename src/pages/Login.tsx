@@ -28,30 +28,6 @@ const Login = () => {
               appearance={{ theme: ThemeSupa }}
               providers={[]}
               theme={theme === 'dark' ? 'dark' : 'light'}
-              localization={{
-                variables: {
-                  sign_up: {
-                    email_label: 'Email address',
-                    password_label: 'Create a password',
-                    button_label: 'Sign up',
-                    social_provider_text: 'Sign in with {{provider}}',
-                    link_text: 'Already have an account? Sign in',
-                    additional_data: {
-                      first_name: 'First Name',
-                      last_name: 'Last Name',
-                      register_number: 'Register Number',
-                      department: 'Department',
-                    }
-                  },
-                  sign_in: {
-                    email_label: 'Email address',
-                    password_label: 'Your password',
-                    button_label: 'Sign in',
-                    social_provider_text: 'Sign in with {{provider}}',
-                    link_text: 'Don\'t have an account? Sign up',
-                  }
-                }
-              }}
               view="sign_in"
               showLinks={true}
             />
