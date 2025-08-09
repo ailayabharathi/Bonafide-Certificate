@@ -27,9 +27,10 @@ import { StudentProfileDialog } from "./StudentProfileDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/utils/toast";
 import { Link } from "react-router-dom";
-import { RequestsTableContent } from "./RequestsTableContent";
+import { DataTable } from "./DataTable"; // Keep DataTable import
 import { useStaffRequestsTableLogic } from "@/hooks/useStaffRequestsTableLogic";
-import { useStaffRequestsTableActions } from "@/hooks/useStaffRequestsTableActions"; // Import the new hook
+import { useStaffRequestsTableActions } from "@/hooks/useStaffRequestsTableActions";
+import { getStaffTableColumns } from "@/lib/staff-table-columns"; // Import getStaffTableColumns
 
 interface StaffRequestsTableProps {
   requests: BonafideRequestWithProfile[];
@@ -84,6 +85,13 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
     setSelectedIds,
   });
 
+  const columns = useMemo(() => getStaffTableColumns({
+    profile,
+    onViewProfile: handleViewProfile,
+    onOpenActionDialog: openActionDialog,
+    getApproveButtonText,
+  }), [profile, handleViewProfile, openActionDialog, getApproveButtonText]);
+
   return (
     <div className="border rounded-md bg-background">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -104,21 +112,20 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
         />
         {tabsInfo.map(tab => (
           <TabsContent key={tab.value} value={tab.value} className="m-0">
-            <RequestsTableContent
-              requestsToRender={paginatedRequestsForCurrentTab}
-              profile={profile}
-              onViewProfile={handleViewProfile}
-              onOpenActionDialog={openActionDialog}
-              getApproveButtonText={getApproveButtonText}
-              selectedIds={selectedIds}
-              onToggleSelect={handleToggleSelect}
-              onSelectAll={handleSelectAllOnPage}
+            <DataTable
+              columns={columns}
+              data={paginatedRequestsForCurrentTab}
               sortConfig={sortConfig as { key: string; direction: 'ascending' | 'descending' }}
               onSort={handleSort}
               currentPage={currentPage}
               onPageChange={(page) => setCurrentPage(page)}
               totalPages={totalPagesForCurrentTab}
+              enableRowSelection={true}
+              selectedIds={selectedIds}
+              onToggleSelect={handleToggleSelect}
+              onSelectAll={handleSelectAllOnPage}
               actionableIdsOnPage={actionableIdsOnPage}
+              rowKey={(row) => row.id}
             />
           </TabsContent>
         ))}
