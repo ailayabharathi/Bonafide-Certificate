@@ -131,13 +131,12 @@ export const useStaffRequestsTableLogic = (
     currentPage * ITEMS_PER_PAGE
   );
 
-  const handleSelectAllOnPage = (checked: boolean) => {
-    const requestsOnCurrentPage = categorizedRequests[activeTab as keyof typeof categorizedRequests].slice(
-      (currentPage - 1) * ITEMS_PER_PAGE,
-      currentPage * ITEMS_PER_PAGE
-    );
-    const actionableIdsOnPage = requestsOnCurrentPage.filter(r => getActionability(r.status)).map(r => r.id);
+  const actionableIdsOnPage = useMemo(() => 
+    paginatedRequestsForCurrentTab.filter(r => getActionability(r.status)).map(r => r.id),
+    [paginatedRequestsForCurrentTab, profile]
+  );
 
+  const handleSelectAllOnPage = (checked: boolean) => {
     if (checked) {
       setSelectedIds(prev => [...new Set([...prev, ...actionableIdsOnPage])]);
     } else {
@@ -165,7 +164,8 @@ export const useStaffRequestsTableLogic = (
     paginatedRequestsForCurrentTab,
     totalPagesForCurrentTab,
     tabsInfo,
-    getActionability,
+    getActionability, // Keep this for internal use in the hook if needed, or remove if only actionableIdsOnPage is exposed
+    actionableIdsOnPage, // Expose this
     ITEMS_PER_PAGE,
   };
 };

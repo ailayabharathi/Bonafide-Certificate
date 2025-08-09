@@ -29,6 +29,7 @@ interface RequestsTableContentProps {
   currentPage: number;
   onPageChange: (page: number) => void;
   totalPages: number;
+  actionableIdsOnPage: string[]; // New prop
 }
 
 export function RequestsTableContent({
@@ -45,19 +46,8 @@ export function RequestsTableContent({
   currentPage,
   onPageChange,
   totalPages,
+  actionableIdsOnPage, // Destructure new prop
 }: RequestsTableContentProps) {
-
-  const getActionability = (status: BonafideStatus) => {
-    if (profile?.role === 'tutor') return status === 'pending';
-    if (profile?.role === 'hod') return status === 'approved_by_tutor';
-    if (profile?.role === 'admin') return status === 'approved_by_hod';
-    return false;
-  };
-
-  const actionableIdsOnPage = useMemo(() => 
-    requestsToRender.filter(r => getActionability(r.status)).map(r => r.id),
-    [requestsToRender, profile]
-  );
 
   const columns = useMemo(() => getStaffTableColumns({
     profile,
@@ -79,7 +69,7 @@ export function RequestsTableContent({
       selectedIds={selectedIds}
       onToggleSelect={onToggleSelect}
       onSelectAll={onSelectAll}
-      actionableIdsOnPage={actionableIdsOnPage}
+      actionableIdsOnPage={actionableIdsOnPage} // Pass to DataTable
       rowKey={(row) => row.id}
     />
   );

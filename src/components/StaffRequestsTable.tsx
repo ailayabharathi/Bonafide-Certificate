@@ -77,7 +77,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
     paginatedRequestsForCurrentTab,
     totalPagesForCurrentTab,
     tabsInfo,
-    getActionability,
+    actionableIdsOnPage, // Destructure new value from hook
     ITEMS_PER_PAGE,
   } = useStaffRequestsTableLogic(requests, profile, onClearDateRange);
 
@@ -177,6 +177,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
               currentPage={currentPage}
               onPageChange={(page) => setCurrentPage(page)}
               totalPages={totalPagesForCurrentTab}
+              actionableIdsOnPage={actionableIdsOnPage} // Pass to RequestsTableContent
             />
           </TabsContent>
         ))}
