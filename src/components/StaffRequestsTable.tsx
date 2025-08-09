@@ -14,7 +14,7 @@ import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
 import { cn } from "@/lib/utils";
 import { useAuth, Profile } from "@/contexts/AuthContext";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { ArrowUpDown, ArrowUp, ArrowDown, User } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, User, Eye } from "lucide-react"; // Added Eye icon
 import {
   Tooltip,
   TooltipContent,
@@ -26,6 +26,7 @@ import { RequestActionDialog } from "./RequestActionDialog";
 import { StudentProfileDialog } from "./StudentProfileDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/utils/toast";
+import { Link } from "react-router-dom"; // Added Link import
 
 interface StaffRequestsTableProps {
   requests: BonafideRequestWithProfile[];
@@ -65,10 +66,6 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
   const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'descending' | 'ascending' }>({ key: 'created_at', direction: 'descending' });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const ITEMS_PER_PAGE = 10;
-
-  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
-  const [studentProfileToView, setStudentProfileToView] = useState<Profile | null>(null);
-  // Removed isFetchingProfile as it's no longer needed for direct profile passing
 
   useEffect(() => {
     setCurrentPage(1);
@@ -342,6 +339,20 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>View Student Profile</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    {request.status === 'completed' && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button asChild variant="outline" size="sm">
+                              <Link to={`/certificate/${request.id}`}>
+                                <Eye className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>View Certificate</TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     )}

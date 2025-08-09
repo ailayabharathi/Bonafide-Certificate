@@ -52,7 +52,7 @@ function App() {
                 <Route
                   path="/certificate/:requestId"
                   element={
-                    <ProtectedRoute allowedRoles={["student"]}>
+                    <ProtectedRoute allowedRoles={["student", "tutor", "hod", "admin"]}>
                       <CertificatePage />
                     </ProtectedRoute>
                   }
