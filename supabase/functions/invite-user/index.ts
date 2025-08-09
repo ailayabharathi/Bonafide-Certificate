@@ -1,81 +1,89 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
-
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Helper to create an admin client
+function createAdminClient(): SupabaseClient {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Supabase environment variables are not set.')
+  }
+  
+  return createClient(supabaseUrl, supabaseServiceKey)
+}
+
 serve(async (req) => {
+  // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Create a Supabase client with the service role key.
-    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    const supabaseAdmin = createAdminClient()
 
-    // Get the JWT from the Authorization header.
+    // 1. Check for Authorization header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Missing Authorization header' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // Get the user object from the JWT.
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(authHeader.replace('Bearer ', ''))
+    // 2. Get user from token
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
 
     if (userError || !user) {
       return new Response(JSON.stringify({ error: userError?.message || 'Unauthorized' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // Check if the user has the 'admin' role in the 'profiles' table.
+    // 3. Check if the user is an admin
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (profileError || !profile || profile.role !== 'admin') {
-      return new Response(JSON.stringify({ error: 'Forbidden: Not an admin' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    if (profileError || profile?.role !== 'admin') {
+      return new Response(JSON.stringify({ error: 'Forbidden: User is not an admin' }), {
         status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // Parse the request body to get the email and role for the new user.
+    // 4. Get email and role from request body
     const { email, role } = await req.json()
     if (!email || !role) {
       throw new Error("Email and role are required.")
     }
 
-    // Invite the new user using their email and assigned role.
-    const { data, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: { role: role },
+    // 5. Invite the user
+    const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+      data: { role },
     })
 
     if (inviteError) {
-      throw inviteError
+      throw new Error(inviteError.message)
     }
 
-    return new Response(JSON.stringify({ message: "Invitation sent successfully.", user: data.user }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    return new Response(JSON.stringify({ message: "Invitation sent successfully.", user: inviteData.user }), {
       status: 200,
-    })
-
-  } catch (error) {
-    console.error("Edge function error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
+    })
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 })
