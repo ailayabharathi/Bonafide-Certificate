@@ -14,6 +14,7 @@ const UserManagement = () => {
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [roleFilter, setRoleFilter] = useState<'all' | 'student' | 'tutor' | 'hod' | 'admin'>('all');
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -61,7 +62,12 @@ const UserManagement = () => {
                 <Skeleton className="h-12 w-full" />
               </div>
             ) : (
-              <UserManagementTable users={users} onUserUpdate={fetchUsers} />
+              <UserManagementTable 
+                users={users} 
+                onUserUpdate={fetchUsers} 
+                roleFilter={roleFilter}
+                onRoleFilterChange={setRoleFilter}
+              />
             )}
           </CardContent>
         </Card>

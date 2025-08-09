@@ -19,7 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
-import { Pencil, ArrowUpDown, ArrowUp, ArrowDown, UserCog, Trash2 } from "lucide-react";
+import { Pencil, ArrowUpDown, ArrowUp, ArrowDown, UserCog, Trash2, XCircle } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -33,12 +33,14 @@ import { DeleteUserDialog } from "./DeleteUserDialog";
 interface UserManagementTableProps {
   users: Profile[];
   onUserUpdate: () => void;
+  roleFilter: 'all' | 'student' | 'tutor' | 'hod' | 'admin';
+  onRoleFilterChange: (value: 'all' | 'student' | 'tutor' | 'hod' | 'admin') => void;
 }
 
 type UserRole = 'student' | 'tutor' | 'hod' | 'admin';
 type SortableKey = 'name' | 'email' | 'role' | 'department' | 'register_number';
 
-export function UserManagementTable({ users, onUserUpdate }: UserManagementTableProps) {
+export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFilterChange }: UserManagementTableProps) {
   const { user: currentUser } = useAuth();
   const [userToEditRole, setUserToEditRole] = useState<Profile | null>(null);
   const [userToEditProfile, setUserToEditProfile] = useState<Profile | null>(null);
@@ -48,7 +50,6 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
   const [isDeleting, setIsDeleting] = useState(false);
   
   const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'ascending' | 'descending' }>({ key: 'name', direction: 'ascending' });
   const ITEMS_PER_PAGE = 10;
@@ -103,6 +104,12 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    onRoleFilterChange("all");
+    setCurrentPage(1);
   };
 
   const processedUsers = useMemo(() => {
@@ -177,6 +184,8 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
     );
   };
 
+  const showClearFilters = searchQuery !== "" || roleFilter !== "all";
+
   return (
     <>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
@@ -190,7 +199,7 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
           className="max-w-sm"
         />
         <Select value={roleFilter} onValueChange={(value: UserRole | "all") => {
-          setRoleFilter(value);
+          onRoleFilterChange(value);
           setCurrentPage(1);
         }}>
           <SelectTrigger className="w-[180px]">
@@ -204,6 +213,12 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
             <SelectItem value="admin">Admin</SelectItem>
           </SelectContent>
         </Select>
+        {showClearFilters && (
+          <Button variant="outline" onClick={handleClearFilters}>
+            <XCircle className="mr-2 h-4 w-4" />
+            Clear Filters
+          </Button>
+        )}
       </div>
       <div className="border rounded-md">
         <Table>
