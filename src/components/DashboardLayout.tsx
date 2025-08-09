@@ -4,6 +4,7 @@ import { UserNav } from "@/components/UserNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileSidebar } from "@/components/MobileSidebar";
+import { NotificationBell } from "./NotificationBell";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -34,6 +35,7 @@ export const DashboardLayout = ({ children, title, headerActions }: DashboardLay
             <div className="flex flex-1 items-center justify-end space-x-4">
               <ThemeToggle />
               <nav className="flex items-center space-x-1">
+                <NotificationBell />
                 <UserNav />
               </nav>
             </div>
