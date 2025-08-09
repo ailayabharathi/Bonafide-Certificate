@@ -270,7 +270,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
           </TableHeader>
           <TableBody>
             {paginatedRequests.map((request) => (
-              <TableRow key={request.id} data-state={selectedIds.includes(request.id) && "selected"}>
+              <TableRow key={request.id} data-state={selectedIds.includes(request.id) ? "selected" : undefined}>
                 <TableCell className="w-12">
                   <Checkbox
                     checked={selectedIds.includes(request.id)}
