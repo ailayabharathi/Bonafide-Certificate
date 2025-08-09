@@ -57,7 +57,7 @@ const CertificatePage = () => {
         }
 
         setRequest(data as BonafideRequestWithProfile);
-      } catch (err: any) => {
+      } catch (err: any) {
         setError(err.message || "An error occurred while fetching the certificate.");
         showError(err.message || "Failed to fetch certificate.");
       } finally {
@@ -97,7 +97,7 @@ const CertificatePage = () => {
 
       pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
       pdf.save(`Bonafide_Certificate_${request.profiles.first_name || 'Student'}.pdf`);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error generating PDF:", err);
       showError("Could not generate PDF. Please try again.");
     } finally {
