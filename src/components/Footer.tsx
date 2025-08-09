@@ -22,7 +22,7 @@ const Footer = () => {
             <a href="#" className="text-muted-foreground hover:text-foreground">
               <X className="h-6 w-6" />
             </a>
-            <a href="#" className="text-muted-foreground hover:text-foreground"><Linkedin /></a>
+            <a href="https://www.linkedin.com/school/adhiyamaan-college-of-engineering/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground"><Linkedin /></a>
           </div>
         </div>
       </div>
