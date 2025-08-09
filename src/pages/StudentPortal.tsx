@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ApplyCertificateForm } from "@/components/ApplyCertificateForm";
-import { RequestsTable } from "@/components/RequestsTable";
+import { StudentRequestsTable } from "@/components/StudentRequestsTable"; // Updated import
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { BonafideRequest } from "@/types";
@@ -116,7 +116,7 @@ const StudentPortal = () => {
                 <CardDescription>A log of all your bonafide certificate requests.</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
-                <RequestsTable requests={requests} onEdit={handleEditRequest} onCancel={deleteRequest} />
+                <StudentRequestsTable requests={requests} onEdit={handleEditRequest} onCancel={deleteRequest} />
               </CardContent>
             </Card>
             <Card className="col-span-full lg:col-span-3">

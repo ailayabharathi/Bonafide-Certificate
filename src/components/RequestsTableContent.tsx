@@ -1,19 +1,10 @@
-import { useState, useMemo } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
 import { cn } from "@/lib/utils";
 import { Profile } from "@/contexts/AuthContext";
-import { ArrowUpDown, ArrowUp, ArrowDown, User, Eye } from "lucide-react";
+import { User, Eye } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -21,6 +12,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Link } from "react-router-dom";
+import { DataTable } from "./DataTable"; // Import DataTable
 
 interface RequestsTableContentProps {
   requestsToRender: BonafideRequestWithProfile[];
@@ -38,8 +30,6 @@ interface RequestsTableContentProps {
   totalPages: number;
 }
 
-type SortableKey = keyof BonafideRequestWithProfile | 'studentName';
-
 const getStatusVariant = (status: BonafideStatus) => {
   switch (status) {
     case 'pending': return 'default';
@@ -55,8 +45,6 @@ const getStatusVariant = (status: BonafideStatus) => {
 const formatStatus = (status: string) => {
   return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
-
-const ITEMS_PER_PAGE = 10; // Define here as it's used for pagination logic
 
 export function RequestsTableContent({
   requestsToRender,
@@ -85,164 +73,123 @@ export function RequestsTableContent({
     requestsToRender.filter(r => getActionability(r.status)).map(r => r.id),
     [requestsToRender, profile]
   );
-  const numSelectedOnPage = selectedIds.filter(id => actionableIdsOnPage.includes(id)).length;
 
-  const SortableHeader = ({ columnKey, title }: { columnKey: SortableKey, title: string }) => {
-    const isSorted = sortConfig.key === columnKey;
-    return (
-      <TableHead>
-        <Button variant="ghost" onClick={() => onSort(columnKey)}>
-          {title}
-          {isSorted ? (
-            sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-          ) : (
-            <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />
+  const columns = useMemo(() => [
+    {
+      id: 'studentName',
+      header: 'Student Name',
+      cell: ({ row }: { row: BonafideRequestWithProfile }) => `${row.profiles?.first_name || ''} ${row.profiles?.last_name || ''}`,
+      enableSorting: true,
+    },
+    {
+      id: 'register_number',
+      header: 'Register No.',
+      cell: ({ row }: { row: BonafideRequestWithProfile }) => row.profiles?.register_number || 'N/A',
+    },
+    {
+      id: 'department',
+      header: 'Department',
+      cell: ({ row }: { row: BonafideRequestWithProfile }) => row.profiles?.department || 'N/A',
+    },
+    {
+      id: 'created_at',
+      header: 'Submitted',
+      cell: ({ row }: { row: BonafideRequestWithProfile }) => new Date(row.created_at).toLocaleDateString(),
+      enableSorting: true,
+    },
+    {
+      id: 'reason',
+      header: 'Reason',
+      cell: ({ row }: { row: BonafideRequestWithProfile }) => <div className="max-w-[200px] truncate">{row.reason}</div>,
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      cell: ({ row }: { row: BonafideRequestWithProfile }) => (
+        <div className="flex flex-col items-start gap-1">
+          <Badge variant={getStatusVariant(row.status)} className={cn(row.status === 'completed' && 'bg-green-500 text-white')}>
+            {formatStatus(row.status)}
+          </Badge>
+          {row.rejection_reason && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <p className="text-xs text-destructive max-w-[200px] truncate cursor-help">
+                    Reason: {row.rejection_reason}
+                  </p>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{row.rejection_reason}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
-        </Button>
-      </TableHead>
-    );
-  };
-
-  if (requestsToRender.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-24 p-4">
-        <p className="text-muted-foreground">No requests in this category.</p>
-      </div>
-    );
-  }
+        </div>
+      ),
+      enableSorting: true,
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }: { row: BonafideRequestWithProfile }) => (
+        <div className="flex gap-2">
+          {row.profiles && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="ghost" onClick={() => onViewProfile(row.user_id)}>
+                    <User className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>View Student Profile</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          {row.status === 'completed' && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to={`/certificate/${row.id}`}>
+                      <Eye className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>View Certificate</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          {getActionability(row.status) ? (
+            <>
+              <Button size="sm" variant="outline" onClick={() => onOpenActionDialog('approve', false, row)}>{getApproveButtonText()}</Button>
+              {profile?.role !== 'admin' && <Button size="sm" variant="destructive" onClick={() => onOpenActionDialog('reject', false, row)}>Reject</Button>}
+            </>
+          ) : profile?.role === 'admin' && row.status === 'completed' ? (
+            <Button size="sm" variant="secondary" onClick={() => onOpenActionDialog('revert', false, row)}>Revert</Button>
+          ) : (
+            <span className="text-xs text-muted-foreground">No action needed</span>
+          )}
+        </div>
+      ),
+      className: "text-right",
+    },
+  ], [profile, onViewProfile, onOpenActionDialog, getApproveButtonText]);
 
   return (
-    <>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-12">
-              <Checkbox
-                checked={
-                  actionableIdsOnPage.length > 0 && numSelectedOnPage === actionableIdsOnPage.length
-                    ? true
-                    : numSelectedOnPage > 0 && numSelectedOnPage < actionableIdsOnPage.length
-                    ? "indeterminate"
-                    : false
-                }
-                onCheckedChange={(checked) => onSelectAll(!!checked)}
-                aria-label="Select all on page"
-                disabled={actionableIdsOnPage.length === 0}
-              />
-            </TableHead>
-            <SortableHeader columnKey="studentName" title="Student Name" />
-            <TableHead>Register No.</TableHead>
-            <TableHead>Department</TableHead>
-            <SortableHeader columnKey="created_at" title="Submitted" />
-            <TableHead>Reason</TableHead>
-            <SortableHeader columnKey="status" title="Status" />
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {requestsToRender.map((request) => (
-            <TableRow key={request.id} data-state={selectedIds.includes(request.id) ? "selected" : undefined}>
-              <TableCell className="w-12">
-                <Checkbox
-                  checked={selectedIds.includes(request.id)}
-                  onCheckedChange={(checked) => onToggleSelect(request.id, !!checked)}
-                  aria-label={`Select request ${request.id}`}
-                  disabled={!getActionability(request.status)}
-                />
-              </TableCell>
-              <TableCell>{request.profiles?.first_name} {request.profiles?.last_name}</TableCell>
-              <TableCell>{request.profiles?.register_number}</TableCell>
-              <TableCell>{request.profiles?.department}</TableCell>
-              <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
-              <TableCell className="max-w-[200px] truncate">{request.reason}</TableCell>
-              <TableCell>
-                <div className="flex flex-col items-start gap-1">
-                  <Badge variant={getStatusVariant(request.status)} className={cn(request.status === 'completed' && 'bg-green-500 text-white')}>
-                    {formatStatus(request.status)}
-                  </Badge>
-                  {request.rejection_reason && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <p className="text-xs text-destructive max-w-[200px] truncate cursor-help">
-                            Reason: {request.rejection_reason}
-                          </p>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{request.rejection_reason}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  {request.profiles && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button size="sm" variant="ghost" onClick={() => onViewProfile(request.user_id)}>
-                            <User className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>View Student Profile</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                  {request.status === 'completed' && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button asChild variant="outline" size="sm">
-                            <Link to={`/certificate/${request.id}`}>
-                              <Eye className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>View Certificate</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                  {getActionability(request.status) ? (
-                    <>
-                      <Button size="sm" variant="outline" onClick={() => onOpenActionDialog('approve', false, request)}>{getApproveButtonText()}</Button>
-                      {profile?.role !== 'admin' && <Button size="sm" variant="destructive" onClick={() => onOpenActionDialog('reject', false, request)}>Reject</Button>}
-                    </>
-                  ) : profile?.role === 'admin' && request.status === 'completed' ? (
-                    <Button size="sm" variant="secondary" onClick={() => onOpenActionDialog('revert', false, request)}>Revert</Button>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">No action needed</span>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <div className="flex items-center justify-end space-x-2 py-4 px-4 border-t">
-          <div className="flex-1 text-sm text-muted-foreground">
-              Page {currentPage} of {totalPages || 1}
-          </div>
-          <div className="space-x-2">
-              <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onPageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-              >
-                  Previous
-              </Button>
-              <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onPageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages}
-              >
-                  Next
-              </Button>
-          </div>
-      </div>
-    </>
+    <DataTable
+      columns={columns}
+      data={requestsToRender}
+      sortConfig={sortConfig}
+      onSort={onSort}
+      currentPage={currentPage}
+      onPageChange={onPageChange}
+      totalPages={totalPages}
+      enableRowSelection={true}
+      selectedIds={selectedIds}
+      onToggleSelect={onToggleSelect}
+      onSelectAll={onSelectAll}
+      actionableIdsOnPage={actionableIdsOnPage}
+      rowKey={(row) => row.id}
+    />
   );
 }

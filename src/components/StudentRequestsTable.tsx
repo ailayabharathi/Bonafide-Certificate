@@ -1,12 +1,4 @@
 import { useState, useMemo } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { BonafideRequest } from "@/types";
 import { cn } from "@/lib/utils";
@@ -18,7 +10,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from "./ui/button";
 import { Link } from "react-router-dom";
-import { Eye, Edit, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Loader2 } from "lucide-react";
+import { Eye, Edit, Trash2, Loader2 } from "lucide-react";
 import { StudentRequestsToolbar } from "./StudentRequestsToolbar";
 import {
   AlertDialog,
@@ -30,8 +22,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { DataTable } from "./DataTable"; // Import DataTable
 
-interface RequestsTableProps {
+interface StudentRequestsTableProps { // Renamed interface
   requests: BonafideRequest[];
   onEdit: (request: BonafideRequest) => void;
   onCancel: (requestId: string) => Promise<void>;
@@ -55,7 +48,7 @@ const formatStatus = (status: string) => {
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
-export function RequestsTable({ requests, onEdit, onCancel }: RequestsTableProps) {
+export function StudentRequestsTable({ requests, onEdit, onCancel }: StudentRequestsTableProps) { // Renamed component
   const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'descending' | 'ascending' }>({ key: 'created_at', direction: 'descending' });
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -132,32 +125,79 @@ export function RequestsTable({ requests, onEdit, onCancel }: RequestsTableProps
     currentPage * ITEMS_PER_PAGE
   );
 
-  const SortableHeader = ({ columnKey, title }: { columnKey: SortableKey, title: string }) => {
-    const isSorted = sortConfig.key === columnKey;
-    return (
-      <TableHead>
-        <Button variant="ghost" onClick={() => handleSort(columnKey)}>
-          {title}
-          {isSorted ? (
-            sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-          ) : (
-            <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />
-          )}
-        </Button>
-      </TableHead>
-    );
-  };
-
-  if (requests.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-40 border rounded-md">
-        <p className="text-muted-foreground">You haven't made any requests yet.</p>
-      </div>
-    );
-  }
-
   const isRejected = (status: BonafideRequest['status']) => 
     status === 'rejected_by_tutor' || status === 'rejected_by_hod';
+
+  const columns = useMemo(() => [
+    {
+      id: 'created_at',
+      header: 'Date Submitted',
+      cell: ({ row }: { row: BonafideRequest }) => new Date(row.created_at).toLocaleDateString(),
+      enableSorting: true,
+    },
+    {
+      id: 'reason',
+      header: 'Reason',
+      cell: ({ row }: { row: BonafideRequest }) => <div className="max-w-xs truncate">{row.reason}</div>,
+      enableSorting: true,
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      cell: ({ row }: { row: BonafideRequest }) => (
+        <div className="flex flex-col items-start gap-1">
+          <Badge variant={getStatusVariant(row.status)} className={cn(row.status === 'completed' && 'bg-green-500 text-white')}>
+            {formatStatus(row.status)}
+          </Badge>
+          {row.rejection_reason && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <p className="text-xs text-destructive max-w-[200px] truncate cursor-help">
+                    Reason: {row.rejection_reason}
+                  </p>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{row.rejection_reason}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+      ),
+      enableSorting: true,
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }: { row: BonafideRequest }) => (
+        <div className="flex gap-1 justify-end">
+          {row.status === 'completed' && (
+            <Button asChild variant="outline" size="sm">
+              <Link to={`/certificate/${row.id}`}>
+                <Eye className="mr-2 h-4 w-4" />
+                View
+              </Link>
+            </Button>
+          )}
+          {isRejected(row.status) && (
+            <Button variant="secondary" size="sm" onClick={() => onEdit(row)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit & Resubmit
+            </Button>
+          )}
+          {row.status === 'pending' && (
+            <Button variant="destructive" size="sm" onClick={() => setRequestToCancel(row)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Cancel
+            </Button>
+          )}
+        </div>
+      ),
+      className: "text-right",
+    },
+  ], [onEdit, onCancel]);
+
 
   return (
     <>
@@ -175,100 +215,16 @@ export function RequestsTable({ requests, onEdit, onCancel }: RequestsTableProps
           }}
           onClearFilters={handleClearFilters}
         />
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <SortableHeader columnKey="created_at" title="Date Submitted" />
-              <SortableHeader columnKey="reason" title="Reason" />
-              <SortableHeader columnKey="status" title="Status" />
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedRequests.length > 0 ? (
-              paginatedRequests.map((request) => (
-                <TableRow key={request.id}>
-                  <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
-                  <TableCell className="max-w-xs truncate">{request.reason}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-col items-start gap-1">
-                      <Badge variant={getStatusVariant(request.status)} className={cn(request.status === 'completed' && 'bg-green-500 text-white')}>
-                        {formatStatus(request.status)}
-                      </Badge>
-                      {request.rejection_reason && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <p className="text-xs text-destructive max-w-[200px] truncate cursor-help">
-                                Reason: {request.rejection_reason}
-                              </p>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>{request.rejection_reason}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex gap-1 justify-end">
-                      {request.status === 'completed' && (
-                        <Button asChild variant="outline" size="sm">
-                          <Link to={`/certificate/${request.id}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View
-                          </Link>
-                        </Button>
-                      )}
-                      {isRejected(request.status) && (
-                        <Button variant="secondary" size="sm" onClick={() => onEdit(request)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit & Resubmit
-                        </Button>
-                      )}
-                      {request.status === 'pending' && (
-                        <Button variant="destructive" size="sm" onClick={() => setRequestToCancel(request)}>
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Cancel
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
-                  No requests match the current filter.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-        <div className="flex items-center justify-end space-x-2 py-4 px-4 border-t">
-          <div className="flex-1 text-sm text-muted-foreground">
-            Page {currentPage} of {totalPages || 1}
-          </div>
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage >= totalPages}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
+        <DataTable
+          columns={columns}
+          data={paginatedRequests}
+          sortConfig={sortConfig as { key: string; direction: 'ascending' | 'descending' }}
+          onSort={handleSort}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+          totalPages={totalPages}
+          rowKey={(row) => row.id}
+        />
       </div>
       <AlertDialog open={!!requestToCancel} onOpenChange={(open) => !open && setRequestToCancel(null)}>
         <AlertDialogContent>
