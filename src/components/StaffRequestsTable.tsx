@@ -12,9 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, Profile } from "@/contexts/AuthContext";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, User } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -23,6 +23,9 @@ import {
 } from "@/components/ui/tooltip";
 import { StaffRequestsToolbar } from "./StaffRequestsToolbar";
 import { RequestActionDialog } from "./RequestActionDialog";
+import { StudentProfileDialog } from "./StudentProfileDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { showError } from "@/utils/toast";
 
 interface StaffRequestsTableProps {
   requests: BonafideRequestWithProfile[];
@@ -60,6 +63,10 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
   const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'descending' | 'ascending' }>({ key: 'created_at', direction: 'descending' });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const ITEMS_PER_PAGE = 10;
+
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [studentProfileToView, setStudentProfileToView] = useState<Profile | null>(null);
+  const [isFetchingProfile, setIsFetchingProfile] = useState(false);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -117,6 +124,27 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
 
     setIsSubmitting(false);
     closeDialog();
+  };
+
+  const handleViewProfile = async (userId: string) => {
+    setIsFetchingProfile(true);
+    setIsProfileDialogOpen(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      setStudentProfileToView(data as Profile);
+    } catch (error: any) {
+      showError(error.message || "Failed to fetch student profile.");
+      setStudentProfileToView(null);
+      setIsProfileDialogOpen(false);
+    } finally {
+      setIsFetchingProfile(false);
+    }
   };
 
   const getActionability = (status: BonafideStatus) => {
@@ -293,16 +321,30 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
                   </div>
                 </TableCell>
                 <TableCell>
-                  {getActionability(request.status) ? (
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => openDialog('approve', false, request)}>{getApproveButtonText()}</Button>
-                      {profile?.role !== 'admin' && <Button size="sm" variant="destructive" onClick={() => openDialog('reject', false, request)}>Reject</Button>}
-                    </div>
-                  ) : profile?.role === 'admin' && request.status === 'completed' ? (
-                    <Button size="sm" variant="secondary" onClick={() => openDialog('revert', false, request)}>Revert</Button>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">No action needed</span>
-                  )}
+                  <div className="flex gap-2">
+                    {request.user_id && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button size="sm" variant="ghost" onClick={() => handleViewProfile(request.user_id)}>
+                              <User className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>View Student Profile</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    {getActionability(request.status) ? (
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => openDialog('approve', false, request)}>{getApproveButtonText()}</Button>
+                        {profile?.role !== 'admin' && <Button size="sm" variant="destructive" onClick={() => openDialog('reject', false, request)}>Reject</Button>}
+                      </>
+                    ) : profile?.role === 'admin' && request.status === 'completed' ? (
+                      <Button size="sm" variant="secondary" onClick={() => openDialog('revert', false, request)}>Revert</Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No action needed</span>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -367,6 +409,13 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
         onConfirm={handleConfirmAction}
         isSubmitting={isSubmitting}
         getApproveButtonText={getApproveButtonText}
+      />
+
+      <StudentProfileDialog
+        isOpen={isProfileDialogOpen}
+        onOpenChange={setIsProfileDialogOpen}
+        profile={studentProfileToView}
+        isLoading={isFetchingProfile}
       />
     </div>
   );
