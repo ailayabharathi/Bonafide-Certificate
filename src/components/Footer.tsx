@@ -1,5 +1,4 @@
 import { Facebook, Linkedin } from "lucide-react";
-import { X } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -20,7 +19,7 @@ const Footer = () => {
           <div className="flex space-x-4 items-center">
             <a href="https://www.facebook.com/adhiyamaancollegeofengg/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground"><Facebook /></a>
             <a href="#" className="text-muted-foreground hover:text-foreground">
-              <X className="h-6 w-6" />
+              <img src="/x-logo.png" alt="X logo" className="h-6 w-6 dark:invert" />
             </a>
             <a href="https://www.linkedin.com/school/adhiyamaan-college-of-engineering/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground"><Linkedin /></a>
           </div>
