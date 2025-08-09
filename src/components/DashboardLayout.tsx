@@ -22,13 +22,13 @@ export const DashboardLayout = ({ children, title, headerActions }: DashboardLay
             <div className="flex items-center gap-2 md:hidden">
               <MobileSidebar />
               <Link to="/" className="flex items-center space-x-2">
-                <img src="/placeholder.svg" alt="College Logo" className="h-8 w-8" />
+                <img src="/picture.png" alt="College Logo" className="h-8 w-8" />
                 <span className="inline-block font-bold">ACE Portal</span>
               </Link>
             </div>
             <div className="hidden md:flex gap-6 md:gap-10">
               <Link to="/" className="flex items-center space-x-2">
-                <img src="/placeholder.svg" alt="College Logo" className="h-8 w-8" />
+                <img src="/picture.png" alt="College Logo" className="h-8 w-8" />
                 <span className="inline-block font-bold">ACE Portal</span>
               </Link>
             </div>

@@ -23,14 +23,14 @@ export const Certificate = ({ request }: CertificateProps) => {
       <div className="relative z-10 border-2 border-gray-400 p-8">
         {/* Watermark */}
         <img 
-          src="/placeholder.svg" 
+          src="/picture.png" 
           alt="Watermark" 
           className="absolute inset-0 m-auto h-3/4 w-3/4 object-contain opacity-10 z-0"
         />
         
         <div className="relative z-10">
           <div className="text-center mb-8">
-            <img src="/placeholder.svg" alt="College Logo" className="h-24 w-24 mx-auto mb-4" />
+            <img src="/picture.png" alt="College Logo" className="h-24 w-24 mx-auto mb-4" />
             <h1 className="text-4xl font-bold text-gray-900 tracking-wider">Adhiyamaan College of Engineering</h1>
             <p className="text-md text-gray-600">(Autonomous)</p>
             <p className="text-md text-gray-600">Dr. M.G.R. Nagar, Hosur - 635109</p>
