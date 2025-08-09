@@ -61,7 +61,7 @@ const formatStatus = (status: string) => {
 export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRequestsTableProps) {
   const { profile } = useAuth();
   const [actionRequest, setActionRequest] = useState<BonafideRequestWithProfile | null>(null);
-  const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
+  const [actionType, setActionType] = useState<'approve' | 'reject' | 'revert' | null>(null);
   const [isBulk, setIsBulk] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,7 +85,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
     setSortConfig({ key, direction });
   };
 
-  const openDialog = (type: 'approve' | 'reject', bulk: boolean, request?: BonafideRequestWithProfile) => {
+  const openDialog = (type: 'approve' | 'reject' | 'revert', bulk: boolean, request?: BonafideRequestWithProfile) => {
     setActionType(type);
     setIsBulk(bulk);
     setActionRequest(request || null);
@@ -112,6 +112,9 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
       else if (profile.role === 'hod') newStatus = 'approved_by_hod';
       else if (profile.role === 'admin') newStatus = 'completed';
       else return;
+    } else if (actionType === 'revert') {
+        if (profile.role !== 'admin') return;
+        newStatus = 'approved_by_hod';
     } else { // reject
       if (rejectionReason.trim().length < 10) {
         alert("Rejection reason must be at least 10 characters.");
@@ -145,6 +148,26 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
       if (profile?.role === 'admin') return 'Mark as Completed';
       return 'Approve';
   }
+
+  const getDialogTitle = () => {
+    if (!actionType) return "";
+    let title = "";
+    if (actionType === 'approve') title = getApproveButtonText();
+    else if (actionType === 'reject') title = 'Reject';
+    else if (actionType === 'revert') title = 'Revert';
+    return `Confirm Action: ${title} Request${isBulk ? 's' : ''}`;
+  };
+
+  const getDialogDescription = () => {
+    if (!actionType) return "";
+    const requestName = `${actionRequest?.profiles?.first_name} ${actionRequest?.profiles?.last_name}`;
+    const target = isBulk ? `${selectedIds.length} requests` : `a request from ${requestName}`;
+
+    if (actionType === 'revert') {
+      return `This will revert the status of ${target} from 'Completed' back to 'Approved by HOD'. The student will no longer be able to view the certificate. Are you sure?`;
+    }
+    return `You are about to ${actionType} ${target}.`;
+  };
 
   const categorizedRequests = useMemo(() => {
     let sortedRequests = [...requests];
@@ -308,6 +331,8 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
                       <Button size="sm" variant="outline" onClick={() => openDialog('approve', false, request)}>{getApproveButtonText()}</Button>
                       {profile?.role !== 'admin' && <Button size="sm" variant="destructive" onClick={() => openDialog('reject', false, request)}>Reject</Button>}
                     </div>
+                  ) : profile?.role === 'admin' && request.status === 'completed' ? (
+                    <Button size="sm" variant="secondary" onClick={() => openDialog('revert', false, request)}>Revert</Button>
                   ) : (
                     <span className="text-xs text-muted-foreground">No action needed</span>
                   )}
@@ -366,9 +391,9 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
       <Dialog open={!!actionType} onOpenChange={closeDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Action: {actionType === 'approve' ? getApproveButtonText() : 'Reject'} Request{isBulk ? 's' : ''}</DialogTitle>
+            <DialogTitle>{getDialogTitle()}</DialogTitle>
             <DialogDescription>
-              {isBulk ? `You are about to ${actionType} ${selectedIds.length} requests.` : `You are about to ${actionType} a request from ${actionRequest?.profiles?.first_name} ${actionRequest?.profiles?.last_name}.`}
+              {getDialogDescription()}
             </DialogDescription>
           </DialogHeader>
           {actionType === 'reject' && (
