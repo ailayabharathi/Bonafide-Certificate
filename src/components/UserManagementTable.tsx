@@ -51,6 +51,7 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
   const [isDeleting, setIsDeleting] = useState(false);
   
   const [searchQuery, setSearchQuery] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("all"); // New state for department filter
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'ascending' | 'descending' }>({ key: 'name', direction: 'ascending' });
   const ITEMS_PER_PAGE = 10;
@@ -110,8 +111,19 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
   const handleClearFilters = () => {
     setSearchQuery("");
     onRoleFilterChange("all");
+    setDepartmentFilter("all"); // Clear department filter
     setCurrentPage(1);
   };
+
+  const uniqueDepartments = useMemo(() => {
+    const departments = new Set<string>();
+    users.forEach(user => {
+        if (user.department) {
+            departments.add(user.department);
+        }
+    });
+    return Array.from(departments).sort();
+  }, [users]);
 
   const processedUsers = useMemo(() => {
     let filteredUsers = users
@@ -126,6 +138,10 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
       .filter(user => {
         if (roleFilter === "all") return true;
         return user.role === roleFilter;
+      })
+      .filter(user => { // Apply new department filter
+        if (departmentFilter === "all") return true;
+        return user.department === departmentFilter;
       });
 
     filteredUsers.sort((a, b) => {
@@ -161,7 +177,7 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
     });
 
     return filteredUsers;
-  }, [users, searchQuery, roleFilter, sortConfig]);
+  }, [users, searchQuery, roleFilter, departmentFilter, sortConfig]);
 
   const totalPages = Math.ceil(processedUsers.length / ITEMS_PER_PAGE);
   const paginatedUsers = processedUsers.slice(
@@ -185,7 +201,7 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
     );
   };
 
-  const showClearFilters = searchQuery !== "" || roleFilter !== "all";
+  const showClearFilters = searchQuery !== "" || roleFilter !== "all" || departmentFilter !== "all";
 
   return (
     <>
@@ -212,6 +228,20 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
             <SelectItem value="tutor">Tutor</SelectItem>
             <SelectItem value="hod">HOD</SelectItem>
             <SelectItem value="admin">Admin</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={departmentFilter} onValueChange={(value) => {
+          setDepartmentFilter(value);
+          setCurrentPage(1);
+        }}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by department" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Departments</SelectItem>
+            {uniqueDepartments.map(dept => (
+              <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <ExportButton 
