@@ -18,6 +18,8 @@ import { showSuccess, showError } from "@/utils/toast";
 import { useBonafideRequests } from "@/hooks/useBonafideRequests";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { StatsCard } from "@/components/StatsCard";
+import { StatusDistributionChart } from "@/components/StatusDistributionChart";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 const StudentPortal = () => {
   const { user } = useAuth();
@@ -82,28 +84,49 @@ const StudentPortal = () => {
     rejected: requests.filter(r => ['rejected_by_tutor', 'rejected_by_hod'].includes(r.status)).length,
   };
 
+  const chartData = [
+    { name: 'In Progress', value: stats.inProgress },
+    { name: 'Completed', value: stats.completed },
+    { name: 'Rejected', value: stats.rejected },
+  ];
+
   return (
     <DashboardLayout title="Student Dashboard" headerActions={headerActions}>
-      <div className="space-y-8">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatsCard title="Total Requests" value={stats.total} icon={ClipboardList} />
-            <StatsCard title="In Progress" value={stats.inProgress} icon={Clock} />
-            <StatsCard title="Completed" value={stats.completed} icon={CheckCircle} />
-            <StatsCard title="Rejected" value={stats.rejected} icon={XCircle} />
-        </div>
+      {isLoading ? (
         <div className="space-y-4">
-          <h2 className="text-2xl font-semibold tracking-tight">Your Requests History</h2>
-          {isLoading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          ) : (
-            <RequestsTable requests={requests} onEdit={handleEditRequest} />
-          )}
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-64 w-full" />
         </div>
-      </div>
+      ) : (
+        <div className="space-y-8">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <StatsCard title="Total Requests" value={stats.total} icon={ClipboardList} />
+              <StatsCard title="In Progress" value={stats.inProgress} icon={Clock} />
+              <StatsCard title="Completed" value={stats.completed} icon={CheckCircle} />
+              <StatsCard title="Rejected" value={stats.rejected} icon={XCircle} />
+          </div>
+          <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-7">
+            <Card className="col-span-full lg:col-span-4">
+              <CardHeader>
+                <CardTitle>Requests History</CardTitle>
+                <CardDescription>A log of all your bonafide certificate requests.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <RequestsTable requests={requests} onEdit={handleEditRequest} />
+              </CardContent>
+            </Card>
+            <Card className="col-span-full lg:col-span-3">
+              <CardHeader>
+                <CardTitle>Status Overview</CardTitle>
+                <CardDescription>A breakdown of your request statuses.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <StatusDistributionChart data={chartData} />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
