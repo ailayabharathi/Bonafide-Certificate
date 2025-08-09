@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Profile } from "@/contexts/AuthContext";
+import { Profile, useAuth } from "@/contexts/AuthContext";
 import {
   Table,
   TableBody,
@@ -28,6 +28,12 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Pencil, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface UserManagementTableProps {
   users: Profile[];
@@ -38,6 +44,7 @@ type UserRole = 'student' | 'tutor' | 'hod' | 'admin';
 type SortableKey = 'name' | 'email' | 'role' | 'department' | 'register_number';
 
 export function UserManagementTable({ users, onUserUpdate }: UserManagementTableProps) {
+  const { user: currentUser } = useAuth();
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
   const [newRole, setNewRole] = useState<UserRole | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -203,21 +210,42 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
             </TableHeader>
             <TableBody>
               {paginatedUsers.length > 0 ? (
-                paginatedUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.first_name} {user.last_name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.register_number}</TableCell>
-                    <TableCell>{user.department}</TableCell>
-                    <TableCell className="capitalize">{user.role}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="outline" size="sm" onClick={() => openDialog(user)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit Role
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
+                paginatedUsers.map((user) => {
+                  const isCurrentUser = user.id === currentUser?.id;
+                  return (
+                    <TableRow key={user.id}>
+                      <TableCell>{user.first_name} {user.last_name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>{user.register_number}</TableCell>
+                      <TableCell>{user.department}</TableCell>
+                      <TableCell className="capitalize">{user.role}</TableCell>
+                      <TableCell className="text-right">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span tabIndex={0}>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openDialog(user)}
+                                  disabled={isCurrentUser}
+                                >
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Edit Role
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            {isCurrentUser && (
+                              <TooltipContent>
+                                <p>You cannot edit your own role.</p>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center">
