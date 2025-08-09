@@ -31,6 +31,7 @@ interface StaffRequestsTableProps {
   requests: BonafideRequestWithProfile[];
   onAction: (requestId: string, newStatus: BonafideStatus, rejectionReason?: string) => Promise<void>;
   onBulkAction: (requestIds: string[], newStatus: BonafideStatus, rejectionReason?: string) => Promise<void>;
+  onClearDateRange: () => void;
 }
 
 type SortableKey = keyof BonafideRequestWithProfile | 'studentName';
@@ -51,7 +52,7 @@ const formatStatus = (status: string) => {
   return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
 
-export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRequestsTableProps) {
+export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDateRange }: StaffRequestsTableProps) {
   const { profile } = useAuth();
   const [actionRequest, setActionRequest] = useState<BonafideRequestWithProfile | null>(null);
   const [actionType, setActionType] = useState<'approve' | 'reject' | 'revert' | null>(null);
@@ -377,6 +378,13 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
     );
   };
 
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setActiveTab("actionable");
+    setSelectedIds([]);
+    onClearDateRange();
+  };
+
   return (
     <div className="border rounded-md bg-background">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -391,6 +399,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
           onClearSelection={() => setSelectedIds([])}
           getApproveButtonText={getApproveButtonText}
           profile={profile}
+          onClearFilters={handleClearFilters}
         />
         {tabsInfo.map(tab => (
           <TabsContent key={tab.value} value={tab.value} className="m-0">

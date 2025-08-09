@@ -86,6 +86,12 @@ export function RequestsTable({ requests, onEdit, onCancel }: RequestsTableProps
     }
   };
 
+  const handleClearFilters = () => {
+    setStatusFilter("all");
+    setSearchQuery("");
+    setCurrentPage(1);
+  };
+
   const processedRequests = useMemo(() => {
     let filteredRequests = [...requests];
 
@@ -93,6 +99,9 @@ export function RequestsTable({ requests, onEdit, onCancel }: RequestsTableProps
       filteredRequests = filteredRequests.filter(r => {
         if (statusFilter === 'in_progress') {
           return ['pending', 'approved_by_tutor', 'approved_by_hod'].includes(r.status);
+        }
+        if (statusFilter === 'completed') {
+          return r.status === 'completed';
         }
         if (statusFilter === 'rejected') {
           return ['rejected_by_tutor', 'rejected_by_hod'].includes(r.status);
@@ -164,6 +173,7 @@ export function RequestsTable({ requests, onEdit, onCancel }: RequestsTableProps
             setSearchQuery(value);
             setCurrentPage(1);
           }}
+          onClearFilters={handleClearFilters}
         />
         <Table>
           <TableHeader>

@@ -92,7 +92,7 @@ export const StaffDashboard = ({
           </div>
         )}
 
-        <StaffRequestsTable requests={requests} onAction={onAction} onBulkAction={onBulkAction} />
+        <StaffRequestsTable requests={requests} onAction={onAction} onBulkAction={onBulkAction} onClearDateRange={() => onDateRangeChange(undefined)} />
       </div>
     </DashboardLayout>
   );

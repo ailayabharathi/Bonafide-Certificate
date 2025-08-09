@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Profile } from "@/contexts/AuthContext";
 import { ExportButton } from "./ExportButton";
 import { BonafideRequestWithProfile } from "@/types";
+import { XCircle } from "lucide-react";
 
 interface TabInfo {
   value: string;
@@ -22,6 +23,7 @@ interface StaffRequestsToolbarProps {
   onClearSelection: () => void;
   getApproveButtonText: () => string;
   profile: Profile | null;
+  onClearFilters: () => void;
 }
 
 export const StaffRequestsToolbar = ({
@@ -35,7 +37,9 @@ export const StaffRequestsToolbar = ({
   onClearSelection,
   getApproveButtonText,
   profile,
+  onClearFilters,
 }: StaffRequestsToolbarProps) => {
+  const showClearFilters = searchQuery !== "" || activeTab !== "actionable";
   return (
     <div className="p-4 border-b space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -57,6 +61,12 @@ export const StaffRequestsToolbar = ({
             data={requestsForExport}
             filename={`bonafide-requests-${activeTab}-${new Date().toISOString().split('T')[0]}.csv`}
           />
+          {showClearFilters && (
+            <Button variant="outline" onClick={onClearFilters}>
+              <XCircle className="mr-2 h-4 w-4" />
+              Clear Filters
+            </Button>
+          )}
         </div>
       </div>
       {selectedIdsCount > 0 && (
