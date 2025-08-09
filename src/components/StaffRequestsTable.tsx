@@ -27,6 +27,7 @@ import { StudentProfileDialog } from "./StudentProfileDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/utils/toast";
 import { Link } from "react-router-dom"; // Added Link import
+import { RequestsTableContent } from "./RequestsTableContent"; // Import the new component
 
 interface StaffRequestsTableProps {
   requests: BonafideRequestWithProfile[];
@@ -60,17 +61,19 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
   const [isBulk, setIsBulk] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState("all"); // New state for department filter
+  const [departmentFilter, setDepartmentFilter] = useState("all");
   const [activeTab, setActiveTab] = useState("actionable");
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'descending' | 'ascending' }>({ key: 'created_at', direction: 'descending' });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false); // Initialized
+  const [studentUserIdToView, setStudentUserIdToView] = useState<string | null>(null); // Initialized
   const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     setCurrentPage(1);
     setSelectedIds([]);
-  }, [activeTab, searchQuery, departmentFilter, sortConfig]); // Add departmentFilter to dependencies
+  }, [activeTab, searchQuery, departmentFilter, sortConfig]);
 
   const handleSort = (key: SortableKey) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -80,13 +83,13 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
     setSortConfig({ key, direction });
   };
 
-  const openDialog = (type: 'approve' | 'reject' | 'revert', bulk: boolean, request?: BonafideRequestWithProfile) => {
+  const openActionDialog = (type: 'approve' | 'reject' | 'revert', bulk: boolean, request?: BonafideRequestWithProfile) => {
     setActionType(type);
     setIsBulk(bulk);
     setActionRequest(request || null);
   };
 
-  const closeDialog = () => {
+  const closeActionDialog = () => {
     setActionRequest(null);
     setActionType(null);
     setIsBulk(false);
@@ -122,19 +125,12 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
     }
 
     setIsSubmitting(false);
-    closeDialog();
+    closeActionDialog();
   };
 
   const handleViewProfile = (userId: string) => {
     setStudentUserIdToView(userId);
     setIsProfileDialogOpen(true);
-  };
-
-  const getActionability = (status: BonafideStatus) => {
-    if (profile?.role === 'tutor') return status === 'pending';
-    if (profile?.role === 'hod') return status === 'approved_by_tutor';
-    if (profile?.role === 'admin') return status === 'approved_by_hod';
-    return false;
   };
   
   const getApproveButtonText = () => {
@@ -180,7 +176,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
     });
 
     return filteredRequests;
-  }, [requests, searchQuery, departmentFilter, sortConfig]); // Add departmentFilter to dependencies
+  }, [requests, searchQuery, departmentFilter, sortConfig]);
 
   const categorizedRequests = useMemo(() => {
     if (!profile) return { actionable: [], inProgress: [], completed: [], rejected: [], all: [] };
@@ -209,193 +205,43 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
     { value: 'all', label: 'All', count: categorizedRequests.all.length },
   ], [categorizedRequests]);
 
-  const SortableHeader = ({ columnKey, title }: { columnKey: SortableKey, title: string }) => {
-    const isSorted = sortConfig.key === columnKey;
-    return (
-      <TableHead>
-        <Button variant="ghost" onClick={() => handleSort(columnKey)}>
-          {title}
-          {isSorted ? (
-            sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-          ) : (
-            <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />
-          )}
-        </Button>
-      </TableHead>
-    );
-  };
-
-  const renderTable = (requestsToRender: BonafideRequestWithProfile[]) => {
-    const totalItems = requestsToRender.length;
-    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-    const paginatedRequests = requestsToRender.slice(
-      (currentPage - 1) * ITEMS_PER_PAGE,
-      currentPage * ITEMS_PER_PAGE
-    );
-
-    const actionableIdsOnPage = paginatedRequests.filter(r => getActionability(r.status)).map(r => r.id);
-    const numSelectedOnPage = selectedIds.filter(id => actionableIdsOnPage.includes(id)).length;
-
-    const handleSelectAll = (checked: boolean) => {
-        if (checked) {
-            setSelectedIds(prev => [...new Set([...prev, ...actionableIdsOnPage])]);
-        } else {
-            setSelectedIds(prev => prev.filter(id => !actionableIdsOnPage.includes(id)));
-        }
-    };
-
-    if (requestsToRender.length === 0) {
-      return (
-        <div className="flex items-center justify-center h-24 p-4">
-          <p className="text-muted-foreground">No requests in this category.</p>
-        </div>
-      );
-    }
-    return (
-      <>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={
-                    actionableIdsOnPage.length > 0 && numSelectedOnPage === actionableIdsOnPage.length
-                      ? true
-                      : numSelectedOnPage > 0 && numSelectedOnPage < actionableIdsOnPage.length
-                      ? "indeterminate"
-                      : false
-                  }
-                  onCheckedChange={(checked) => handleSelectAll(!!checked)}
-                  aria-label="Select all on page"
-                  disabled={actionableIdsOnPage.length === 0}
-                />
-              </TableHead>
-              <SortableHeader columnKey="studentName" title="Student Name" />
-              <TableHead>Register No.</TableHead>
-              <TableHead>Department</TableHead>
-              <SortableHeader columnKey="created_at" title="Submitted" />
-              <TableHead>Reason</TableHead>
-              <SortableHeader columnKey="status" title="Status" />
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedRequests.map((request) => (
-              <TableRow key={request.id} data-state={selectedIds.includes(request.id) ? "selected" : undefined}>
-                <TableCell className="w-12">
-                  <Checkbox
-                    checked={selectedIds.includes(request.id)}
-                    onCheckedChange={(checked) => {
-                      setSelectedIds(prev => checked ? [...prev, request.id] : prev.filter(id => id !== request.id))
-                    }}
-                    aria-label={`Select request ${request.id}`}
-                    disabled={!getActionability(request.status)}
-                  />
-                </TableCell>
-                <TableCell>{request.profiles?.first_name} {request.profiles?.last_name}</TableCell>
-                <TableCell>{request.profiles?.register_number}</TableCell>
-                <TableCell>{request.profiles?.department}</TableCell>
-                <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
-                <TableCell className="max-w-[200px] truncate">{request.reason}</TableCell>
-                <TableCell>
-                  <div className="flex flex-col items-start gap-1">
-                    <Badge variant={getStatusVariant(request.status)} className={cn(request.status === 'completed' && 'bg-green-500 text-white')}>
-                      {formatStatus(request.status)}
-                    </Badge>
-                    {request.rejection_reason && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <p className="text-xs text-destructive max-w-[200px] truncate cursor-help">
-                              Reason: {request.rejection_reason}
-                            </p>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{request.rejection_reason}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    {request.profiles && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button size="sm" variant="ghost" onClick={() => handleViewProfile(request.user_id)}>
-                              <User className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>View Student Profile</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                    {request.status === 'completed' && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button asChild variant="outline" size="sm">
-                              <Link to={`/certificate/${request.id}`}>
-                                <Eye className="h-4 w-4" />
-                              </Link>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>View Certificate</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                    {getActionability(request.status) ? (
-                      <>
-                        <Button size="sm" variant="outline" onClick={() => openDialog('approve', false, request)}>{getApproveButtonText()}</Button>
-                        {profile?.role !== 'admin' && <Button size="sm" variant="destructive" onClick={() => openDialog('reject', false, request)}>Reject</Button>}
-                      </>
-                    ) : profile?.role === 'admin' && request.status === 'completed' ? (
-                      <Button size="sm" variant="secondary" onClick={() => openDialog('revert', false, request)}>Revert</Button>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">No action needed</span>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <div className="flex items-center justify-end space-x-2 py-4 px-4 border-t">
-            <div className="flex-1 text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages || 1}
-            </div>
-            <div className="space-x-2">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => p - 1)}
-                    disabled={currentPage === 1}
-                >
-                    Previous
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => p + 1)}
-                    disabled={currentPage >= totalPages}
-                >
-                    Next
-                </Button>
-            </div>
-        </div>
-      </>
-    );
-  };
-
   const handleClearFilters = () => {
     setSearchQuery("");
-    setDepartmentFilter("all"); // Clear department filter
+    setDepartmentFilter("all");
     setActiveTab("actionable");
     setSelectedIds([]);
     onClearDateRange();
   };
+
+  const handleToggleSelect = (id: string, checked: boolean) => {
+    setSelectedIds(prev => checked ? [...prev, id] : prev.filter(item => item !== id));
+  };
+
+  const handleSelectAllOnPage = (checked: boolean) => {
+    const requestsOnCurrentPage = categorizedRequests[activeTab as keyof typeof categorizedRequests].slice(
+      (currentPage - 1) * ITEMS_PER_PAGE,
+      currentPage * ITEMS_PER_PAGE
+    );
+    const actionableIdsOnPage = requestsOnCurrentPage.filter(r => {
+      if (profile?.role === 'tutor') return r.status === 'pending';
+      if (profile?.role === 'hod') return r.status === 'approved_by_tutor';
+      if (profile?.role === 'admin') return r.status === 'approved_by_hod';
+      return false;
+    }).map(r => r.id);
+
+    if (checked) {
+      setSelectedIds(prev => [...new Set([...prev, ...actionableIdsOnPage])]);
+    } else {
+      setSelectedIds(prev => prev.filter(id => !actionableIdsOnPage.includes(id)));
+    }
+  };
+
+  const requestsForCurrentTab = categorizedRequests[activeTab as keyof typeof categorizedRequests];
+  const totalPagesForCurrentTab = Math.ceil(requestsForCurrentTab.length / ITEMS_PER_PAGE);
+  const paginatedRequestsForCurrentTab = requestsForCurrentTab.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   return (
     <div className="border rounded-md bg-background">
@@ -403,13 +249,13 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
         <StaffRequestsToolbar
           tabs={tabsInfo}
           activeTab={activeTab}
-          requestsForExport={categorizedRequests[activeTab as keyof typeof categorizedRequests]}
+          requestsForExport={requestsForCurrentTab}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          departmentFilter={departmentFilter} // Pass department filter
-          onDepartmentFilterChange={setDepartmentFilter} // Pass department filter handler
+          departmentFilter={departmentFilter}
+          onDepartmentFilterChange={setDepartmentFilter}
           selectedIdsCount={selectedIds.length}
-          onBulkAction={(type) => openDialog(type, true)}
+          onBulkAction={(type) => openActionDialog(type, true)}
           onClearSelection={() => setSelectedIds([])}
           getApproveButtonText={getApproveButtonText}
           profile={profile}
@@ -417,14 +263,28 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
         />
         {tabsInfo.map(tab => (
           <TabsContent key={tab.value} value={tab.value} className="m-0">
-            {renderTable(categorizedRequests[tab.value as keyof typeof categorizedRequests])}
+            <RequestsTableContent
+              requestsToRender={paginatedRequestsForCurrentTab}
+              profile={profile}
+              onViewProfile={handleViewProfile}
+              onOpenActionDialog={openActionDialog}
+              getApproveButtonText={getApproveButtonText}
+              selectedIds={selectedIds}
+              onToggleSelect={handleToggleSelect}
+              onSelectAll={handleSelectAllOnPage}
+              sortConfig={sortConfig}
+              onSort={handleSort}
+              currentPage={currentPage}
+              onPageChange={(page) => setCurrentPage(page)}
+              totalPages={totalPagesForCurrentTab}
+            />
           </TabsContent>
         ))}
       </Tabs>
 
       <RequestActionDialog
         isOpen={!!actionType}
-        onOpenChange={(open) => !open && closeDialog()}
+        onOpenChange={(open) => !open && closeActionDialog()}
         actionType={actionType}
         isBulk={isBulk}
         request={actionRequest}
