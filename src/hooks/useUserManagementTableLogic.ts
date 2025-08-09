@@ -7,16 +7,18 @@ type SortableKey = 'name' | 'email' | 'role' | 'department' | 'register_number';
 
 const ITEMS_PER_PAGE = 10;
 
-export const useUserManagementTableLogic = (users: Profile[]) => {
+export const useUserManagementTableLogic = (
+  users: Profile[],
+  roleFilter: UserRole | 'all', // Now a prop
+  departmentFilter: string, // Now a prop
+) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
-  const [departmentFilter, setDepartmentFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'ascending' | 'descending' }>({ key: 'name', direction: 'ascending' });
 
   useEffect(() => {
     setCurrentPage(1); // Reset page when filters or sort change
-  }, [searchQuery, roleFilter, departmentFilter, sortConfig]);
+  }, [searchQuery, roleFilter, departmentFilter, sortConfig]); // Dependencies now include props
 
   const handleSort = (key: SortableKey) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -24,12 +26,6 @@ export const useUserManagementTableLogic = (users: Profile[]) => {
       direction = 'descending';
     }
     setSortConfig({ key, direction });
-  };
-
-  const handleClearFilters = () => {
-    setSearchQuery("");
-    setRoleFilter("all");
-    setDepartmentFilter("all");
   };
 
   const processedUsers = useMemo(() => {
@@ -92,24 +88,16 @@ export const useUserManagementTableLogic = (users: Profile[]) => {
     currentPage * ITEMS_PER_PAGE
   );
 
-  const showClearFilters = searchQuery !== "" || roleFilter !== "all" || departmentFilter !== "all";
-
   return {
     searchQuery,
     setSearchQuery,
-    roleFilter,
-    setRoleFilter,
-    departmentFilter,
-    setDepartmentFilter,
     currentPage,
     setCurrentPage,
     sortConfig,
     handleSort,
-    handleClearFilters,
     processedUsers,
     totalPages,
     paginatedUsers,
-    showClearFilters,
     ITEMS_PER_PAGE,
   };
 };

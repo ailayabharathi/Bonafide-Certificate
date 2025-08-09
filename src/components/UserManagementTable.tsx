@@ -28,12 +28,12 @@ import {
 } from "@/components/ui/tooltip";
 import { EditUserDialog } from "./EditUserDialog";
 import { DeleteUserDialog } from "./DeleteUserDialog";
-import { ExportButton } from "./ExportButton"; // Import ExportButton
-import { departments } from "@/lib/departments"; // Import the departments list
-import { EditUserRoleDialog } from "./EditUserRoleDialog"; // Import the new dialog
-import { DataTable } from "./DataTable"; // Import DataTable
-import { useUserManagementTableLogic } from "@/hooks/useUserManagementTableLogic"; // Import the new hook
-import { getUserManagementTableColumns } from "@/lib/user-management-table-columns"; // Import the new utility
+import { ExportButton } from "./ExportButton";
+import { departments } from "@/lib/departments";
+import { EditUserRoleDialog } from "./EditUserRoleDialog";
+import { DataTable } from "./DataTable";
+import { useUserManagementTableLogic } from "@/hooks/useUserManagementTableLogic";
+import { getUserManagementTableColumns } from "@/lib/user-management-table-columns";
 
 interface UserManagementTableProps {
   users: Profile[];
@@ -45,37 +45,44 @@ interface UserManagementTableProps {
 type UserRole = 'student' | 'tutor' | 'hod' | 'admin';
 type SortableKey = 'name' | 'email' | 'role' | 'department' | 'register_number';
 
-export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFilterChange }: UserManagementTableProps) {
+export function UserManagementTable({ users, onUserUpdate, roleFilter: initialRoleFilter, onRoleFilterChange }: UserManagementTableProps) {
   const { user: currentUser, profile: currentUserProfile } = useAuth();
   const [userToEditProfile, setUserToEditProfile] = useState<Profile | null>(null);
-  const [userToEditRole, setUserToEditRole] = useState<Profile | null>(null); // New state for role editing
+  const [userToEditRole, setUserToEditRole] = useState<Profile | null>(null);
   const [userToDelete, setUserToDelete] = useState<Profile | null>(null);
   
   const [isDeleting, setIsDeleting] = useState(false);
-  
+
+  // Internal state for filters, managed by this component
+  const [componentRoleFilter, setComponentRoleFilter] = useState<UserRole | 'all'>(initialRoleFilter);
+  const [componentDepartmentFilter, setComponentDepartmentFilter] = useState("all");
+
+  // Sync initialRoleFilter prop with internal state on mount/prop change
+  useMemo(() => {
+    setComponentRoleFilter(initialRoleFilter);
+  }, [initialRoleFilter]);
+
   const {
     searchQuery,
     setSearchQuery,
-    roleFilter: internalRoleFilter, // Renamed to avoid conflict with prop
-    setRoleFilter: setInternalRoleFilter, // Renamed to avoid conflict with prop
-    departmentFilter,
-    setDepartmentFilter,
     currentPage,
     setCurrentPage,
     sortConfig,
     handleSort,
-    handleClearFilters,
     processedUsers,
     totalPages,
     paginatedUsers,
-    showClearFilters,
     ITEMS_PER_PAGE,
-  } = useUserManagementTableLogic(users);
+  } = useUserManagementTableLogic(users, componentRoleFilter, componentDepartmentFilter); // Pass internal states to hook
 
-  // Sync external roleFilter prop with internal state
-  useMemo(() => {
-    setInternalRoleFilter(roleFilter);
-  }, [roleFilter, setInternalRoleFilter]);
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setComponentRoleFilter("all");
+    setComponentDepartmentFilter("all");
+    onRoleFilterChange("all"); // Propagate change to parent
+  };
+
+  const showClearFilters = searchQuery !== "" || componentRoleFilter !== "all" || componentDepartmentFilter !== "all";
 
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
@@ -115,8 +122,8 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
           onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-sm"
         />
-        <Select value={internalRoleFilter} onValueChange={(value: UserRole | "all") => {
-          setInternalRoleFilter(value);
+        <Select value={componentRoleFilter} onValueChange={(value: UserRole | "all") => {
+          setComponentRoleFilter(value);
           onRoleFilterChange(value); // Propagate change to parent
         }}>
           <SelectTrigger className="w-[180px]">
@@ -130,7 +137,7 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
             <SelectItem value="admin">Admin</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+        <Select value={componentDepartmentFilter} onValueChange={setComponentDepartmentFilter}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by department" />
           </SelectTrigger>
