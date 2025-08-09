@@ -26,15 +26,15 @@ export const Certificate = ({ request }: CertificateProps) => {
 
   return (
     // Using a common serif font stack. For a more official look, you could import a specific font like 'EB Garamond' or 'Playfair Display' in your project's CSS.
-    <div className="bg-white p-8 md:p-12 max-w-4xl mx-auto font-serif relative shadow-2xl" style={{ border: '10px solid #c0a062' }}>
-      <div className="relative z-10 border-2 border-gray-400 p-8">
+    <div className="bg-white p-8 md:p-12 max-w-4xl mx-auto font-serif relative shadow-2xl border-4 border-amber-600/50 print:shadow-none print:border-amber-600 print:p-0">
+      <div className="relative z-10 border-2 border-gray-400 p-8 print:border-none">
         {/* Watermark */}
-        <img 
-          src="/logo.png" 
-          alt="Watermark" 
+        <img
+          src="/logo.png"
+          alt="Watermark"
           className="absolute inset-0 m-auto h-3/4 w-3/4 object-contain opacity-10 z-0"
         />
-        
+
         <div className="relative z-10">
           <div className="text-center mb-8">
             <img src="/logo.png" alt="College Logo" className="h-24 w-24 mx-auto mb-4" />
@@ -51,9 +51,9 @@ export const Certificate = ({ request }: CertificateProps) => {
 
           <div className="mt-8 text-xl leading-loose space-y-6 text-justify">
             <p>
-              This is to certify that <span className="font-bold">{studentProfile.first_name} {studentProfile.last_name}</span> 
-              (Register No: <span className="font-bold">{studentProfile.register_number || 'N/A'}</span>) 
-              is a bonafide student of the <span className="font-bold">{studentProfile.department || 'N/A'}</span> department 
+              This is to certify that <span className="font-bold">{studentProfile.first_name} {studentProfile.last_name}</span>
+              (Register No: <span className="font-bold">{studentProfile.register_number || 'N/A'}</span>)
+              is a bonafide student of the <span className="font-bold">{studentProfile.department || 'N/A'}</span> department
               at this institution.
             </p>
             <p>
