@@ -69,6 +69,18 @@ const bulkUpdateRequestStatus = async ({
     }
 };
 
+const deleteRequest = async (requestId: string) => {
+  const { error } = await supabase
+    .from("bonafide_requests")
+    .delete()
+    .eq("id", requestId);
+
+  if (error) {
+    showError(error.message || "Failed to cancel request.");
+    throw new Error(error.message);
+  }
+};
+
 const invokeEmailNotification = async (requestId: string) => {
   try {
     const { error } = await supabase.functions.invoke('send-status-update-email', {
@@ -133,10 +145,19 @@ export const useBonafideRequests = (
     }
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteRequest,
+    onSuccess: () => {
+      showSuccess("Request cancelled successfully!");
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
+
   return {
     requests: requests || [],
     isLoading: isLoading && (!requests || requests.length === 0),
     updateRequest: mutation.mutateAsync,
     bulkUpdateRequest: bulkUpdateMutation.mutateAsync,
+    deleteRequest: deleteMutation.mutateAsync,
   };
 };

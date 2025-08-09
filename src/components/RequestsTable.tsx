@@ -18,12 +18,23 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from "./ui/button";
 import { Link } from "react-router-dom";
-import { Eye, Edit, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Eye, Edit, ArrowUpDown, ArrowUp, ArrowDown, Trash2, Loader2 } from "lucide-react";
 import { StudentRequestsToolbar } from "./StudentRequestsToolbar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface RequestsTableProps {
   requests: BonafideRequest[];
   onEdit: (request: BonafideRequest) => void;
+  onCancel: (requestId: string) => Promise<void>;
 }
 
 type SortableKey = keyof BonafideRequest;
@@ -44,11 +55,13 @@ const formatStatus = (status: string) => {
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
-export function RequestsTable({ requests, onEdit }: RequestsTableProps) {
+export function RequestsTable({ requests, onEdit, onCancel }: RequestsTableProps) {
   const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'descending' | 'ascending' }>({ key: 'created_at', direction: 'descending' });
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [requestToCancel, setRequestToCancel] = useState<BonafideRequest | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
   const ITEMS_PER_PAGE = 10;
 
   const handleSort = (key: SortableKey) => {
@@ -58,6 +71,19 @@ export function RequestsTable({ requests, onEdit }: RequestsTableProps) {
     }
     setSortConfig({ key, direction });
     setCurrentPage(1);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!requestToCancel) return;
+    setIsCancelling(true);
+    try {
+      await onCancel(requestToCancel.id);
+    } catch (error) {
+      console.error("Failed to cancel request:", error);
+    } finally {
+      setIsCancelling(false);
+      setRequestToCancel(null);
+    }
   };
 
   const processedRequests = useMemo(() => {
@@ -125,105 +151,132 @@ export function RequestsTable({ requests, onEdit }: RequestsTableProps) {
     status === 'rejected_by_tutor' || status === 'rejected_by_hod';
 
   return (
-    <div className="border rounded-md">
-      <StudentRequestsToolbar
-        statusFilter={statusFilter}
-        onStatusChange={(value) => {
-          setStatusFilter(value);
-          setCurrentPage(1);
-        }}
-        searchQuery={searchQuery}
-        onSearchChange={(value) => {
-          setSearchQuery(value);
-          setCurrentPage(1);
-        }}
-      />
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <SortableHeader columnKey="created_at" title="Date Submitted" />
-            <SortableHeader columnKey="reason" title="Reason" />
-            <SortableHeader columnKey="status" title="Status" />
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {paginatedRequests.length > 0 ? (
-            paginatedRequests.map((request) => (
-              <TableRow key={request.id}>
-                <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
-                <TableCell className="max-w-xs truncate">{request.reason}</TableCell>
-                <TableCell>
-                  <div className="flex flex-col items-start gap-1">
-                    <Badge variant={getStatusVariant(request.status)} className={cn(request.status === 'completed' && 'bg-green-500 text-white')}>
-                      {formatStatus(request.status)}
-                    </Badge>
-                    {request.rejection_reason && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <p className="text-xs text-destructive max-w-[200px] truncate cursor-help">
-                              Reason: {request.rejection_reason}
-                            </p>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{request.rejection_reason}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  {request.status === 'completed' && (
-                    <Button asChild variant="outline" size="sm">
-                      <Link to={`/certificate/${request.id}`}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        View
-                      </Link>
-                    </Button>
-                  )}
-                  {isRejected(request.status) && (
-                     <Button variant="secondary" size="sm" onClick={() => onEdit(request)}>
-                       <Edit className="mr-2 h-4 w-4" />
-                       Edit & Resubmit
-                     </Button>
-                  )}
+    <>
+      <div className="border rounded-md">
+        <StudentRequestsToolbar
+          statusFilter={statusFilter}
+          onStatusChange={(value) => {
+            setStatusFilter(value);
+            setCurrentPage(1);
+          }}
+          searchQuery={searchQuery}
+          onSearchChange={(value) => {
+            setSearchQuery(value);
+            setCurrentPage(1);
+          }}
+        />
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <SortableHeader columnKey="created_at" title="Date Submitted" />
+              <SortableHeader columnKey="reason" title="Reason" />
+              <SortableHeader columnKey="status" title="Status" />
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedRequests.length > 0 ? (
+              paginatedRequests.map((request) => (
+                <TableRow key={request.id}>
+                  <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
+                  <TableCell className="max-w-xs truncate">{request.reason}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col items-start gap-1">
+                      <Badge variant={getStatusVariant(request.status)} className={cn(request.status === 'completed' && 'bg-green-500 text-white')}>
+                        {formatStatus(request.status)}
+                      </Badge>
+                      {request.rejection_reason && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <p className="text-xs text-destructive max-w-[200px] truncate cursor-help">
+                                Reason: {request.rejection_reason}
+                              </p>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{request.rejection_reason}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex gap-1 justify-end">
+                      {request.status === 'completed' && (
+                        <Button asChild variant="outline" size="sm">
+                          <Link to={`/certificate/${request.id}`}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
+                          </Link>
+                        </Button>
+                      )}
+                      {isRejected(request.status) && (
+                        <Button variant="secondary" size="sm" onClick={() => onEdit(request)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit & Resubmit
+                        </Button>
+                      )}
+                      {request.status === 'pending' && (
+                        <Button variant="destructive" size="sm" onClick={() => setRequestToCancel(request)}>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={4} className="h-24 text-center">
+                  No requests match the current filter.
                 </TableCell>
               </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={4} className="h-24 text-center">
-                No requests match the current filter.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-      <div className="flex items-center justify-end space-x-2 py-4 px-4 border-t">
-        <div className="flex-1 text-sm text-muted-foreground">
-          Page {currentPage} of {totalPages || 1}
-        </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage >= totalPages}
-          >
-            Next
-          </Button>
+            )}
+          </TableBody>
+        </Table>
+        <div className="flex items-center justify-end space-x-2 py-4 px-4 border-t">
+          <div className="flex-1 text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages || 1}
+          </div>
+          <div className="space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+      <AlertDialog open={!!requestToCancel} onOpenChange={(open) => !open && setRequestToCancel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently cancel your request. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCancelling}>Back</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmCancel} disabled={isCancelling} className="bg-destructive hover:bg-destructive/90">
+              {isCancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Yes, cancel request
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

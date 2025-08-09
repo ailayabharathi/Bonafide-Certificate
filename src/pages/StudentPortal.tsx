@@ -54,7 +54,7 @@ const StudentPortal = () => {
     }
   };
 
-  const { requests, isLoading } = useBonafideRequests(
+  const { requests, isLoading, deleteRequest } = useBonafideRequests(
     `student-requests:${user?.id}`,
     user?.id,
     handleRealtimeEvent,
@@ -112,7 +112,7 @@ const StudentPortal = () => {
                 <CardDescription>A log of all your bonafide certificate requests.</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
-                <RequestsTable requests={requests} onEdit={handleEditRequest} />
+                <RequestsTable requests={requests} onEdit={handleEditRequest} onCancel={deleteRequest} />
               </CardContent>
             </Card>
             <Card className="col-span-full lg:col-span-3">
