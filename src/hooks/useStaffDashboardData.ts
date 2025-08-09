@@ -31,35 +31,61 @@ export const useStaffDashboardData = (
     });
   }, [requests, dateRange]);
 
+  const statusCounts = useMemo(() => {
+    const counts = {
+      total: filteredRequests.length,
+      pending: 0,
+      approved_by_tutor: 0,
+      rejected_by_tutor: 0,
+      approved_by_hod: 0,
+      rejected_by_hod: 0,
+      completed: 0,
+    };
+
+    filteredRequests.forEach(request => {
+      counts.total++;
+      switch (request.status) {
+        case 'pending': counts.pending++; break;
+        case 'approved_by_tutor': counts.approved_by_tutor++; break;
+        case 'rejected_by_tutor': counts.rejected_by_tutor++; break;
+        case 'approved_by_hod': counts.approved_by_hod++; break;
+        case 'rejected_by_hod': counts.rejected_by_hod++; break;
+        case 'completed': counts.completed++; break;
+      }
+    });
+    return counts;
+  }, [filteredRequests]);
+
   const stats = useMemo(() => {
     if (!profile) return [];
 
     switch (profile.role) {
       case "tutor":
         return [
-          { title: "Total Requests", value: filteredRequests.length, icon: ClipboardList },
-          { title: "Pending Your Action", value: filteredRequests.filter((r) => r.status === "pending").length, icon: Clock },
-          { title: "Approved by You", value: filteredRequests.filter((r) => r.status === "approved_by_tutor").length, icon: CheckCircle },
-          { title: "Rejected by You", value: filteredRequests.filter((r) => r.status === "rejected_by_tutor").length, icon: XCircle },
+          { title: "Total Requests", value: statusCounts.total, icon: ClipboardList },
+          { title: "Pending Your Action", value: statusCounts.pending, icon: Clock },
+          { title: "Approved by You", value: statusCounts.approved_by_tutor, icon: CheckCircle },
+          { title: "Rejected by You", value: statusCounts.rejected_by_tutor, icon: XCircle },
         ];
       case "hod":
         return [
-          { title: "Total Processed by You", value: filteredRequests.filter(r => ['approved_by_hod', 'rejected_by_hod'].includes(r.status)).length, icon: ClipboardList },
-          { title: "Pending Your Approval", value: filteredRequests.filter((r) => r.status === "approved_by_tutor").length, icon: Clock },
-          { title: "Approved by You", value: filteredRequests.filter((r) => r.status === "approved_by_hod").length, icon: CheckCircle },
-          { title: "Rejected by You", value: filteredRequests.filter((r) => r.status === "rejected_by_hod").length, icon: XCircle },
+          { title: "Total Requests", value: statusCounts.total, icon: ClipboardList },
+          { title: "Pending Your Approval", value: statusCounts.approved_by_tutor, icon: Clock },
+          { title: "Approved by You", value: statusCounts.approved_by_hod, icon: CheckCircle },
+          { title: "Rejected by You", value: statusCounts.rejected_by_hod, icon: XCircle },
         ];
       case "admin":
         return [
           { title: "Total Users", value: allUsers.length, icon: Users },
-          { title: "Total Requests", value: filteredRequests.length, icon: ClipboardList },
-          { title: "Pending Final Processing", value: filteredRequests.filter((r) => r.status === "approved_by_hod").length, icon: Clock },
-          { title: "Completed Certificates", value: filteredRequests.filter((r) => r.status === "completed").length, icon: CheckCircle },
+          { title: "Total Requests", value: statusCounts.total, icon: ClipboardList },
+          { title: "Pending Final Processing", value: statusCounts.approved_by_hod, icon: Clock },
+          { title: "Completed Certificates", value: statusCounts.completed, icon: CheckCircle },
+          { title: "Total Rejected", value: statusCounts.rejected_by_tutor + statusCounts.rejected_by_hod, icon: XCircle },
         ];
       default:
         return [];
     }
-  }, [filteredRequests, profile, allUsers]);
+  }, [profile, statusCounts, allUsers]);
 
   const charts = useMemo(() => {
     if (!profile) return [];
@@ -130,9 +156,9 @@ export const useStaffDashboardData = (
 
     if (profile.role === "tutor" || profile.role === "hod") {
       const statusChartData = [
-        { name: 'Pending', value: (stats[1]?.value as number) || 0 },
-        { name: 'Approved', value: (stats[2]?.value as number) || 0 },
-        { name: 'Rejected', value: (stats[3]?.value as number) || 0 },
+        { name: 'Pending', value: (profile.role === 'tutor' ? statusCounts.pending : statusCounts.approved_by_tutor) },
+        { name: 'Approved', value: (profile.role === 'tutor' ? statusCounts.approved_by_tutor : statusCounts.approved_by_hod) },
+        { name: 'Rejected', value: (profile.role === 'tutor' ? statusCounts.rejected_by_tutor : statusCounts.rejected_by_hod) },
       ];
       return [
         {
@@ -158,7 +184,7 @@ export const useStaffDashboardData = (
     }
 
     return [];
-  }, [filteredRequests, profile, stats, allUsers]);
+  }, [filteredRequests, profile, allUsers]);
 
   return { stats, charts };
 };
