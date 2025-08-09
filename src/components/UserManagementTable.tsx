@@ -32,6 +32,7 @@ import { ExportButton } from "./ExportButton"; // Import ExportButton
 import { departments } from "@/lib/departments"; // Import the departments list
 import { EditUserRoleDialog } from "./EditUserRoleDialog"; // Import the new dialog
 import { DataTable } from "./DataTable"; // Import DataTable
+import { useUserManagementTableLogic } from "@/hooks/useUserManagementTableLogic"; // Import the new hook
 
 interface UserManagementTableProps {
   users: Profile[];
@@ -51,20 +52,29 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
   
   const [isDeleting, setIsDeleting] = useState(false);
   
-  const [searchQuery, setSearchQuery] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState("all"); // New state for department filter
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'ascending' | 'descending' }>({ key: 'name', direction: 'ascending' });
-  const ITEMS_PER_PAGE = 10;
+  const {
+    searchQuery,
+    setSearchQuery,
+    roleFilter: internalRoleFilter, // Renamed to avoid conflict with prop
+    setRoleFilter: setInternalRoleFilter, // Renamed to avoid conflict with prop
+    departmentFilter,
+    setDepartmentFilter,
+    currentPage,
+    setCurrentPage,
+    sortConfig,
+    handleSort,
+    handleClearFilters,
+    processedUsers,
+    totalPages,
+    paginatedUsers,
+    showClearFilters,
+    ITEMS_PER_PAGE,
+  } = useUserManagementTableLogic(users);
 
-  const handleSort = (key: SortableKey) => {
-    let direction: 'ascending' | 'descending' = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-    setCurrentPage(1);
-  };
+  // Sync external roleFilter prop with internal state
+  useMemo(() => {
+    setInternalRoleFilter(roleFilter);
+  }, [roleFilter, setInternalRoleFilter]);
 
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
@@ -86,75 +96,6 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
       setIsDeleting(false);
     }
   };
-
-  const handleClearFilters = () => {
-    setSearchQuery("");
-    onRoleFilterChange("all");
-    setDepartmentFilter("all"); // Clear department filter
-    setCurrentPage(1);
-  };
-
-  const processedUsers = useMemo(() => {
-    let filteredUsers = users
-      .filter(user => {
-        const name = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
-        const email = user.email?.toLowerCase() || '';
-        const department = user.department?.toLowerCase() || '';
-        const registerNumber = user.register_number?.toLowerCase() || '';
-        const query = searchQuery.toLowerCase();
-        return name.includes(query) || email.includes(query) || department.includes(query) || registerNumber.includes(query);
-      })
-      .filter(user => {
-        if (roleFilter === "all") return true;
-        return user.role === roleFilter;
-      })
-      .filter(user => { // Apply new department filter
-        if (departmentFilter === "all") return true;
-        return user.department === departmentFilter;
-      });
-
-    filteredUsers.sort((a, b) => {
-      let aValue: string, bValue: string;
-      switch (sortConfig.key) {
-        case 'name':
-          aValue = `${a.first_name || ''} ${a.last_name || ''}`.toLowerCase();
-          bValue = `${b.first_name || ''} ${b.last_name || ''}`.toLowerCase();
-          break;
-        case 'email':
-          aValue = a.email?.toLowerCase() || '';
-          bValue = b.email?.toLowerCase() || '';
-          break;
-        case 'role':
-          aValue = a.role.toLowerCase();
-          bValue = b.role.toLowerCase();
-          break;
-        case 'department':
-            aValue = a.department?.toLowerCase() || '';
-            bValue = b.department?.toLowerCase() || '';
-            break;
-        case 'register_number':
-            aValue = a.register_number?.toLowerCase() || '';
-            bValue = b.register_number?.toLowerCase() || '';
-            break;
-        default:
-          return 0;
-      }
-
-      if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
-      if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
-      return 0;
-    });
-
-    return filteredUsers;
-  }, [users, searchQuery, roleFilter, departmentFilter, sortConfig]);
-
-  const totalPages = Math.ceil(processedUsers.length / ITEMS_PER_PAGE);
-  const paginatedUsers = processedUsers.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
-
-  const showClearFilters = searchQuery !== "" || roleFilter !== "all" || departmentFilter !== "all";
 
   const columns = useMemo(() => [
     {
@@ -256,15 +197,12 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
         <Input
           placeholder="Search by name, email, department..."
           value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setCurrentPage(1);
-          }}
+          onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-sm"
         />
-        <Select value={roleFilter} onValueChange={(value: UserRole | "all") => {
-          onRoleFilterChange(value);
-          setCurrentPage(1);
+        <Select value={internalRoleFilter} onValueChange={(value: UserRole | "all") => {
+          setInternalRoleFilter(value);
+          onRoleFilterChange(value); // Propagate change to parent
         }}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by role" />
@@ -277,10 +215,7 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
             <SelectItem value="admin">Admin</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={departmentFilter} onValueChange={(value) => {
-          setDepartmentFilter(value);
-          setCurrentPage(1);
-        }}>
+        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by department" />
           </SelectTrigger>
