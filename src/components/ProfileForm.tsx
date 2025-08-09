@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, Profile } from "@/contexts/AuthContext";
 import { showSuccess, showError } from "@/utils/toast";
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -26,45 +26,52 @@ const formSchema = z.object({
   last_name: z.string().min(2, {
     message: "Last name must be at least 2 characters.",
   }),
-  // These are optional as they might not apply to all roles or might be admin-set
   register_number: z.string().optional(),
   department: z.string().optional(),
 });
 
 interface ProfileFormProps {
   onSuccess: () => void;
+  profileToEdit?: Profile; // If provided, we're in admin edit mode
 }
 
-export function ProfileForm({ onSuccess }: ProfileFormProps) {
-  const { user, profile } = useAuth();
+export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {
+  const { user, profile: currentUserProfile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(profile?.avatar_url || null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Determine which profile we are working with and who is editing.
+  const targetProfile = profileToEdit || currentUserProfile;
+  const isEditingOwnProfile = !profileToEdit;
+  
+  // Sensitive fields are editable if an admin is editing, or if the user is editing their own profile and is not a student.
+  const canEditSensitiveFields = !!profileToEdit || (currentUserProfile?.role !== 'student');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      first_name: profile?.first_name || "",
-      last_name: profile?.last_name || "",
-      register_number: profile?.register_number || "",
-      department: profile?.department || "",
+      first_name: "",
+      last_name: "",
+      register_number: "",
+      department: "",
     },
   });
 
   useEffect(() => {
-    if (profile) {
-        form.reset({
-            first_name: profile.first_name || "",
-            last_name: profile.last_name || "",
-            register_number: profile.register_number || "",
-            department: profile.department || "",
-        });
-        if (profile.avatar_url) {
-            setAvatarPreview(profile.avatar_url);
-        }
+    if (targetProfile) {
+      form.reset({
+        first_name: targetProfile.first_name || "",
+        last_name: targetProfile.last_name || "",
+        register_number: targetProfile.register_number || "",
+        department: targetProfile.department || "",
+      });
+      if (targetProfile.avatar_url) {
+        setAvatarPreview(targetProfile.avatar_url);
+      }
     }
-  }, [profile, form]);
+  }, [targetProfile, form]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -75,34 +82,21 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) {
-      showError("You must be logged in to update your profile.");
+    if (!targetProfile || !user) {
+      showError("User profile not found.");
       return;
     }
     setIsSubmitting(true);
 
     try {
-      let avatarUrl = profile?.avatar_url;
+      let avatarUrl = targetProfile.avatar_url;
 
-      if (avatarFile) {
+      // Avatar can only be changed by the user themselves
+      if (avatarFile && isEditingOwnProfile) {
         setIsUploading(true);
         const fileExt = avatarFile.name.split('.').pop();
         const fileName = `avatar.${fileExt}`;
-        const filePath = `${user.id}/${fileName}`;
-
-        const { data: files, error: listError } = await supabase.storage
-          .from('avatars')
-          .list(user.id);
-        
-        if (listError) console.error("Error listing old avatars:", listError);
-
-        if (files && files.length > 0) {
-            const filesToRemove = files.map(file => `${user.id}/${file.name}`);
-            const { error: removeError } = await supabase.storage
-                .from('avatars')
-                .remove(filesToRemove);
-            if (removeError) console.error("Error removing old avatars:", removeError);
-        }
+        const filePath = `${targetProfile.id}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('avatars')
@@ -124,8 +118,7 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
         avatar_url: avatarUrl,
       };
 
-      // Only allow non-students to update these fields
-      if (profile?.role !== 'student') {
+      if (canEditSensitiveFields) {
         updateData.register_number = values.register_number;
         updateData.department = values.department;
       }
@@ -133,7 +126,7 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
       const { error: updateError } = await supabase
         .from("profiles")
         .update(updateData)
-        .eq("id", user.id);
+        .eq("id", targetProfile.id);
 
       if (updateError) throw updateError;
 
@@ -153,38 +146,38 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
-  const isStudent = profile?.role === 'student';
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          name="avatar"
-          render={() => (
-            <FormItem className="flex flex-col items-center">
-              <FormLabel>
-                <Avatar className="h-24 w-24 cursor-pointer">
-                  <AvatarImage src={avatarPreview || undefined} alt="User avatar" />
-                  <AvatarFallback>{getInitials()}</AvatarFallback>
-                </Avatar>
-              </FormLabel>
-              <FormControl>
-                <Input
-                  type="file"
-                  className="hidden"
-                  id="avatar-upload"
-                  accept="image/png, image/jpeg"
-                  onChange={handleAvatarChange}
-                  disabled={isSubmitting}
-                />
-              </FormControl>
-              <Button asChild variant="link">
-                <label htmlFor="avatar-upload">Change Avatar</label>
-              </Button>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {isEditingOwnProfile && (
+          <FormField
+            name="avatar"
+            render={() => (
+              <FormItem className="flex flex-col items-center">
+                <FormLabel>
+                  <Avatar className="h-24 w-24 cursor-pointer">
+                    <AvatarImage src={avatarPreview || undefined} alt="User avatar" />
+                    <AvatarFallback>{getInitials()}</AvatarFallback>
+                  </Avatar>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type="file"
+                    className="hidden"
+                    id="avatar-upload"
+                    accept="image/png, image/jpeg"
+                    onChange={handleAvatarChange}
+                    disabled={isSubmitting}
+                  />
+                </FormControl>
+                <Button asChild variant="link">
+                  <label htmlFor="avatar-upload">Change Avatar</label>
+                </Button>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
         <FormField
           control={form.control}
           name="first_name"
@@ -192,7 +185,7 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
             <FormItem>
               <FormLabel>First Name</FormLabel>
               <FormControl>
-                <Input placeholder="Your first name" {...field} />
+                <Input placeholder="User's first name" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -205,7 +198,7 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
             <FormItem>
               <FormLabel>Last Name</FormLabel>
               <FormControl>
-                <Input placeholder="Your last name" {...field} />
+                <Input placeholder="User's last name" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -218,9 +211,9 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
             <FormItem>
               <FormLabel>Register Number</FormLabel>
               <FormControl>
-                <Input placeholder="Your register number" {...field} disabled={isStudent} />
+                <Input placeholder="User's register number" {...field} disabled={!canEditSensitiveFields} />
               </FormControl>
-              {isStudent && <FormDescription>Register number can only be changed by an administrator.</FormDescription>}
+              {!canEditSensitiveFields && <FormDescription>Register number can only be changed by an administrator.</FormDescription>}
               <FormMessage />
             </FormItem>
           )}
@@ -232,9 +225,9 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
             <FormItem>
               <FormLabel>Department</FormLabel>
               <FormControl>
-                <Input placeholder="Your department" {...field} disabled={isStudent} />
+                <Input placeholder="User's department" {...field} disabled={!canEditSensitiveFields} />
               </FormControl>
-              {isStudent && <FormDescription>Department can only be changed by an administrator.</FormDescription>}
+              {!canEditSensitiveFields && <FormDescription>Department can only be changed by an administrator.</FormDescription>}
               <FormMessage />
             </FormItem>
           )}
