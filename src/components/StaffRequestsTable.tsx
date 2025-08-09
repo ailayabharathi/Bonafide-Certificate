@@ -9,17 +9,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
 import { cn } from "@/lib/utils";
@@ -33,6 +22,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { StaffRequestsToolbar } from "./StaffRequestsToolbar";
+import { RequestActionDialog } from "./RequestActionDialog";
 
 interface StaffRequestsTableProps {
   requests: BonafideRequestWithProfile[];
@@ -63,7 +53,6 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
   const [actionRequest, setActionRequest] = useState<BonafideRequestWithProfile | null>(null);
   const [actionType, setActionType] = useState<'approve' | 'reject' | 'revert' | null>(null);
   const [isBulk, setIsBulk] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("actionable");
@@ -89,17 +78,15 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
     setActionType(type);
     setIsBulk(bulk);
     setActionRequest(request || null);
-    setRejectionReason("");
   };
 
   const closeDialog = () => {
     setActionRequest(null);
     setActionType(null);
     setIsBulk(false);
-    setRejectionReason("");
   };
 
-  const handleConfirm = async () => {
+  const handleConfirmAction = async (rejectionReason?: string) => {
     if (!actionType || !profile) return;
     if (!isBulk && !actionRequest) return;
     if (isBulk && selectedIds.length === 0) return;
@@ -116,11 +103,6 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
         if (profile.role !== 'admin') return;
         newStatus = 'approved_by_hod';
     } else { // reject
-      if (rejectionReason.trim().length < 10) {
-        alert("Rejection reason must be at least 10 characters.");
-        setIsSubmitting(false);
-        return;
-      }
       if (profile.role === 'tutor') newStatus = 'rejected_by_tutor';
       else if (profile.role === 'hod') newStatus = 'rejected_by_hod';
       else return;
@@ -148,26 +130,6 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
       if (profile?.role === 'admin') return 'Mark as Completed';
       return 'Approve';
   }
-
-  const getDialogTitle = () => {
-    if (!actionType) return "";
-    let title = "";
-    if (actionType === 'approve') title = getApproveButtonText();
-    else if (actionType === 'reject') title = 'Reject';
-    else if (actionType === 'revert') title = 'Revert';
-    return `Confirm Action: ${title} Request${isBulk ? 's' : ''}`;
-  };
-
-  const getDialogDescription = () => {
-    if (!actionType) return "";
-    const requestName = `${actionRequest?.profiles?.first_name} ${actionRequest?.profiles?.last_name}`;
-    const target = isBulk ? `${selectedIds.length} requests` : `a request from ${requestName}`;
-
-    if (actionType === 'revert') {
-      return `This will revert the status of ${target} from 'Completed' back to 'Approved by HOD'. The student will no longer be able to view the certificate. Are you sure?`;
-    }
-    return `You are about to ${actionType} ${target}.`;
-  };
 
   const categorizedRequests = useMemo(() => {
     let sortedRequests = [...requests];
@@ -393,35 +355,17 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
         ))}
       </Tabs>
 
-      <Dialog open={!!actionType} onOpenChange={closeDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{getDialogTitle()}</DialogTitle>
-            <DialogDescription>
-              {getDialogDescription()}
-            </DialogDescription>
-          </DialogHeader>
-          {actionType === 'reject' && (
-            <div className="grid gap-4 py-4">
-              <Label htmlFor="rejectionReason">Reason for Rejection</Label>
-              <Textarea
-                id="rejectionReason"
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Provide a clear reason for rejection (min. 10 characters)."
-              />
-            </div>
-          )}
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button onClick={handleConfirm} disabled={isSubmitting}>
-              {isSubmitting ? 'Submitting...' : 'Confirm'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RequestActionDialog
+        isOpen={!!actionType}
+        onOpenChange={(open) => !open && closeDialog()}
+        actionType={actionType}
+        isBulk={isBulk}
+        request={actionRequest}
+        selectedIdsCount={selectedIds.length}
+        onConfirm={handleConfirmAction}
+        isSubmitting={isSubmitting}
+        getApproveButtonText={getApproveButtonText}
+      />
     </div>
   );
 }
