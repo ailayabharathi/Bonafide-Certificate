@@ -1,5 +1,4 @@
 import { BonafideRequestWithProfile } from "@/types";
-import { useAuth } from "@/contexts/AuthContext";
 import { QRCodeComponent } from "./QRCode";
 
 interface CertificateProps {
@@ -7,15 +6,23 @@ interface CertificateProps {
 }
 
 export const Certificate = ({ request }: CertificateProps) => {
-  const { profile } = useAuth();
-  const issueDate = new Date().toLocaleDateString('en-GB', {
+  const studentProfile = request.profiles;
+  const issueDate = new Date(request.updated_at).toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
   });
   const certificateUrl = `${window.location.origin}/verify/${request.id}`;
 
-  if (!profile) return null;
+  if (!studentProfile) {
+    // This can happen if the profile was deleted, but the request still exists.
+    return (
+      <div className="bg-white p-12 max-w-4xl mx-auto text-center">
+        <h2 className="text-2xl font-bold text-destructive">Error: Student Profile Not Found</h2>
+        <p className="text-muted-foreground mt-2">The profile associated with this certificate could not be found.</p>
+      </div>
+    );
+  }
 
   return (
     // Using a common serif font stack. For a more official look, you could import a specific font like 'EB Garamond' or 'Playfair Display' in your project's CSS.
@@ -44,9 +51,9 @@ export const Certificate = ({ request }: CertificateProps) => {
 
           <div className="mt-8 text-xl leading-loose space-y-6 text-justify">
             <p>
-              This is to certify that <span className="font-bold">{profile.first_name} {profile.last_name}</span> 
-              (Register No: <span className="font-bold">{profile.register_number || 'N/A'}</span>) 
-              is a bonafide student of the <span className="font-bold">{profile.department || 'N/A'}</span> department 
+              This is to certify that <span className="font-bold">{studentProfile.first_name} {studentProfile.last_name}</span> 
+              (Register No: <span className="font-bold">{studentProfile.register_number || 'N/A'}</span>) 
+              is a bonafide student of the <span className="font-bold">{studentProfile.department || 'N/A'}</span> department 
               at this institution.
             </p>
             <p>
