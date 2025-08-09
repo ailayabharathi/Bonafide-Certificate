@@ -5,9 +5,12 @@ import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { StaffDashboard } from "@/components/StaffDashboard";
 import { useStaffDashboardData } from "@/hooks/useStaffDashboardData";
 import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
+import { DateRange } from "react-day-picker";
 
 const TutorPortal = () => {
   const { profile } = useAuth();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
     if (payload.eventType === 'INSERT' && payload.new.status === 'pending') {
@@ -18,10 +21,12 @@ const TutorPortal = () => {
   const { requests, isLoading, updateRequest, bulkUpdateRequest } = useBonafideRequests(
     "public:bonafide_requests:tutor",
     undefined,
-    handleRealtimeEvent
+    handleRealtimeEvent,
+    dateRange?.from,
+    dateRange?.to,
   );
 
-  const { stats, charts } = useStaffDashboardData(requests, profile);
+  const { stats, charts } = useStaffDashboardData(requests, profile, [], dateRange);
 
   const handleAction = async (
     requestId: string,
@@ -48,6 +53,8 @@ const TutorPortal = () => {
       isLoading={isLoading}
       onAction={handleAction}
       onBulkAction={handleBulkAction}
+      dateRange={dateRange}
+      onDateRangeChange={setDateRange}
     />
   );
 };

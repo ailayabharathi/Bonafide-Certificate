@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { showError, showSuccess } from "@/utils/toast";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
-const fetchRequests = async (userId?: string): Promise<BonafideRequestWithProfile[]> => {
+const fetchRequests = async (userId?: string, startDate?: Date, endDate?: Date): Promise<BonafideRequestWithProfile[]> => {
   let query = supabase
     .from("bonafide_requests")
     .select("*, profiles(first_name, last_name, department, register_number)")
@@ -13,6 +13,16 @@ const fetchRequests = async (userId?: string): Promise<BonafideRequestWithProfil
 
   if (userId) {
     query = query.eq("user_id", userId);
+  }
+
+  if (startDate) {
+    query = query.gte("created_at", startDate.toISOString());
+  }
+  if (endDate) {
+    // Add one day to endDate to include the entire day
+    const adjustedEndDate = new Date(endDate);
+    adjustedEndDate.setDate(adjustedEndDate.getDate() + 1);
+    query = query.lt("created_at", adjustedEndDate.toISOString());
   }
 
   const { data, error } = await query;
@@ -125,10 +135,12 @@ const invokeEmailNotification = async (requestId: string, oldStatus: BonafideSta
 export const useBonafideRequests = (
   channelName: string,
   userId?: string,
-  onRealtimeEvent?: (payload: RealtimePostgresChangesPayload<BonafideRequest>) => void
+  onRealtimeEvent?: (payload: RealtimePostgresChangesPayload<BonafideRequest>) => void,
+  startDate?: Date,
+  endDate?: Date,
 ) => {
   const queryClient = useQueryClient();
-  const queryKey = ["bonafide_requests", userId || "all"];
+  const queryKey = ["bonafide_requests", userId || "all", startDate?.toISOString(), endDate?.toISOString()];
 
   useEffect(() => {
     const channel = supabase
@@ -150,7 +162,7 @@ export const useBonafideRequests = (
 
   const { data: requests, isLoading } = useQuery<BonafideRequestWithProfile[]>({
     queryKey,
-    queryFn: () => fetchRequests(userId),
+    queryFn: () => fetchRequests(userId, startDate, endDate),
     initialData: [],
   });
 

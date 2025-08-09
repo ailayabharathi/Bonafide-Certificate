@@ -10,6 +10,8 @@ import { useStaffDashboardData } from "@/hooks/useStaffDashboardData";
 import { useAuth, Profile } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { DateRange } from "react-day-picker";
 
 const fetchAllUsers = async (): Promise<Profile[]> => {
   const { data, error } = await supabase.from("profiles").select("role");
@@ -22,6 +24,7 @@ const fetchAllUsers = async (): Promise<Profile[]> => {
 
 const AdminDashboard = () => {
   const { profile } = useAuth();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   const handleRealtimeEvent = (
     payload: RealtimePostgresChangesPayload<BonafideRequest>,
@@ -43,6 +46,8 @@ const AdminDashboard = () => {
     "public:bonafide_requests:admin",
     undefined,
     handleRealtimeEvent,
+    dateRange?.from,
+    dateRange?.to,
   );
 
   const { data: allUsers = [], isLoading: usersLoading } = useQuery<Profile[]>({
@@ -51,7 +56,7 @@ const AdminDashboard = () => {
     enabled: profile?.role === "admin",
   });
 
-  const { stats, charts } = useStaffDashboardData(requests, profile, allUsers);
+  const { stats, charts } = useStaffDashboardData(requests, profile, allUsers, dateRange);
 
   const handleAction = async (
     requestId: string,
@@ -88,6 +93,8 @@ const AdminDashboard = () => {
       isLoading={requestsLoading || usersLoading}
       onAction={handleAction}
       onBulkAction={handleBulkAction}
+      dateRange={dateRange}
+      onDateRangeChange={setDateRange}
     />
   );
 };

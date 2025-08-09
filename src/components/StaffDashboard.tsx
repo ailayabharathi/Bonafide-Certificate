@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { StaffRequestsTable } from "@/components/StaffRequestsTable";
 import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
 import { LucideIcon } from "lucide-react";
+import { DateRangePicker } from "./DateRangePicker";
+import { DateRange } from "react-day-picker";
 
 interface Stat {
   title: string;
@@ -34,6 +36,8 @@ interface StaffDashboardProps {
   isLoading: boolean;
   onAction: (requestId: string, newStatus: BonafideStatus, rejectionReason?: string) => Promise<void>;
   onBulkAction: (requestIds: string[], newStatus: BonafideStatus, rejectionReason?: string) => Promise<void>;
+  dateRange: DateRange | undefined;
+  onDateRangeChange: (date: DateRange | undefined) => void;
 }
 
 export const StaffDashboard = ({
@@ -45,6 +49,8 @@ export const StaffDashboard = ({
   isLoading,
   onAction,
   onBulkAction,
+  dateRange,
+  onDateRangeChange,
 }: StaffDashboardProps) => {
   if (isLoading) {
     return (
@@ -61,6 +67,9 @@ export const StaffDashboard = ({
   return (
     <DashboardLayout title={title} headerActions={headerActions}>
       <div className="space-y-8">
+        <div className="flex justify-end">
+          <DateRangePicker date={dateRange} setDate={onDateRangeChange} />
+        </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat, index) => (
             <StatsCard key={index} title={stat.title} value={stat.value} icon={stat.icon} />

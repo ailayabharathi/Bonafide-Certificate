@@ -11,42 +11,55 @@ import {
 import { StatusDistributionChart } from "@/components/StatusDistributionChart";
 import { RequestsChart } from "@/components/RequestsChart";
 import { DepartmentDistributionChart } from "@/components/DepartmentDistributionChart";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isWithinInterval } from "date-fns";
+import { DateRange } from "react-day-picker";
 
 export const useStaffDashboardData = (
   requests: BonafideRequestWithProfile[],
   profile: Profile | null,
-  allUsers: Profile[] = []
+  allUsers: Profile[] = [],
+  dateRange?: DateRange,
 ) => {
+  const filteredRequests = useMemo(() => {
+    if (!dateRange?.from) {
+      return requests;
+    }
+    const { from, to } = dateRange;
+    return requests.filter(request => {
+      const createdAt = parseISO(request.created_at);
+      return isWithinInterval(createdAt, { start: from, end: to || new Date() });
+    });
+  }, [requests, dateRange]);
+
   const stats = useMemo(() => {
     if (!profile) return [];
 
     switch (profile.role) {
       case "tutor":
         return [
-          { title: "Total Requests", value: requests.length, icon: ClipboardList },
-          { title: "Pending Your Action", value: requests.filter((r) => r.status === "pending").length, icon: Clock },
-          { title: "Approved by You", value: requests.filter((r) => r.status === "approved_by_tutor").length, icon: CheckCircle },
-          { title: "Rejected by You", value: requests.filter((r) => r.status === "rejected_by_tutor").length, icon: XCircle },
+          { title: "Total Requests", value: filteredRequests.length, icon: ClipboardList },
+          { title: "Pending Your Action", value: filteredRequests.filter((r) => r.status === "pending").length, icon: Clock },
+          { title: "Approved by You", value: filteredRequests.filter((r) => r.status === "approved_by_tutor").length, icon: CheckCircle },
+          { title: "Rejected by You", value: filteredRequests.filter((r) => r.status === "rejected_by_tutor").length, icon: XCircle },
         ];
       case "hod":
         return [
-          { title: "Total Processed by You", value: requests.filter(r => ['approved_by_hod', 'rejected_by_hod'].includes(r.status)).length, icon: ClipboardList },
-          { title: "Pending Your Approval", value: requests.filter((r) => r.status === "approved_by_tutor").length, icon: Clock },
-          { title: "Approved by You", value: requests.filter((r) => r.status === "approved_by_hod").length, icon: CheckCircle },
-          { title: "Rejected by You", value: requests.filter((r) => r.status === "rejected_by_hod").length, icon: XCircle },
+          { title: "Total Processed by You", value: filteredRequests.filter(r => ['approved_by_hod', 'rejected_by_hod'].includes(r.status)).length, icon: ClipboardList },
+          { title: "Pending Your Approval", value: filteredRequests.filter((r) => r.status === "approved_by_tutor").length, icon: Clock },
+          { title: "Approved by You", value: filteredRequests.filter((r) => r.status === "approved_by_hod").length, icon: CheckCircle },
+          { title: "Rejected by You", value: filteredRequests.filter((r) => r.status === "rejected_by_hod").length, icon: XCircle },
         ];
       case "admin":
         return [
           { title: "Total Users", value: allUsers.length, icon: Users },
-          { title: "Total Requests", value: requests.length, icon: ClipboardList },
-          { title: "Pending Final Processing", value: requests.filter((r) => r.status === "approved_by_hod").length, icon: Clock },
-          { title: "Completed Certificates", value: requests.filter((r) => r.status === "completed").length, icon: CheckCircle },
+          { title: "Total Requests", value: filteredRequests.length, icon: ClipboardList },
+          { title: "Pending Final Processing", value: filteredRequests.filter((r) => r.status === "approved_by_hod").length, icon: Clock },
+          { title: "Completed Certificates", value: filteredRequests.filter((r) => r.status === "completed").length, icon: CheckCircle },
         ];
       default:
         return [];
     }
-  }, [requests, profile, allUsers]);
+  }, [filteredRequests, profile, allUsers]);
 
   const charts = useMemo(() => {
     if (!profile) return [];
@@ -55,7 +68,7 @@ export const useStaffDashboardData = (
       name: format(new Date(0, i), "MMM"),
       total: 0,
     }));
-    requests.forEach((request) => {
+    filteredRequests.forEach((request) => {
       if (new Date(request.created_at).getFullYear() === new Date().getFullYear()) {
         const monthIndex = parseISO(request.created_at).getMonth();
         monthlyChartData[monthIndex].total += 1;
@@ -64,7 +77,7 @@ export const useStaffDashboardData = (
 
     if (profile.role === "admin") {
       const departmentCounts: { [key: string]: number } = {};
-      requests.forEach((request) => {
+      filteredRequests.forEach((request) => {
         const department = request.profiles?.department || "Unknown";
         departmentCounts[department] = (departmentCounts[department] || 0) + 1;
       });
@@ -145,7 +158,7 @@ export const useStaffDashboardData = (
     }
 
     return [];
-  }, [requests, profile, stats, allUsers]);
+  }, [filteredRequests, profile, stats, allUsers]);
 
   return { stats, charts };
 };
