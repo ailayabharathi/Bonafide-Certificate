@@ -15,22 +15,30 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      SUPABASE_URL,
-      SUPABASE_SERVICE_ROLE_KEY,
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-    )
+    // Create a Supabase client with the service role key.
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    const { data: { user } } = await supabaseClient.auth.getUser()
-
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    // Get the JWT from the Authorization header.
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing Authorization header' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
       })
     }
 
-    const { data: profile, error: profileError } = await supabaseClient
+    // Get the user object from the JWT.
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(authHeader.replace('Bearer ', ''))
+
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: userError?.message || 'Unauthorized' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      })
+    }
+
+    // Check if the user has the 'admin' role in the 'profiles' table.
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -43,19 +51,19 @@ serve(async (req) => {
       })
     }
 
+    // Parse the request body to get the email and role for the new user.
     const { email, role } = await req.json()
     if (!email || !role) {
       throw new Error("Email and role are required.")
     }
 
-    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-
-    const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+    // Invite the new user using their email and assigned role.
+    const { data, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
       data: { role: role },
     })
 
-    if (error) {
-      throw error
+    if (inviteError) {
+      throw inviteError
     }
 
     return new Response(JSON.stringify({ message: "Invitation sent successfully.", user: data.user }), {
