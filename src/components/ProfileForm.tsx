@@ -57,9 +57,10 @@ export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {
   // Sensitive fields can only be edited by an administrator.
   const canEditSensitiveFields = currentUserProfile?.role === 'admin';
   
-  // Allow user to edit if they are admin OR if the field is currently empty
-  const canUserEditRegisterNumber = canEditSensitiveFields || !targetProfile?.register_number;
-  const canUserEditDepartment = canEditSensitiveFields || !targetProfile?.department;
+  // A user can edit their own register number/department if they are an admin OR if the field is currently empty.
+  // If an admin is editing another user's profile, they can always edit these fields.
+  const canEditRegisterNumber = canEditSensitiveFields || (isEditingOwnProfile && !targetProfile?.register_number);
+  const canEditDepartment = canEditSensitiveFields || (isEditingOwnProfile && !targetProfile?.department);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -131,10 +132,10 @@ export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {
       };
 
       // Only update if the user is allowed to edit or if it's an admin
-      if (canUserEditRegisterNumber) {
+      if (canEditRegisterNumber) {
         updateData.register_number = values.register_number;
       }
-      if (canUserEditDepartment) {
+      if (canEditDepartment) {
         updateData.department = values.department;
       }
 
@@ -172,7 +173,7 @@ export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {
                 <FormLabel>
                   <Avatar className="h-24 w-24 cursor-pointer">
                     <AvatarImage src={avatarPreview || undefined} alt="User avatar" />
-                    <AvatarFallback>{getInitials()}</AvatarFallback>
+                    <AvatarFallback>{getInitals()}</AvatarFallback>
                   </Avatar>
                 </FormLabel>
                 <FormControl>
@@ -226,10 +227,13 @@ export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {
             <FormItem>
               <FormLabel>Register Number</FormLabel>
               <FormControl>
-                <Input placeholder="User's register number" {...field} disabled={!canUserEditRegisterNumber} />
+                <Input placeholder="User's register number" {...field} disabled={!canEditRegisterNumber} />
               </FormControl>
-              {!canEditSensitiveFields && !canUserEditRegisterNumber && <FormDescription>This field can only be changed by an administrator.</FormDescription>}
-              {!canEditSensitiveFields && canUserEditRegisterNumber && <FormDescription>You can set this once. After that, only an administrator can change it.</FormDescription>}
+              {isEditingOwnProfile && !canEditSensitiveFields && (
+                <FormDescription>
+                  {targetProfile?.register_number ? "This field can only be changed by an administrator." : "You can set this once. After that, only an administrator can change it."}
+                </FormDescription>
+              )}
               <FormMessage />
             </FormItem>
           )}
@@ -240,7 +244,7 @@ export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Department</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value} disabled={!canUserEditDepartment}>
+              <Select onValueChange={field.onChange} value={field.value} disabled={!canEditDepartment}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a department" />
@@ -254,8 +258,11 @@ export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {
                   ))}
                 </SelectContent>
               </Select>
-              {!canEditSensitiveFields && !canUserEditDepartment && <FormDescription>This field can only be changed by an administrator.</FormDescription>}
-              {!canEditSensitiveFields && canUserEditDepartment && <FormDescription>You can set this once. After that, only an administrator can change it.</FormDescription>}
+              {isEditingOwnProfile && !canEditSensitiveFields && (
+                <FormDescription>
+                  {targetProfile?.department ? "This field can only be changed by an administrator." : "You can set this once. After that, only an administrator can change it."}
+                </FormDescription>
+              )}
               <FormMessage />
             </FormItem>
           )}
