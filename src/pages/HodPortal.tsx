@@ -40,7 +40,6 @@ const HodPortal = () => {
   };
 
   const stats = {
-    total: requests.length,
     pending: requests.filter((r) => r.status === "approved_by_tutor").length,
     approved: requests.filter((r) => r.status === "approved_by_hod").length,
     rejected: requests.filter((r) => r.status === "rejected_by_hod").length,
@@ -56,53 +55,45 @@ const HodPortal = () => {
     <DashboardLayout title="HOD Dashboard">
       {isLoading ? (
         <div className="space-y-4">
-          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-64 w-full" />
           <Skeleton className="h-64 w-full" />
         </div>
       ) : (
         <div className="space-y-8">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatsCard
-              title="Total Requests"
-              value={stats.total}
-              icon={ClipboardList}
-            />
-            <StatsCard
-              title="Pending Your Approval"
-              value={stats.pending}
-              icon={Clock}
-            />
-            <StatsCard
-              title="Approved by You"
-              value={stats.approved}
-              icon={CheckCircle}
-            />
-            <StatsCard
-              title="Rejected by You"
-              value={stats.rejected}
-              icon={XCircle}
-            />
-          </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             <Card className="col-span-full lg:col-span-4">
-                <CardHeader>
-                    <CardTitle>Requests History</CardTitle>
-                    <CardDescription>All requests requiring your attention or previously handled by you.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <StaffRequestsTable requests={requests} onAction={handleAction} onBulkAction={handleBulkAction} />
-                </CardContent>
+              <CardHeader>
+                <CardTitle>Status Overview</CardTitle>
+                <CardDescription>A breakdown of requests you've processed.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <StatusDistributionChart data={chartData} />
+              </CardContent>
             </Card>
-            <Card className="col-span-full lg:col-span-3">
-                <CardHeader>
-                    <CardTitle>Status Overview</CardTitle>
-                    <CardDescription>A breakdown of requests you've processed.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <StatusDistributionChart data={chartData} />
-                </CardContent>
-            </Card>
+            <div className="col-span-full lg:col-span-3 space-y-4">
+              <StatsCard
+                title="Total Requests"
+                value={requests.length}
+                icon={ClipboardList}
+              />
+              <StatsCard
+                title="Pending Your Approval"
+                value={stats.pending}
+                icon={Clock}
+              />
+              <StatsCard
+                title="Approved by You"
+                value={stats.approved}
+                icon={CheckCircle}
+              />
+              <StatsCard
+                title="Rejected by You"
+                value={stats.rejected}
+                icon={XCircle}
+              />
+            </div>
           </div>
+          <StaffRequestsTable requests={requests} onAction={handleAction} onBulkAction={handleBulkAction} />
         </div>
       )}
     </DashboardLayout>

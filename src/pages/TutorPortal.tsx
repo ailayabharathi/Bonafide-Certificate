@@ -56,53 +56,45 @@ const TutorPortal = () => {
     <DashboardLayout title="Tutor Dashboard">
       {isLoading ? (
         <div className="space-y-4">
-          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-64 w-full" />
           <Skeleton className="h-64 w-full" />
         </div>
       ) : (
         <div className="space-y-8">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatsCard
-              title="Total Requests"
-              value={stats.total}
-              icon={ClipboardList}
-            />
-            <StatsCard
-              title="Pending Your Action"
-              value={stats.pending}
-              icon={Clock}
-            />
-            <StatsCard
-              title="Approved by You"
-              value={stats.approved}
-              icon={CheckCircle}
-            />
-            <StatsCard
-              title="Rejected by You"
-              value={stats.rejected}
-              icon={XCircle}
-            />
-          </div>
-           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             <Card className="col-span-full lg:col-span-4">
-                <CardHeader>
-                    <CardTitle>Requests Queue</CardTitle>
-                    <CardDescription>All student requests awaiting your review or previously handled by you.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <StaffRequestsTable requests={requests} onAction={handleAction} onBulkAction={handleBulkAction} />
-                </CardContent>
+              <CardHeader>
+                <CardTitle>Status Overview</CardTitle>
+                <CardDescription>A breakdown of requests you've processed.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <StatusDistributionChart data={chartData} />
+              </CardContent>
             </Card>
-            <Card className="col-span-full lg:col-span-3">
-                <CardHeader>
-                    <CardTitle>Status Overview</CardTitle>
-                    <CardDescription>A breakdown of requests you've processed.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <StatusDistributionChart data={chartData} />
-                </CardContent>
-            </Card>
+            <div className="col-span-full lg:col-span-3 space-y-4">
+              <StatsCard
+                title="Total Requests"
+                value={stats.total}
+                icon={ClipboardList}
+              />
+              <StatsCard
+                title="Pending Your Action"
+                value={stats.pending}
+                icon={Clock}
+              />
+              <StatsCard
+                title="Approved by You"
+                value={stats.approved}
+                icon={CheckCircle}
+              />
+              <StatsCard
+                title="Rejected by You"
+                value={stats.rejected}
+                icon={XCircle}
+              />
+            </div>
           </div>
+          <StaffRequestsTable requests={requests} onAction={handleAction} onBulkAction={handleBulkAction} />
         </div>
       )}
     </DashboardLayout>
