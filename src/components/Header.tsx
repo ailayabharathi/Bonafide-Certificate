@@ -1,8 +1,13 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./ThemeToggle";
+import { useAuth } from "@/contexts/AuthContext";
+import { UserNav } from "./UserNav";
+import { NotificationBell } from "./NotificationBell";
 
 const Header = () => {
+  const { session, loading } = useAuth();
+
   return (
     <header className="flex items-center justify-between p-4 px-8 bg-card text-card-foreground shadow-md w-full">
       <Link to="/" className="flex items-center space-x-4">
@@ -11,9 +16,18 @@ const Header = () => {
       </Link>
       <nav className="flex items-center gap-4">
         <ThemeToggle />
-        <Link to="/login">
-          <Button>Login</Button>
-        </Link>
+        {!loading && (
+          session ? (
+            <>
+              <NotificationBell />
+              <UserNav />
+            </>
+          ) : (
+            <Link to="/login">
+              <Button>Login</Button>
+            </Link>
+          )
+        )}
       </nav>
     </header>
   );
