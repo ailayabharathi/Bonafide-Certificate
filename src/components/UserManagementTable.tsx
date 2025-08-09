@@ -27,7 +27,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { EditUserDialog } from "./EditUserDialog";
-import { EditRoleDialog } from "./EditRoleDialog";
 import { DeleteUserDialog } from "./DeleteUserDialog";
 import { ExportButton } from "./ExportButton"; // Import ExportButton
 
@@ -43,11 +42,9 @@ type SortableKey = 'name' | 'email' | 'role' | 'department' | 'register_number';
 
 export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFilterChange }: UserManagementTableProps) {
   const { user: currentUser } = useAuth();
-  const [userToEditRole, setUserToEditRole] = useState<Profile | null>(null);
   const [userToEditProfile, setUserToEditProfile] = useState<Profile | null>(null);
   const [userToDelete, setUserToDelete] = useState<Profile | null>(null);
   
-  const [isSubmittingRole, setIsSubmittingRole] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
   const [searchQuery, setSearchQuery] = useState("");
@@ -63,28 +60,6 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
     }
     setSortConfig({ key, direction });
     setCurrentPage(1);
-  };
-
-  const handleUpdateRole = async (newRole: UserRole) => {
-    if (!userToEditRole) return;
-
-    setIsSubmittingRole(true);
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ role: newRole })
-        .eq("id", userToEditRole.id);
-
-      if (error) throw error;
-
-      showSuccess(`Successfully updated ${userToEditRole.first_name}'s role to ${newRole}.`);
-      onUserUpdate();
-      setUserToEditRole(null);
-    } catch (error: any) {
-      showError(error.message || "Failed to update user role.");
-    } finally {
-      setIsSubmittingRole(false);
-    }
   };
 
   const handleDeleteUser = async () => {
@@ -297,7 +272,7 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() => setUserToEditRole(user)}
+                                  onClick={() => setUserToEditProfile(user)} // Now opens EditUserDialog
                                   disabled={isCurrentUser}
                                 >
                                   <UserCog className="h-4 w-4" />
@@ -367,14 +342,6 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
           </Button>
         </div>
       </div>
-
-      <EditRoleDialog
-        user={userToEditRole}
-        isOpen={!!userToEditRole}
-        onOpenChange={() => setUserToEditRole(null)}
-        onConfirm={handleUpdateRole}
-        isSubmitting={isSubmittingRole}
-      />
 
       <DeleteUserDialog
         user={userToDelete}

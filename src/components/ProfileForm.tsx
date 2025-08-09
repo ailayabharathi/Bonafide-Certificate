@@ -18,6 +18,13 @@ import { showSuccess, showError } from "@/utils/toast";
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const formSchema = z.object({
   first_name: z.string().min(2, {
@@ -28,6 +35,7 @@ const formSchema = z.object({
   }),
   register_number: z.string().optional(),
   department: z.string().optional(),
+  role: z.enum(["student", "tutor", "hod", "admin"]).optional(), // Role is optional for self-edit, required for admin-edit
 });
 
 interface ProfileFormProps {
@@ -60,6 +68,7 @@ export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {
       last_name: "",
       register_number: "",
       department: "",
+      role: undefined, // Set to undefined initially
     },
   });
 
@@ -70,6 +79,7 @@ export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {
         last_name: targetProfile.last_name || "",
         register_number: targetProfile.register_number || "",
         department: targetProfile.department || "",
+        role: targetProfile.role,
       });
       if (targetProfile.avatar_url) {
         setAvatarPreview(targetProfile.avatar_url);
@@ -128,6 +138,11 @@ export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {
       }
       if (canUserEditDepartment) {
         updateData.department = values.department;
+      }
+
+      // Only admin can change role for other users
+      if (!isEditingOwnProfile && canEditSensitiveFields && values.role) {
+        updateData.role = values.role;
       }
 
       const { error: updateError } = await supabase
@@ -241,6 +256,31 @@ export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {
             </FormItem>
           )}
         />
+        {!isEditingOwnProfile && canEditSensitiveFields && (
+          <FormField
+            control={form.control}
+            name="role"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Role</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="student">Student</SelectItem>
+                    <SelectItem value="tutor">Tutor</SelectItem>
+                    <SelectItem value="hod">HOD</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
         <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
