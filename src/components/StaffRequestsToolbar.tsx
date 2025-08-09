@@ -41,7 +41,7 @@ export const StaffRequestsToolbar = ({
           ))}
         </TabsList>
         <Input
-          placeholder="Search by student name..."
+          placeholder="Search by name, reg no, dept..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="max-w-xs"
