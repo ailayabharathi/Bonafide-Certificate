@@ -46,8 +46,8 @@ export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {
   const targetProfile = profileToEdit || currentUserProfile;
   const isEditingOwnProfile = !profileToEdit;
   
-  // Sensitive fields are editable if an admin is editing, or if the user is editing their own profile and is not a student.
-  const canEditSensitiveFields = !!profileToEdit || (currentUserProfile?.role !== 'student');
+  // Sensitive fields can only be edited by an administrator.
+  const canEditSensitiveFields = currentUserProfile?.role === 'admin';
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -213,7 +213,7 @@ export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {
               <FormControl>
                 <Input placeholder="User's register number" {...field} disabled={!canEditSensitiveFields} />
               </FormControl>
-              {!canEditSensitiveFields && <FormDescription>Register number can only be changed by an administrator.</FormDescription>}
+              {!canEditSensitiveFields && <FormDescription>This field can only be changed by an administrator.</FormDescription>}
               <FormMessage />
             </FormItem>
           )}
@@ -227,7 +227,7 @@ export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {
               <FormControl>
                 <Input placeholder="User's department" {...field} disabled={!canEditSensitiveFields} />
               </FormControl>
-              {!canEditSensitiveFields && <FormDescription>Department can only be changed by an administrator.</FormDescription>}
+              {!canEditSensitiveFields && <FormDescription>This field can only be changed by an administrator.</FormDescription>}
               <FormMessage />
             </FormItem>
           )}
