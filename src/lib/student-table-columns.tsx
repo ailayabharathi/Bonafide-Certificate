@@ -14,7 +14,7 @@ import { Eye, Edit, Trash2 } from "lucide-react";
 
 interface GetStudentTableColumnsProps {
   onEdit: (request: BonafideRequest) => void;
-  onCancel: (requestId: string) => void;
+  onCancel: (requestId: string) => void; // Changed to accept only ID
 }
 
 const isRejected = (status: BonafideRequest['status']) => 
