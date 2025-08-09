@@ -13,21 +13,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface StudentProfileDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  profile: Profile | null;
-  isLoading: boolean;
+  profile: Profile | null; // Now directly accepts a Profile object
 }
 
 export function StudentProfileDialog({
   isOpen,
   onOpenChange,
   profile,
-  isLoading,
 }: StudentProfileDialogProps) {
   const getInitials = (firstName: string | null, lastName: string | null) => {
     const first = firstName?.charAt(0) || '';
     const last = lastName?.charAt(0) || '';
     return `${first}${last}`.toUpperCase();
   };
+
+  // isLoading is now derived from whether the profile prop is null
+  const isLoading = !profile;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

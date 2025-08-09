@@ -68,7 +68,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
 
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [studentProfileToView, setStudentProfileToView] = useState<Profile | null>(null);
-  const [isFetchingProfile, setIsFetchingProfile] = useState(false);
+  // Removed isFetchingProfile as it's no longer needed for direct profile passing
 
   useEffect(() => {
     setCurrentPage(1);
@@ -128,25 +128,9 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
     closeDialog();
   };
 
-  const handleViewProfile = async (userId: string) => {
-    setIsFetchingProfile(true);
+  const handleViewProfile = (studentProfile: Profile) => {
+    setStudentProfileToView(studentProfile);
     setIsProfileDialogOpen(true);
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) throw error;
-      setStudentProfileToView(data as Profile);
-    } catch (error: any) {
-      showError(error.message || "Failed to fetch student profile.");
-      setStudentProfileToView(null);
-      setIsProfileDialogOpen(false);
-    } finally {
-      setIsFetchingProfile(false);
-    }
   };
 
   const getActionability = (status: BonafideStatus) => {
@@ -349,11 +333,11 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
-                    {request.user_id && (
+                    {request.profiles && (
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button size="sm" variant="ghost" onClick={() => handleViewProfile(request.user_id)}>
+                            <Button size="sm" variant="ghost" onClick={() => handleViewProfile(request.profiles!)}>
                               <User className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
@@ -454,7 +438,6 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
         isOpen={isProfileDialogOpen}
         onOpenChange={setIsProfileDialogOpen}
         profile={studentProfileToView}
-        isLoading={isFetchingProfile}
       />
     </div>
   );
