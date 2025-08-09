@@ -13,7 +13,7 @@ export const Certificate = ({ request }: CertificateProps) => {
     month: 'long',
     year: 'numeric',
   });
-  const certificateUrl = `${window.location.origin}/certificate/${request.id}`;
+  const certificateUrl = `${window.location.origin}/verify/${request.id}`;
 
   if (!profile) return null;
 

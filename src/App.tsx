@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import ProfilePage from "./pages/ProfilePage";
 import CertificatePage from "./pages/CertificatePage";
 import UserManagement from "./pages/UserManagement";
+import VerifyCertificatePage from "./pages/VerifyCertificatePage";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<HomeRedirect />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/verify/:requestId" element={<VerifyCertificatePage />} />
                 <Route
                   path="/profile"
                   element={
