@@ -66,15 +66,9 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
     totalPages,
     paginatedUsers,
     ITEMS_PER_PAGE,
+    handleClearFilters,
+    showClearFilters,
   } = useUserManagementTableLogic(users);
-
-  const handleClearFilters = () => {
-    setSearchQuery("");
-    setRoleFilter("all");
-    setDepartmentFilter("all");
-  };
-
-  const showClearFilters = searchQuery !== "" || roleFilter !== "all" || departmentFilter !== "all";
 
   const handleDeleteUser = async () => {
     if (!userToDelete) return;

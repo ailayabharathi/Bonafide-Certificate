@@ -11,8 +11,8 @@ export const useUserManagementTableLogic = (
   users: Profile[],
 ) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all'); // Managed internally
-  const [departmentFilter, setDepartmentFilter] = useState("all"); // Managed internally
+  const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
+  const [departmentFilter, setDepartmentFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'ascending' | 'descending' }>({ key: 'name', direction: 'ascending' });
 
@@ -26,6 +26,13 @@ export const useUserManagementTableLogic = (
       direction = 'descending';
     }
     setSortConfig({ key, direction });
+  };
+
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setRoleFilter("all");
+    setDepartmentFilter("all");
+    setCurrentPage(1);
   };
 
   const processedUsers = useMemo(() => {
@@ -88,6 +95,8 @@ export const useUserManagementTableLogic = (
     currentPage * ITEMS_PER_PAGE
   );
 
+  const showClearFilters = searchQuery !== "" || roleFilter !== "all" || departmentFilter !== "all";
+
   return {
     searchQuery,
     setSearchQuery,
@@ -103,5 +112,7 @@ export const useUserManagementTableLogic = (
     totalPages,
     paginatedUsers,
     ITEMS_PER_PAGE,
+    handleClearFilters,
+    showClearFilters,
   };
 };
