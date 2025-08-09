@@ -245,10 +245,15 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead padding="checkbox">
+              <TableHead className="w-12"> {/* Removed padding="checkbox" */}
                 <Checkbox
-                  checked={actionableIdsOnPage.length > 0 && numSelectedOnPage === actionableIdsOnPage.length}
-                  indeterminate={numSelectedOnPage > 0 && numSelectedOnPage < actionableIdsOnPage.length}
+                  checked={
+                    actionableIdsOnPage.length > 0 && numSelectedOnPage === actionableIdsOnPage.length
+                      ? true
+                      : numSelectedOnPage > 0 && numSelectedOnPage < actionableIdsOnPage.length
+                      ? "indeterminate"
+                      : false
+                  }
                   onCheckedChange={(checked) => handleSelectAll(!!checked)}
                   aria-label="Select all on page"
                   disabled={actionableIdsOnPage.length === 0}
@@ -266,7 +271,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
           <TableBody>
             {paginatedRequests.map((request) => (
               <TableRow key={request.id} data-state={selectedIds.includes(request.id) && "selected"}>
-                <TableCell padding="checkbox">
+                <TableCell className="w-12"> {/* Removed padding="checkbox" */}
                   <Checkbox
                     checked={selectedIds.includes(request.id)}
                     onCheckedChange={(checked) => {
@@ -295,8 +300,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
                         </TooltipContent>
                       )}
                     </Tooltip>
-                  </TooltipProvider>
-                </TableCell>
+                  </TableCell>
                 <TableCell>
                   {getActionability(request.status) ? (
                     <div className="flex gap-2">
