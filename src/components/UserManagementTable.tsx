@@ -29,6 +29,7 @@ import {
 import { EditUserDialog } from "./EditUserDialog";
 import { DeleteUserDialog } from "./DeleteUserDialog";
 import { ExportButton } from "./ExportButton"; // Import ExportButton
+import { departments } from "@/lib/departments"; // Import the departments list
 
 interface UserManagementTableProps {
   users: Profile[];
@@ -90,15 +91,7 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
     setCurrentPage(1);
   };
 
-  const uniqueDepartments = useMemo(() => {
-    const departments = new Set<string>();
-    users.forEach(user => {
-        if (user.department) {
-            departments.add(user.department);
-        }
-    });
-    return Array.from(departments).sort();
-  }, [users]);
+  // Removed uniqueDepartments memo as we will use the imported 'departments' list
 
   const processedUsers = useMemo(() => {
     let filteredUsers = users
@@ -214,7 +207,7 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Departments</SelectItem>
-            {uniqueDepartments.map(dept => (
+            {departments.map(dept => (
               <SelectItem key={dept} value={dept}>{dept}</SelectItem>
             ))}
           </SelectContent>
