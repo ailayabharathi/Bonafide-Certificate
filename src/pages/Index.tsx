@@ -34,6 +34,18 @@ const Index = () => {
             </p>
           </div>
         </section>
+
+        <section className="py-16 px-8 bg-primary text-primary-foreground">
+          <div className="container mx-auto text-center">
+            <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
+            <p className="text-lg text-primary-foreground/80 max-w-2xl mx-auto mb-8">
+              Access the portal now to apply for your bonafide certificate, track its status, and download it hassle-free.
+            </p>
+            <Link to="/login">
+              <Button size="lg" variant="secondary">Go to Portal</Button>
+            </Link>
+          </div>
+        </section>
       </main>
       <Footer />
       <MadeWithDyad />

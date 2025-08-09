@@ -8,10 +8,12 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { MadeWithDyad } from '@/components/made-with-dyad';
 import { Card } from '@/components/ui/card';
+import { useTheme } from '@/components/ThemeProvider';
 
 const LoginPage = () => {
   const { session, loading } = useAuth();
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (!loading && session) {
@@ -32,7 +34,7 @@ const LoginPage = () => {
             <Auth
               supabaseClient={supabase}
               appearance={{ theme: ThemeSupa }}
-              theme="light"
+              theme={theme === 'dark' ? 'dark' : 'light'}
               providers={[]}
               redirectTo={`${window.location.origin}/`}
               showLinks={true}
