@@ -37,24 +37,6 @@ interface StaffRequestsTableProps {
   onClearDateRange: () => void;
 }
 
-type SortableKey = keyof BonafideRequestWithProfile | 'studentName';
-
-const getStatusVariant = (status: BonafideStatus) => {
-  switch (status) {
-    case 'pending': return 'default';
-    case 'approved_by_tutor':
-    case 'approved_by_hod': return 'outline';
-    case 'completed': return 'default';
-    case 'rejected_by_tutor':
-    case 'rejected_by_hod': return 'destructive';
-    default: return 'secondary';
-  }
-};
-
-const formatStatus = (status: string) => {
-  return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-};
-
 export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDateRange }: StaffRequestsTableProps) {
   const { profile } = useAuth();
   const {
@@ -77,8 +59,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
     paginatedRequestsForCurrentTab,
     totalPagesForCurrentTab,
     tabsInfo,
-    actionableIdsOnPage, // Destructure new value from hook
-    ITEMS_PER_PAGE,
+    actionableIdsOnPage,
   } = useStaffRequestsTableLogic(requests, profile, onClearDateRange);
 
   const [actionRequest, setActionRequest] = useState<BonafideRequestWithProfile | null>(null);
@@ -177,7 +158,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
               currentPage={currentPage}
               onPageChange={(page) => setCurrentPage(page)}
               totalPages={totalPagesForCurrentTab}
-              actionableIdsOnPage={actionableIdsOnPage} // Pass to RequestsTableContent
+              actionableIdsOnPage={actionableIdsOnPage}
             />
           </TabsContent>
         ))}
