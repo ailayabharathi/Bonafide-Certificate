@@ -11,19 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface ColumnDef<TData> {
-  id: string;
-  header: string | ((props: { sortConfig: SortConfig; onSort: (key: string) => void }) => React.ReactNode);
-  cell: (props: { row: TData }) => React.ReactNode;
-  enableSorting?: boolean;
-  className?: string;
-}
-
-interface SortConfig {
-  key: string;
-  direction: 'ascending' | 'descending';
-}
+import { ColumnDef, SortConfig } from "@/types"; // Import from types
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData>[];

@@ -24,3 +24,18 @@ export interface BonafideRequestWithProfile extends BonafideRequest {
     register_number?: string | null;
   } | null;
 }
+
+// New ColumnDef interface for generic DataTable
+export interface ColumnDef<TData> {
+  id: string;
+  header: string | ((props: { sortConfig: SortConfig; onSort: (key: string) => void }) => React.ReactNode);
+  cell: (props: { row: TData }) => React.ReactNode;
+  enableSorting?: boolean;
+  className?: string;
+}
+
+// New SortConfig interface for generic DataTable
+export interface SortConfig {
+  key: string;
+  direction: 'ascending' | 'descending';
+}

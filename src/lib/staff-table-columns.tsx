@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
+import { BonafideRequestWithProfile, BonafideStatus, ColumnDef } from "@/types"; // Import ColumnDef from types
 import { cn } from "@/lib/utils";
 import { Profile } from "@/contexts/AuthContext";
 import { User, Eye } from "lucide-react";
@@ -12,7 +12,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Link } from "react-router-dom";
-import { ColumnDef } from "@/components/DataTable"; // Assuming DataTable's ColumnDef type is exported
 
 const getStatusVariant = (status: BonafideStatus) => {
   switch (status) {
