@@ -7,7 +7,18 @@ import { showSuccess } from "@/utils/toast";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { StaffDashboard } from "@/components/StaffDashboard";
 import { useStaffDashboardData } from "@/hooks/useStaffDashboardData";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, Profile } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+const fetchAllUsers = async (): Promise<Profile[]> => {
+  const { data, error } = await supabase.from("profiles").select("role");
+  if (error) {
+    console.error("Failed to fetch users for dashboard", error);
+    return [];
+  }
+  return data || [];
+};
 
 const AdminDashboard = () => {
   const { profile } = useAuth();
@@ -23,14 +34,24 @@ const AdminDashboard = () => {
     }
   };
 
-  const { requests, isLoading, updateRequest, bulkUpdateRequest } =
-    useBonafideRequests(
-      "public:bonafide_requests:admin",
-      undefined,
-      handleRealtimeEvent,
-    );
+  const {
+    requests,
+    isLoading: requestsLoading,
+    updateRequest,
+    bulkUpdateRequest,
+  } = useBonafideRequests(
+    "public:bonafide_requests:admin",
+    undefined,
+    handleRealtimeEvent,
+  );
 
-  const { stats, charts } = useStaffDashboardData(requests, profile);
+  const { data: allUsers = [], isLoading: usersLoading } = useQuery<Profile[]>({
+    queryKey: ["allUsers"],
+    queryFn: fetchAllUsers,
+    enabled: profile?.role === "admin",
+  });
+
+  const { stats, charts } = useStaffDashboardData(requests, profile, allUsers);
 
   const handleAction = async (
     requestId: string,
@@ -64,7 +85,7 @@ const AdminDashboard = () => {
       stats={stats}
       charts={charts}
       requests={requests}
-      isLoading={isLoading}
+      isLoading={requestsLoading || usersLoading}
       onAction={handleAction}
       onBulkAction={handleBulkAction}
     />

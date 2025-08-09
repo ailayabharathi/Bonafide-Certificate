@@ -15,7 +15,8 @@ import { format, parseISO } from "date-fns";
 
 export const useStaffDashboardData = (
   requests: BonafideRequestWithProfile[],
-  profile: Profile | null
+  profile: Profile | null,
+  allUsers: Profile[] = []
 ) => {
   const stats = useMemo(() => {
     if (!profile) return [];
@@ -37,15 +38,15 @@ export const useStaffDashboardData = (
         ];
       case "admin":
         return [
+          { title: "Total Users", value: allUsers.length, icon: Users },
           { title: "Total Requests", value: requests.length, icon: ClipboardList },
           { title: "Pending Final Processing", value: requests.filter((r) => r.status === "approved_by_hod").length, icon: Clock },
           { title: "Completed Certificates", value: requests.filter((r) => r.status === "completed").length, icon: CheckCircle },
-          { title: "Total Rejected", value: requests.filter((r) => ["rejected_by_tutor", "rejected_by_hod"].includes(r.status)).length, icon: XCircle },
         ];
       default:
         return [];
     }
-  }, [requests, profile]);
+  }, [requests, profile, allUsers]);
 
   const charts = useMemo(() => {
     if (!profile) return [];
@@ -72,6 +73,15 @@ export const useStaffDashboardData = (
         value,
       })).sort((a, b) => b.value - a.value);
 
+      const roleCounts: { [key: string]: number } = {};
+      allUsers.forEach((user) => {
+        roleCounts[user.role] = (roleCounts[user.role] || 0) + 1;
+      });
+      const roleChartData = Object.entries(roleCounts).map(([name, value]) => ({
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        value,
+      }));
+
       return [
         {
           id: 'monthly',
@@ -80,6 +90,7 @@ export const useStaffDashboardData = (
           card: {
             title: "Monthly Requests",
             description: "Total requests submitted per month this year.",
+            className: "lg:col-span-2",
             contentClassName: "pl-2",
           }
         },
@@ -90,6 +101,15 @@ export const useStaffDashboardData = (
           card: {
             title: "Requests by Department",
             description: "Distribution of all requests across departments.",
+          }
+        },
+        {
+          id: 'roles',
+          component: DepartmentDistributionChart,
+          props: { data: roleChartData },
+          card: {
+            title: "User Role Distribution",
+            description: "A breakdown of all user roles in the system.",
           }
         }
       ];
@@ -125,7 +145,7 @@ export const useStaffDashboardData = (
     }
 
     return [];
-  }, [requests, profile, stats]);
+  }, [requests, profile, stats, allUsers]);
 
   return { stats, charts };
 };
