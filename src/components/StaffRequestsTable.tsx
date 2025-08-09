@@ -67,6 +67,9 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const ITEMS_PER_PAGE = 10;
 
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [studentUserIdToView, setStudentUserIdToView] = useState<string | null>(null);
+
   useEffect(() => {
     setCurrentPage(1);
     setSelectedIds([]);
@@ -125,8 +128,8 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
     closeDialog();
   };
 
-  const handleViewProfile = (studentProfile: Profile) => {
-    setStudentProfileToView(studentProfile);
+  const handleViewProfile = (userId: string) => {
+    setStudentUserIdToView(userId);
     setIsProfileDialogOpen(true);
   };
 
@@ -334,7 +337,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button size="sm" variant="ghost" onClick={() => handleViewProfile(request.profiles!)}>
+                            <Button size="sm" variant="ghost" onClick={() => handleViewProfile(request.user_id)}>
                               <User className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
@@ -448,7 +451,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
       <StudentProfileDialog
         isOpen={isProfileDialogOpen}
         onOpenChange={setIsProfileDialogOpen}
-        profile={studentProfileToView}
+        userId={studentUserIdToView}
       />
     </div>
   );

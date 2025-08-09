@@ -9,26 +9,46 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Profile } from "@/contexts/AuthContext";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { showError } from "@/utils/toast";
 
 interface StudentProfileDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  profile: Profile | null; // Now directly accepts a Profile object
+  userId: string | null; // Now accepts a userId
 }
+
+const fetchProfileById = async (userId: string): Promise<Profile | null> => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+
+  if (error) {
+    showError("Failed to fetch student profile.");
+    throw new Error(error.message);
+  }
+  return data as Profile;
+};
 
 export function StudentProfileDialog({
   isOpen,
   onOpenChange,
-  profile,
+  userId,
 }: StudentProfileDialogProps) {
-  const getInitials = (firstName: string | null, lastName: string | null) => {
+  const { data: profile, isLoading, isError, error } = useQuery<Profile | null>({
+    queryKey: ['studentProfile', userId],
+    queryFn: () => (userId ? fetchProfileById(userId) : Promise.resolve(null)),
+    enabled: isOpen && !!userId, // Only fetch when dialog is open and userId is available
+  });
+
+  const getInitials = (firstName: string | null | undefined, lastName: string | null | undefined) => {
     const first = firstName?.charAt(0) || '';
     const last = lastName?.charAt(0) || '';
     return `${first}${last}`.toUpperCase();
   };
-
-  // isLoading is now derived from whether the profile prop is null
-  const isLoading = !profile;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -45,6 +65,10 @@ export function StudentProfileDialog({
             <Skeleton className="h-4 w-56" />
             <Skeleton className="h-4 w-40" />
             <Skeleton className="h-4 w-48" />
+          </div>
+        ) : isError ? (
+          <div className="text-center py-4 text-destructive">
+            Error loading profile: {error?.message || "Unknown error."}
           </div>
         ) : profile ? (
           <div className="grid gap-4 py-4">
