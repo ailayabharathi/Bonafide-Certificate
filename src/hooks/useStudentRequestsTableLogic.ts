@@ -6,9 +6,6 @@ type SortableKey = keyof BonafideRequest;
 
 const ITEMS_PER_PAGE = 10;
 
-const isRejected = (status: BonafideRequest['status']) => 
-  status === 'rejected_by_tutor' || status === 'rejected_by_hod';
-
 export const useStudentRequestsTableLogic = (
   requests: BonafideRequest[],
   onCancel: (requestId: string) => Promise<void>
@@ -107,7 +104,7 @@ export const useStudentRequestsTableLogic = (
     paginatedRequests,
     getStatusVariant,
     formatStatus,
-    isRejected,
+    isRejected: (status: BonafideRequest['status']) => status === 'rejected_by_tutor' || status === 'rejected_by_hod',
     ITEMS_PER_PAGE,
   };
 };
