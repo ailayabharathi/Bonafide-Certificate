@@ -154,20 +154,25 @@ export function RequestsTable({ requests, onEdit }: RequestsTableProps) {
                 <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
                 <TableCell className="max-w-xs truncate">{request.reason}</TableCell>
                 <TableCell>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Badge variant={getStatusVariant(request.status)} className={cn(request.status === 'completed' && 'bg-green-500 text-white')}>
-                          {formatStatus(request.status)}
-                        </Badge>
-                      </TooltipTrigger>
-                      {request.rejection_reason && (
-                        <TooltipContent>
-                          <p>Reason: {request.rejection_reason}</p>
-                        </TooltipContent>
-                      )}
-                    </Tooltip>
-                  </TooltipProvider>
+                  <div className="flex flex-col items-start gap-1">
+                    <Badge variant={getStatusVariant(request.status)} className={cn(request.status === 'completed' && 'bg-green-500 text-white')}>
+                      {formatStatus(request.status)}
+                    </Badge>
+                    {request.rejection_reason && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className="text-xs text-destructive max-w-[200px] truncate cursor-help">
+                              Reason: {request.rejection_reason}
+                            </p>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{request.rejection_reason}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="text-right">
                   {request.status === 'completed' && (
