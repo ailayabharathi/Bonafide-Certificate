@@ -27,13 +27,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
-import { Pencil, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Pencil, ArrowUpDown, ArrowUp, ArrowDown, UserCog } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { EditUserDialog } from "./EditUserDialog";
 
 interface UserManagementTableProps {
   users: Profile[];
@@ -45,7 +46,10 @@ type SortableKey = 'name' | 'email' | 'role' | 'department' | 'register_number';
 
 export function UserManagementTable({ users, onUserUpdate }: UserManagementTableProps) {
   const { user: currentUser } = useAuth();
-  const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
+  const [userToEditRole, setUserToEditRole] = useState<Profile | null>(null);
+  const [userToEditProfile, setUserToEditProfile] = useState<Profile | null>(null);
+  const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [newRole, setNewRole] = useState<UserRole | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -63,31 +67,38 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
     setCurrentPage(1);
   };
 
-  const openDialog = (user: Profile) => {
-    setSelectedUser(user);
+  const openRoleDialog = (user: Profile) => {
+    setUserToEditRole(user);
     setNewRole(user.role);
+    setIsRoleDialogOpen(true);
   };
 
-  const closeDialog = () => {
-    setSelectedUser(null);
+  const closeRoleDialog = () => {
+    setUserToEditRole(null);
     setNewRole(null);
+    setIsRoleDialogOpen(false);
+  };
+
+  const openProfileDialog = (user: Profile) => {
+    setUserToEditProfile(user);
+    setIsProfileDialogOpen(true);
   };
 
   const handleUpdateRole = async () => {
-    if (!selectedUser || !newRole) return;
+    if (!userToEditRole || !newRole) return;
 
     setIsSubmitting(true);
     try {
       const { error } = await supabase
         .from("profiles")
         .update({ role: newRole })
-        .eq("id", selectedUser.id);
+        .eq("id", userToEditRole.id);
 
       if (error) throw error;
 
-      showSuccess(`Successfully updated ${selectedUser.first_name}'s role to ${newRole}.`);
+      showSuccess(`Successfully updated ${userToEditRole.first_name}'s role to ${newRole}.`);
       onUserUpdate();
-      closeDialog();
+      closeRoleDialog();
     } catch (error: any) {
       showError(error.message || "Failed to update user role.");
     } finally {
@@ -219,28 +230,37 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
                     <TableCell>{user.department}</TableCell>
                     <TableCell className="capitalize">{user.role}</TableCell>
                     <TableCell className="text-right">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span tabIndex={0}>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openDialog(user)}
-                                disabled={isCurrentUser}
-                              >
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Edit Role
+                      <div className="flex gap-1 justify-end">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" onClick={() => openProfileDialog(user)}>
+                                <Pencil className="h-4 w-4" />
                               </Button>
-                            </span>
-                          </TooltipTrigger>
-                          {isCurrentUser && (
+                            </TooltipTrigger>
+                            <TooltipContent><p>Edit Profile</p></TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span tabIndex={0}>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => openRoleDialog(user)}
+                                  disabled={isCurrentUser}
+                                >
+                                  <UserCog className="h-4 w-4" />
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
                             <TooltipContent>
-                              <p>You cannot edit your own role.</p>
+                              {isCurrentUser ? <p>You cannot edit your own role.</p> : <p>Edit Role</p>}
                             </TooltipContent>
-                          )}
-                        </Tooltip>
-                      </TooltipProvider>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -279,14 +299,14 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
         </div>
       </div>
 
-      <Dialog open={!!selectedUser} onOpenChange={closeDialog}>
+      <Dialog open={isRoleDialogOpen} onOpenChange={closeRoleDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit User Role</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <p className="mb-2">
-              Editing role for: <span className="font-semibold">{selectedUser?.first_name} {selectedUser?.last_name}</span>
+              Editing role for: <span className="font-semibold">{userToEditRole?.first_name} {userToEditRole?.last_name}</span>
             </p>
             <Select value={newRole ?? undefined} onValueChange={(value: UserRole) => setNewRole(value)}>
               <SelectTrigger>
@@ -310,6 +330,16 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EditUserDialog
+        user={userToEditProfile}
+        isOpen={isProfileDialogOpen}
+        onOpenChange={setIsProfileDialogOpen}
+        onUserUpdate={() => {
+          onUserUpdate();
+          setIsProfileDialogOpen(false);
+        }}
+      />
     </>
   );
 }
