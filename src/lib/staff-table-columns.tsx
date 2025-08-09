@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BonafideRequestWithProfile, BonafideStatus, ColumnDef } from "@/types"; // Import ColumnDef from types
-import { cn } from "@/lib/utils";
+import { cn, getStatusVariant, formatStatus } from "@/lib/utils"; // Import from utils
 import { Profile } from "@/contexts/AuthContext";
 import { User, Eye } from "lucide-react";
 import {
@@ -12,22 +12,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Link } from "react-router-dom";
-
-const getStatusVariant = (status: BonafideStatus) => {
-  switch (status) {
-    case 'pending': return 'default';
-    case 'approved_by_tutor':
-    case 'approved_by_hod': return 'outline';
-    case 'completed': return 'default';
-    case 'rejected_by_tutor':
-    case 'rejected_by_hod': return 'destructive';
-    default: return 'secondary';
-  }
-};
-
-const formatStatus = (status: string) => {
-  return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-};
 
 interface GetStaffTableColumnsProps {
   profile: Profile | null;

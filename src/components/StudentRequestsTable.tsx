@@ -49,9 +49,9 @@ export function StudentRequestsTable({ requests, onEdit, onCancel }: StudentRequ
     processedRequests,
     totalPages,
     paginatedRequests,
-    getStatusVariant,
-    formatStatus,
-    isRejected,
+    getStatusVariant, // Now imported from hook
+    formatStatus,     // Now imported from hook
+    isRejected,       // Now imported from hook
   } = useStudentRequestsTableLogic(requests, onCancel);
 
   const showClearFilters = statusFilter !== "all" || searchQuery !== "";

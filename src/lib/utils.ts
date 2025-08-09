@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { BonafideStatus } from "@/types"; // Import BonafideStatus
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -48,3 +49,19 @@ export function exportToCsv(filename: string, rows: Record<string, any>[]) {
     URL.revokeObjectURL(url); // Clean up the object URL
   }
 }
+
+export const getStatusVariant = (status: BonafideStatus) => {
+  switch (status) {
+    case 'pending': return 'default';
+    case 'approved_by_tutor':
+    case 'approved_by_hod': return 'outline';
+    case 'completed': return 'default';
+    case 'rejected_by_tutor':
+    case 'rejected_by_hod': return 'destructive';
+    default: return 'secondary';
+  }
+};
+
+export const formatStatus = (status: string) => {
+  return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+};

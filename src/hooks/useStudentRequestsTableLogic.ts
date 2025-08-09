@@ -1,25 +1,10 @@
 import { useState, useMemo } from "react";
 import { BonafideRequest } from "@/types";
+import { getStatusVariant, formatStatus } from "@/lib/utils"; // Import from utils
 
 type SortableKey = keyof BonafideRequest;
 
 const ITEMS_PER_PAGE = 10;
-
-const getStatusVariant = (status: BonafideRequest['status']) => {
-  switch (status) {
-    case 'pending': return 'default';
-    case 'approved_by_tutor':
-    case 'approved_by_hod': return 'outline';
-    case 'completed': return 'default';
-    case 'rejected_by_tutor':
-    case 'rejected_by_hod': return 'destructive';
-    default: return 'secondary';
-  }
-};
-
-const formatStatus = (status: string) => {
-    return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-}
 
 const isRejected = (status: BonafideRequest['status']) => 
   status === 'rejected_by_tutor' || status === 'rejected_by_hod';
