@@ -245,7 +245,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-12"> {/* Removed padding="checkbox" */}
+              <TableHead className="w-12">
                 <Checkbox
                   checked={
                     actionableIdsOnPage.length > 0 && numSelectedOnPage === actionableIdsOnPage.length
@@ -271,7 +271,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
           <TableBody>
             {paginatedRequests.map((request) => (
               <TableRow key={request.id} data-state={selectedIds.includes(request.id) && "selected"}>
-                <TableCell className="w-12"> {/* Removed padding="checkbox" */}
+                <TableCell className="w-12">
                   <Checkbox
                     checked={selectedIds.includes(request.id)}
                     onCheckedChange={(checked) => {
