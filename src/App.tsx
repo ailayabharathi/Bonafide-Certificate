@@ -6,7 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./components/ThemeProvider";
 import HomeRedirect from "./components/HomeRedirect";
-import Login from "./pages/Login";
+// import Login from "./pages/Login";
 import StudentPortal from "./pages/StudentPortal";
 import TutorPortal from "./pages/TutorPortal";
 import HodPortal from "./pages/HodPortal";
@@ -30,7 +30,7 @@ function App() {
             <AuthProvider>
               <Routes>
                 <Route path="/" element={<HomeRedirect />} />
-                <Route path="/login" element={<Login />} />
+                {/* <Route path="/login" element={<Login />} /> */}
                 <Route
                   path="/profile"
                   element={
