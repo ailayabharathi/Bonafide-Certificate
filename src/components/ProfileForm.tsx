@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { departments } from "@/lib/departments"; // Import the departments list
 
 const formSchema = z.object({
   first_name: z.string().min(2, {
@@ -247,9 +248,20 @@ export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Department</FormLabel>
-              <FormControl>
-                <Input placeholder="User's department" {...field} disabled={!canUserEditDepartment} />
-              </FormControl>
+              <Select onValueChange={field.onChange} value={field.value} disabled={!canUserEditDepartment}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a department" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept} value={dept}>
+                      {dept}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {!canEditSensitiveFields && !canUserEditDepartment && <FormDescription>This field can only be changed by an administrator.</FormDescription>}
               {!canEditSensitiveFields && canUserEditDepartment && <FormDescription>You can set this once. After that, only an administrator can change it.</FormDescription>}
               <FormMessage />
