@@ -21,6 +21,7 @@ import { StatsCard } from "@/components/StatsCard";
 import { StatusDistributionChart } from "@/components/StatusDistributionChart";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useStudentDashboardData } from "@/hooks/useStudentDashboardData";
+import { ExportButton } from "@/components/ExportButton"; // Import ExportButton
 
 const StudentPortal = () => {
   const { user } = useAuth();
@@ -74,10 +75,24 @@ const StudentPortal = () => {
   };
 
   const headerActions = (
-    <Button onClick={handleNewRequestClick}>
-      <PlusCircle className="mr-2 h-4 w-4" />
-      Apply for Certificate
-    </Button>
+    <div className="flex gap-2">
+      <ExportButton
+        data={requests.map(req => ({
+          ...req,
+          profiles: {
+            first_name: user?.user_metadata.first_name,
+            last_name: user?.user_metadata.last_name,
+            department: user?.user_metadata.department,
+            register_number: user?.user_metadata.register_number,
+          }
+        }))}
+        filename={`my-bonafide-requests-${new Date().toISOString().split('T')[0]}.csv`}
+      />
+      <Button onClick={handleNewRequestClick}>
+        <PlusCircle className="mr-2 h-4 w-4" />
+        Apply for Certificate
+      </Button>
+    </div>
   );
 
   return (
