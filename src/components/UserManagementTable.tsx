@@ -16,6 +16,7 @@ import {
   DialogTitle,
   DialogFooter,
   DialogClose,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -27,7 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
-import { Pencil, ArrowUpDown, ArrowUp, ArrowDown, UserCog } from "lucide-react";
+import { Pencil, ArrowUpDown, ArrowUp, ArrowDown, UserCog, Trash2 } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -48,10 +49,12 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
   const { user: currentUser } = useAuth();
   const [userToEditRole, setUserToEditRole] = useState<Profile | null>(null);
   const [userToEditProfile, setUserToEditProfile] = useState<Profile | null>(null);
+  const [userToDelete, setUserToDelete] = useState<Profile | null>(null);
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [newRole, setNewRole] = useState<UserRole | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,6 +87,14 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
     setIsProfileDialogOpen(true);
   };
 
+  const openDeleteDialog = (user: Profile) => {
+    setUserToDelete(user);
+  };
+
+  const closeDeleteDialog = () => {
+    setUserToDelete(null);
+  };
+
   const handleUpdateRole = async () => {
     if (!userToEditRole || !newRole) return;
 
@@ -103,6 +114,27 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
       showError(error.message || "Failed to update user role.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.functions.invoke('delete-user', {
+        body: { userIdToDelete: userToDelete.id },
+      });
+
+      if (error) throw new Error(error.message);
+
+      showSuccess(`Successfully deleted user ${userToDelete.first_name} ${userToDelete.last_name}.`);
+      onUserUpdate();
+      closeDeleteDialog();
+    } catch (error: any) {
+      showError(error.message || "Failed to delete user.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -260,6 +292,26 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span tabIndex={0}>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => openDeleteDialog(user)}
+                                  disabled={isCurrentUser}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {isCurrentUser ? <p>You cannot delete yourself.</p> : <p>Delete User</p>}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -326,6 +378,31 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
             </DialogClose>
             <Button onClick={handleUpdateRole} disabled={isSubmitting}>
               {isSubmitting ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!userToDelete} onOpenChange={closeDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently delete the user{' '}
+              <span className="font-semibold">{userToDelete?.first_name} {userToDelete?.last_name}</span>?
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteUser}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>
