@@ -35,39 +35,62 @@ serve(async (req) => {
     if (!requestData) throw new Error("Request not found.")
     if (!requestData.profiles?.email) throw new Error("Student email not found.")
 
-    const { status, rejection_reason } = requestData;
+    const { status, rejection_reason, user_id } = requestData;
     const { first_name, email } = requestData.profiles;
 
     let subject = '';
     let body = '';
+    let notificationMessage = '';
+    let notificationLink = '/student/dashboard';
 
     switch (status) {
       case 'approved_by_tutor':
         subject = 'Request Approved by Tutor';
         body = `Hi ${first_name},<br><br>Good news! Your bonafide certificate request has been approved by your tutor and is now with the HOD for further approval.<br><br>You can track its status on your dashboard.`;
+        notificationMessage = 'Your request was approved by your tutor.';
         break;
       case 'rejected_by_tutor':
         subject = 'Update on Your Bonafide Request';
         body = `Hi ${first_name},<br><br>Your bonafide certificate request has been rejected by your tutor. <br>Reason: ${rejection_reason}.<br><br>Please log in to your dashboard to edit and resubmit your request.`;
+        notificationMessage = `Your request was rejected by your tutor. Reason: ${rejection_reason}`;
         break;
       case 'approved_by_hod':
         subject = 'Request Approved by HOD';
         body = `Hi ${first_name},<br><br>Your bonafide certificate request has been approved by the HOD. It is now being processed by the college office.<br><br>You will be notified once the certificate is ready.`;
+        notificationMessage = 'Your request was approved by the HOD.';
         break;
       case 'rejected_by_hod':
         subject = 'Update on Your Bonafide Request';
         body = `Hi ${first_name},<br><br>Your bonafide certificate request has been rejected by the HOD. <br>Reason: ${rejection_reason}.<br><br>Please log in to your dashboard to edit and resubmit your request.`;
+        notificationMessage = `Your request was rejected by the HOD. Reason: ${rejection_reason}`;
         break;
       case 'completed':
         subject = 'Your Bonafide Certificate is Ready!';
         body = `Hi ${first_name},<br><br>Your bonafide certificate is now ready! You can view and download it from your dashboard.<br><br>Thank you.`;
+        notificationMessage = 'Your certificate is ready for download!';
+        notificationLink = `/certificate/${requestId}`;
         break;
       default:
-        // Don't send email for 'pending' or other statuses
+        // Don't send email or notification for 'pending' or other statuses
         return new Response(JSON.stringify({ message: "No notification needed for this status." }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
         })
+    }
+
+    // Create in-app notification
+    if (notificationMessage) {
+      const { error: notificationError } = await supabaseAdmin
+        .from('notifications')
+        .insert({
+          user_id: user_id,
+          message: notificationMessage,
+          link: notificationLink,
+        });
+      if (notificationError) {
+        // Log this error but don't fail the whole function
+        console.error('Error creating notification:', notificationError);
+      }
     }
 
     // Using Resend as an example email provider
@@ -93,7 +116,7 @@ serve(async (req) => {
       throw new Error(`Failed to send email: ${errorBody.message}`);
     }
 
-    return new Response(JSON.stringify({ message: "Email sent successfully." }), {
+    return new Response(JSON.stringify({ message: "Email and notification sent successfully." }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
