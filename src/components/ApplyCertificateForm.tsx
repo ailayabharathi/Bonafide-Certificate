@@ -1,6 +1,3 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -11,17 +8,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { showSuccess, showError } from "@/utils/toast";
-import { useState, useEffect } from "react";
 import { BonafideRequest } from "@/types";
-
-const formSchema = z.object({
-  reason: z.string().min(10, {
-    message: "Reason must be at least 10 characters.",
-  }),
-});
+import { useApplyCertificateFormLogic } from "@/hooks/useApplyCertificateFormLogic"; // Import the new hook
 
 interface ApplyCertificateFormProps {
   onSuccess: () => void;
@@ -30,64 +18,7 @@ interface ApplyCertificateFormProps {
 }
 
 export function ApplyCertificateForm({ onSuccess, setOpen, existingRequest }: ApplyCertificateFormProps) {
-  const { user } = useAuth();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      reason: "",
-    },
-  });
-
-  useEffect(() => {
-    if (existingRequest) {
-      form.reset({ reason: existingRequest.reason });
-    } else {
-      form.reset({ reason: "" });
-    }
-  }, [existingRequest, form]);
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) {
-      showError("You must be logged in to apply.");
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      if (existingRequest) {
-        // Update existing request
-        const { error } = await supabase
-          .from("bonafide_requests")
-          .update({
-            reason: values.reason,
-            status: 'pending',
-            rejection_reason: null,
-          })
-          .eq("id", existingRequest.id);
-        
-        if (error) throw error;
-        showSuccess("Request updated and resubmitted successfully!");
-
-      } else {
-        // Insert new request
-        const { error } = await supabase.from("bonafide_requests").insert({
-          user_id: user.id,
-          reason: values.reason,
-        });
-
-        if (error) throw error;
-        showSuccess("Certificate request submitted successfully!");
-      }
-      
-      onSuccess();
-      setOpen(false);
-    } catch (error: any) {
-      showError(error.message || "Failed to submit request.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+  const { form, isSubmitting, onSubmit } = useApplyCertificateFormLogic({ onSuccess, setOpen, existingRequest });
 
   return (
     <Form {...form}>
