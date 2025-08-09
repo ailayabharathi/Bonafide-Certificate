@@ -21,6 +21,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { DataTable } from "./DataTable"; // Import DataTable
 import { useStudentRequestsTableLogic } from "@/hooks/useStudentRequestsTableLogic"; // Import the new hook

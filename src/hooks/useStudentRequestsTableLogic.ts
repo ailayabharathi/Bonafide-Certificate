@@ -15,8 +15,8 @@ export const useStudentRequestsTableLogic = (
 ) => {
   const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'descending' | 'ascending' }>({ key: 'created_at', direction: 'descending' });
   const [currentPage, setCurrentPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all"); // Managed internally
+  const [searchQuery, setSearchQuery] = useState(""); // Managed internally
   const [requestToCancel, setRequestToCancel] = useState<BonafideRequest | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
 
