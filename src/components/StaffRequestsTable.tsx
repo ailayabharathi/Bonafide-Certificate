@@ -340,6 +340,8 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <StaffRequestsToolbar
           tabs={tabsInfo}
+          activeTab={activeTab}
+          requestsForExport={categorizedRequests[activeTab as keyof typeof categorizedRequests]}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           selectedIdsCount={selectedIds.length}

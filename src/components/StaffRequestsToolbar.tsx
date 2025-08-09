@@ -2,6 +2,8 @@ import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Profile } from "@/contexts/AuthContext";
+import { ExportButton } from "./ExportButton";
+import { BonafideRequestWithProfile } from "@/types";
 
 interface TabInfo {
   value: string;
@@ -11,6 +13,8 @@ interface TabInfo {
 
 interface StaffRequestsToolbarProps {
   tabs: TabInfo[];
+  activeTab: string;
+  requestsForExport: BonafideRequestWithProfile[];
   searchQuery: string;
   onSearchChange: (query: string) => void;
   selectedIdsCount: number;
@@ -22,6 +26,8 @@ interface StaffRequestsToolbarProps {
 
 export const StaffRequestsToolbar = ({
   tabs,
+  activeTab,
+  requestsForExport,
   searchQuery,
   onSearchChange,
   selectedIdsCount,
@@ -40,12 +46,18 @@ export const StaffRequestsToolbar = ({
             </TabsTrigger>
           ))}
         </TabsList>
-        <Input
-          placeholder="Search by name, reg no, dept..."
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="max-w-xs"
-        />
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Search by name, reg no, dept..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="max-w-xs"
+          />
+          <ExportButton 
+            data={requestsForExport}
+            filename={`bonafide-requests-${activeTab}-${new Date().toISOString().split('T')[0]}.csv`}
+          />
+        </div>
       </div>
       {selectedIdsCount > 0 && (
         <div className="flex items-center gap-4 p-2 bg-secondary rounded-md">
