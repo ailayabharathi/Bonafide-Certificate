@@ -30,6 +30,7 @@ import { EditUserDialog } from "./EditUserDialog";
 import { DeleteUserDialog } from "./DeleteUserDialog";
 import { ExportButton } from "./ExportButton"; // Import ExportButton
 import { departments } from "@/lib/departments"; // Import the departments list
+import { EditUserRoleDialog } from "./EditUserRoleDialog"; // Import the new dialog
 
 interface UserManagementTableProps {
   users: Profile[];
@@ -42,8 +43,9 @@ type UserRole = 'student' | 'tutor' | 'hod' | 'admin';
 type SortableKey = 'name' | 'email' | 'role' | 'department' | 'register_number';
 
 export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFilterChange }: UserManagementTableProps) {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, profile: currentUserProfile } = useAuth();
   const [userToEditProfile, setUserToEditProfile] = useState<Profile | null>(null);
+  const [userToEditRole, setUserToEditRole] = useState<Profile | null>(null); // New state for role editing
   const [userToDelete, setUserToDelete] = useState<Profile | null>(null);
   
   const [isDeleting, setIsDeleting] = useState(false);
@@ -90,8 +92,6 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
     setDepartmentFilter("all"); // Clear department filter
     setCurrentPage(1);
   };
-
-  // Removed uniqueDepartments memo as we will use the imported 'departments' list
 
   const processedUsers = useMemo(() => {
     let filteredUsers = users
@@ -265,15 +265,15 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() => setUserToEditProfile(user)} // Now opens EditUserDialog
-                                  disabled={isCurrentUser}
+                                  onClick={() => setUserToEditRole(user)} // Now opens EditUserRoleDialog
+                                  disabled={isCurrentUser || currentUserProfile?.role !== 'admin'} // Only admin can edit roles
                                 >
                                   <UserCog className="h-4 w-4" />
                                 </Button>
                               </span>
                             </TooltipTrigger>
                             <TooltipContent>
-                              {isCurrentUser ? <p>You cannot edit your own role.</p> : <p>Edit Role</p>}
+                              {isCurrentUser ? <p>You cannot edit your own role.</p> : currentUserProfile?.role !== 'admin' ? <p>Only administrators can edit roles.</p> : <p>Edit Role</p>}
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -285,7 +285,7 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => setUserToDelete(user)}
-                                  disabled={isCurrentUser}
+                                  disabled={isCurrentUser || currentUserProfile?.role !== 'admin'} // Only admin can delete users
                                   className="text-destructive hover:text-destructive"
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -293,7 +293,7 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
                               </span>
                             </TooltipTrigger>
                             <TooltipContent>
-                              {isCurrentUser ? <p>You cannot delete yourself.</p> : <p>Delete User</p>}
+                              {isCurrentUser ? <p>You cannot delete yourself.</p> : currentUserProfile?.role !== 'admin' ? <p>Only administrators can delete users.</p> : <p>Delete User</p>}
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -351,6 +351,16 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
         onUserUpdate={() => {
           onUserUpdate();
           setUserToEditProfile(null);
+        }}
+      />
+
+      <EditUserRoleDialog
+        user={userToEditRole}
+        isOpen={!!userToEditRole}
+        onOpenChange={() => setUserToEditRole(null)}
+        onRoleUpdated={() => {
+          onUserUpdate();
+          setUserToEditRole(null);
         }}
       />
     </>
