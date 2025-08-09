@@ -31,6 +31,7 @@ import { DeleteUserDialog } from "./DeleteUserDialog";
 import { ExportButton } from "./ExportButton"; // Import ExportButton
 import { departments } from "@/lib/departments"; // Import the departments list
 import { EditUserRoleDialog } from "./EditUserRoleDialog"; // Import the new dialog
+import { DataTable } from "./DataTable"; // Import DataTable
 
 interface UserManagementTableProps {
   users: Profile[];
@@ -153,23 +154,101 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
     currentPage * ITEMS_PER_PAGE
   );
 
-  const SortableHeader = ({ columnKey, title }: { columnKey: SortableKey, title: string }) => {
-    const isSorted = sortConfig.key === columnKey;
-    return (
-      <TableHead>
-        <Button variant="ghost" onClick={() => handleSort(columnKey)}>
-          {title}
-          {isSorted ? (
-            sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-          ) : (
-            <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />
-          )}
-        </Button>
-      </TableHead>
-    );
-  };
-
   const showClearFilters = searchQuery !== "" || roleFilter !== "all" || departmentFilter !== "all";
+
+  const columns = useMemo(() => [
+    {
+      id: 'name',
+      header: 'Name',
+      cell: ({ row }: { row: Profile }) => `${row.first_name} ${row.last_name}`,
+      enableSorting: true,
+    },
+    {
+      id: 'email',
+      header: 'Email',
+      cell: ({ row }: { row: Profile }) => row.email,
+      enableSorting: true,
+    },
+    {
+      id: 'register_number',
+      header: 'Register No.',
+      cell: ({ row }: { row: Profile }) => row.register_number || 'N/A',
+      enableSorting: true,
+    },
+    {
+      id: 'department',
+      header: 'Department',
+      cell: ({ row }: { row: Profile }) => row.department || 'N/A',
+      enableSorting: true,
+    },
+    {
+      id: 'role',
+      header: 'Role',
+      cell: ({ row }: { row: Profile }) => <span className="capitalize">{row.role}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }: { row: Profile }) => {
+        const isCurrentUser = row.id === currentUser?.id;
+        return (
+          <div className="flex gap-1 justify-end">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={() => setUserToEditProfile(row)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent><p>Edit Profile</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setUserToEditRole(row)}
+                      disabled={isCurrentUser || currentUserProfile?.role !== 'admin'}
+                    >
+                      <UserCog className="h-4 w-4" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isCurrentUser ? <p>You cannot edit your own role.</p> : currentUserProfile?.role !== 'admin' ? <p>Only administrators can edit roles.</p> : <p>Edit Role</p>}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setUserToDelete(row)}
+                      disabled={isCurrentUser || currentUserProfile?.role !== 'admin'}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isCurrentUser ? <p>You cannot delete yourself.</p> : currentUserProfile?.role !== 'admin' ? <p>Only administrators can delete users.</p> : <p>Delete User</p>}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        );
+      },
+      className: "text-right",
+    },
+  ], [currentUser, currentUserProfile]);
 
   return (
     <>
@@ -224,116 +303,16 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
         )}
       </div>
       <div className="border rounded-md">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <SortableHeader columnKey="name" title="Name" />
-              <SortableHeader columnKey="email" title="Email" />
-              <SortableHeader columnKey="register_number" title="Register No." />
-              <SortableHeader columnKey="department" title="Department" />
-              <SortableHeader columnKey="role" title="Role" />
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedUsers.length > 0 ? (
-              paginatedUsers.map((user) => {
-                const isCurrentUser = user.id === currentUser?.id;
-                return (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.first_name} {user.last_name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.register_number}</TableCell>
-                    <TableCell>{user.department}</TableCell>
-                    <TableCell className="capitalize">{user.role}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-1 justify-end">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={() => setUserToEditProfile(user)}>
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Edit Profile</p></TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span tabIndex={0}>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => setUserToEditRole(user)} // Now opens EditUserRoleDialog
-                                  disabled={isCurrentUser || currentUserProfile?.role !== 'admin'} // Only admin can edit roles
-                                >
-                                  <UserCog className="h-4 w-4" />
-                                </Button>
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {isCurrentUser ? <p>You cannot edit your own role.</p> : currentUserProfile?.role !== 'admin' ? <p>Only administrators can edit roles.</p> : <p>Edit Role</p>}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span tabIndex={0}>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => setUserToDelete(user)}
-                                  disabled={isCurrentUser || currentUserProfile?.role !== 'admin'} // Only admin can delete users
-                                  className="text-destructive hover:text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {isCurrentUser ? <p>You cannot delete yourself.</p> : currentUserProfile?.role !== 'admin' ? <p>Only administrators can delete users.</p> : <p>Delete User</p>}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            ) : (
-              <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
-                  No users found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      <div className="flex items-center justify-end space-x-2 pt-4">
-        <div className="flex-1 text-sm text-muted-foreground">
-          Page {currentPage} of {totalPages || 1}
-        </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage >= totalPages}
-          >
-            Next
-          </Button>
-        </div>
+        <DataTable
+          columns={columns}
+          data={paginatedUsers}
+          sortConfig={sortConfig as { key: string; direction: 'ascending' | 'descending' }}
+          onSort={handleSort}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+          totalPages={totalPages}
+          rowKey={(row) => row.id}
+        />
       </div>
 
       <DeleteUserDialog
