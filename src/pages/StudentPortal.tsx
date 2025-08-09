@@ -11,7 +11,7 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { BonafideRequest } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, ClipboardList, Clock, CheckCircle, XCircle } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { showSuccess, showError } from "@/utils/toast";
@@ -20,6 +20,7 @@ import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { StatsCard } from "@/components/StatsCard";
 import { StatusDistributionChart } from "@/components/StatusDistributionChart";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useStudentDashboardData } from "@/hooks/useStudentDashboardData";
 
 const StudentPortal = () => {
   const { user } = useAuth();
@@ -60,6 +61,8 @@ const StudentPortal = () => {
     handleRealtimeEvent,
   );
 
+  const { stats, chartData } = useStudentDashboardData(requests);
+
   const handleNewRequestClick = () => {
     setRequestToEdit(null);
     setIsDialogOpen(true);
@@ -77,19 +80,6 @@ const StudentPortal = () => {
     </Button>
   );
 
-  const stats = {
-    total: requests.length,
-    inProgress: requests.filter(r => ['pending', 'approved_by_tutor', 'approved_by_hod'].includes(r.status)).length,
-    completed: requests.filter(r => r.status === 'completed').length,
-    rejected: requests.filter(r => ['rejected_by_tutor', 'rejected_by_hod'].includes(r.status)).length,
-  };
-
-  const chartData = [
-    { name: 'In Progress', value: stats.inProgress },
-    { name: 'Completed', value: stats.completed },
-    { name: 'Rejected', value: stats.rejected },
-  ];
-
   return (
     <DashboardLayout title="Student Dashboard" headerActions={headerActions}>
       {isLoading ? (
@@ -100,10 +90,9 @@ const StudentPortal = () => {
       ) : (
         <div className="space-y-8">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <StatsCard title="Total Requests" value={stats.total} icon={ClipboardList} />
-              <StatsCard title="In Progress" value={stats.inProgress} icon={Clock} />
-              <StatsCard title="Completed" value={stats.completed} icon={CheckCircle} />
-              <StatsCard title="Rejected" value={stats.rejected} icon={XCircle} />
+            {stats.map((stat, index) => (
+              <StatsCard key={index} title={stat.title} value={stat.value} icon={stat.icon} />
+            ))}
           </div>
           <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-7">
             <Card className="col-span-full lg:col-span-4">
