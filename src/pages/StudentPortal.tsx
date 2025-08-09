@@ -21,7 +21,7 @@ import { StatsCard } from "@/components/StatsCard";
 import { StatusDistributionChart } from "@/components/StatusDistributionChart";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useStudentDashboardData } from "@/hooks/useStudentDashboardData";
-import { ExportButton } from "@/components/ExportButton"; // Import ExportButton
+import { ExportButton } from "@/components/ExportButton";
 
 const StudentPortal = () => {
   const { user } = useAuth();
