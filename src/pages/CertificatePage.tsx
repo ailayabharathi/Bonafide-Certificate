@@ -13,7 +13,7 @@ import html2canvas from 'html2canvas';
 
 const CertificatePage = () => {
   const { requestId } = useParams<{ requestId: string }>();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [request, setRequest] = useState<BonafideRequestWithProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,7 +57,7 @@ const CertificatePage = () => {
         }
 
         setRequest(data as BonafideRequestWithProfile);
-      } catch (err: any) {
+      } catch (err: any) => {
         setError(err.message || "An error occurred while fetching the certificate.");
         showError(err.message || "Failed to fetch certificate.");
       } finally {
@@ -69,7 +69,7 @@ const CertificatePage = () => {
   }, [requestId, user, authLoading, navigate]);
 
   const handleDownloadPDF = async () => {
-    if (!certificateRef.current) return;
+    if (!certificateRef.current || !request?.profiles) return;
     
     setIsDownloading(true);
     try {
@@ -96,7 +96,7 @@ const CertificatePage = () => {
       const y = (pdfHeight - imgHeight) / 2; // Center vertically
 
       pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
-      pdf.save(`Bonafide_Certificate_${profile?.first_name || 'Student'}.pdf`);
+      pdf.save(`Bonafide_Certificate_${request.profiles.first_name || 'Student'}.pdf`);
     } catch (err) {
       console.error("Error generating PDF:", err);
       showError("Could not generate PDF. Please try again.");
