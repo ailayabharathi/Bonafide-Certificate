@@ -9,6 +9,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +26,7 @@ const formSchema = z.object({
   last_name: z.string().min(2, {
     message: "Last name must be at least 2 characters.",
   }),
+  // These are optional as they might not apply to all roles or might be admin-set
   register_number: z.string().optional(),
   department: z.string().optional(),
 });
@@ -116,15 +118,21 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
         setIsUploading(false);
       }
 
+      const updateData: { [key: string]: any } = {
+        first_name: values.first_name,
+        last_name: values.last_name,
+        avatar_url: avatarUrl,
+      };
+
+      // Only allow non-students to update these fields
+      if (profile?.role !== 'student') {
+        updateData.register_number = values.register_number;
+        updateData.department = values.department;
+      }
+
       const { error: updateError } = await supabase
         .from("profiles")
-        .update({
-          first_name: values.first_name,
-          last_name: values.last_name,
-          avatar_url: avatarUrl,
-          register_number: values.register_number,
-          department: values.department,
-        })
+        .update(updateData)
         .eq("id", user.id);
 
       if (updateError) throw updateError;
@@ -203,51 +211,34 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
             </FormItem>
           )}
         />
-        {isStudent ? (
-          <>
+        <FormField
+          control={form.control}
+          name="register_number"
+          render={({ field }) => (
             <FormItem>
               <FormLabel>Register Number</FormLabel>
               <FormControl>
-                <Input disabled value={profile?.register_number || 'Not set'} />
+                <Input placeholder="Your register number" {...field} disabled={isStudent} />
               </FormControl>
+              {isStudent && <FormDescription>Register number can only be changed by an administrator.</FormDescription>}
+              <FormMessage />
             </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="department"
+          render={({ field }) => (
             <FormItem>
               <FormLabel>Department</FormLabel>
               <FormControl>
-                <Input disabled value={profile?.department || 'Not set'} />
+                <Input placeholder="Your department" {...field} disabled={isStudent} />
               </FormControl>
+              {isStudent && <FormDescription>Department can only be changed by an administrator.</FormDescription>}
+              <FormMessage />
             </FormItem>
-          </>
-        ) : (
-          <>
-            <FormField
-              control={form.control}
-              name="register_number"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Register Number</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Your register number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="department"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Department</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Your department" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </>
-        )}
+          )}
+        />
         <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

@@ -38,7 +38,7 @@ const CertificatePage = () => {
       try {
         const { data, error: fetchError } = await supabase
           .from("bonafide_requests")
-          .select("*, profiles(first_name, last_name)")
+          .select("*, profiles(first_name, last_name, department, register_number)")
           .eq("id", requestId)
           .single();
 
@@ -73,32 +73,29 @@ const CertificatePage = () => {
     
     setIsDownloading(true);
     try {
-      const canvas = await html2canvas(certificateRef.current, { scale: 2 });
+      const canvas = await html2canvas(certificateRef.current, { 
+        scale: 3, // Increase scale for better resolution
+        useCORS: true,
+        backgroundColor: null, // Use transparent background
+      });
       const imgData = canvas.toDataURL('image/png');
       
-      // A4 dimensions in points: 595.28 x 841.89. We'll use a similar aspect ratio.
+      // A4 dimensions in mm: 210 x 297.
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const canvasWidth = canvas.width;
       const canvasHeight = canvas.height;
       const canvasAspectRatio = canvasWidth / canvasHeight;
-      const pdfAspectRatio = pdfWidth / pdfHeight;
-
-      let finalWidth, finalHeight;
-
-      if (canvasAspectRatio > pdfAspectRatio) {
-        finalWidth = pdfWidth;
-        finalHeight = pdfWidth / canvasAspectRatio;
-      } else {
-        finalHeight = pdfHeight;
-        finalWidth = pdfHeight * canvasAspectRatio;
-      }
       
-      const x = (pdfWidth - finalWidth) / 2;
-      const y = (pdfHeight - finalHeight) / 2;
+      // Calculate image dimensions to fit A4, maintaining aspect ratio
+      const imgWidth = pdfWidth - 20; // with 10mm margin on each side
+      const imgHeight = imgWidth / canvasAspectRatio;
 
-      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+      const x = 10; // 10mm margin from left
+      const y = (pdfHeight - imgHeight) / 2; // Center vertically
+
+      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
       pdf.save(`Bonafide_Certificate_${profile?.first_name || 'Student'}.pdf`);
     } catch (err) {
       console.error("Error generating PDF:", err);
@@ -129,8 +126,8 @@ const CertificatePage = () => {
   }
 
   return (
-    <div className="bg-gray-100 min-h-screen p-4 md:p-8">
-      <div className="max-w-4xl mx-auto mb-4 flex justify-between items-center print:hidden">
+    <div className="bg-gray-100 dark:bg-gray-900 min-h-screen p-4 md:p-8 print:bg-white">
+      <div className="max-w-5xl mx-auto mb-4 flex justify-between items-center print:hidden">
         <Button variant="outline" asChild>
           <Link to="/student/dashboard">
             <ArrowLeft className="mr-2 h-4 w-4" />
