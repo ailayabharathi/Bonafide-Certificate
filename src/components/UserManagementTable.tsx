@@ -10,15 +10,6 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -36,6 +27,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { EditUserDialog } from "./EditUserDialog";
+import { EditRoleDialog } from "./EditRoleDialog";
+import { DeleteUserDialog } from "./DeleteUserDialog";
 
 interface UserManagementTableProps {
   users: Profile[];
@@ -50,11 +43,10 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
   const [userToEditRole, setUserToEditRole] = useState<Profile | null>(null);
   const [userToEditProfile, setUserToEditProfile] = useState<Profile | null>(null);
   const [userToDelete, setUserToDelete] = useState<Profile | null>(null);
-  const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
-  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
-  const [newRole, setNewRole] = useState<UserRole | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [isSubmittingRole, setIsSubmittingRole] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -70,35 +62,10 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
     setCurrentPage(1);
   };
 
-  const openRoleDialog = (user: Profile) => {
-    setUserToEditRole(user);
-    setNewRole(user.role);
-    setIsRoleDialogOpen(true);
-  };
+  const handleUpdateRole = async (newRole: UserRole) => {
+    if (!userToEditRole) return;
 
-  const closeRoleDialog = () => {
-    setUserToEditRole(null);
-    setNewRole(null);
-    setIsRoleDialogOpen(false);
-  };
-
-  const openProfileDialog = (user: Profile) => {
-    setUserToEditProfile(user);
-    setIsProfileDialogOpen(true);
-  };
-
-  const openDeleteDialog = (user: Profile) => {
-    setUserToDelete(user);
-  };
-
-  const closeDeleteDialog = () => {
-    setUserToDelete(null);
-  };
-
-  const handleUpdateRole = async () => {
-    if (!userToEditRole || !newRole) return;
-
-    setIsSubmitting(true);
+    setIsSubmittingRole(true);
     try {
       const { error } = await supabase
         .from("profiles")
@@ -109,11 +76,11 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
 
       showSuccess(`Successfully updated ${userToEditRole.first_name}'s role to ${newRole}.`);
       onUserUpdate();
-      closeRoleDialog();
+      setUserToEditRole(null);
     } catch (error: any) {
       showError(error.message || "Failed to update user role.");
     } finally {
-      setIsSubmitting(false);
+      setIsSubmittingRole(false);
     }
   };
 
@@ -130,7 +97,7 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
 
       showSuccess(`Successfully deleted user ${userToDelete.first_name} ${userToDelete.last_name}.`);
       onUserUpdate();
-      closeDeleteDialog();
+      setUserToDelete(null);
     } catch (error: any) {
       showError(error.message || "Failed to delete user.");
     } finally {
@@ -266,7 +233,7 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={() => openProfileDialog(user)}>
+                              <Button variant="ghost" size="icon" onClick={() => setUserToEditProfile(user)}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
@@ -280,7 +247,7 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() => openRoleDialog(user)}
+                                  onClick={() => setUserToEditRole(user)}
                                   disabled={isCurrentUser}
                                 >
                                   <UserCog className="h-4 w-4" />
@@ -299,7 +266,7 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() => openDeleteDialog(user)}
+                                  onClick={() => setUserToDelete(user)}
                                   disabled={isCurrentUser}
                                   className="text-destructive hover:text-destructive"
                                 >
@@ -351,70 +318,29 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
         </div>
       </div>
 
-      <Dialog open={isRoleDialogOpen} onOpenChange={closeRoleDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit User Role</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="mb-2">
-              Editing role for: <span className="font-semibold">{userToEditRole?.first_name} {userToEditRole?.last_name}</span>
-            </p>
-            <Select value={newRole ?? undefined} onValueChange={(value: UserRole) => setNewRole(value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="student">Student</SelectItem>
-                <SelectItem value="tutor">Tutor</SelectItem>
-                <SelectItem value="hod">HOD</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button onClick={handleUpdateRole} disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save Changes"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EditRoleDialog
+        user={userToEditRole}
+        isOpen={!!userToEditRole}
+        onOpenChange={() => setUserToEditRole(null)}
+        onConfirm={handleUpdateRole}
+        isSubmitting={isSubmittingRole}
+      />
 
-      <Dialog open={!!userToDelete} onOpenChange={closeDeleteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete User</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to permanently delete the user{' '}
-              <span className="font-semibold">{userToDelete?.first_name} {userToDelete?.last_name}</span>?
-              This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteUser}
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteUserDialog
+        user={userToDelete}
+        isOpen={!!userToDelete}
+        onOpenChange={() => setUserToDelete(null)}
+        onConfirm={handleDeleteUser}
+        isDeleting={isDeleting}
+      />
 
       <EditUserDialog
         user={userToEditProfile}
-        isOpen={isProfileDialogOpen}
-        onOpenChange={setIsProfileDialogOpen}
+        isOpen={!!userToEditProfile}
+        onOpenChange={() => setUserToEditProfile(null)}
         onUserUpdate={() => {
           onUserUpdate();
-          setIsProfileDialogOpen(false);
+          setUserToEditProfile(null);
         }}
       />
     </>
