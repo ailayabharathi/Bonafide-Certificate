@@ -61,8 +61,8 @@ export const Certificate = ({ request }: CertificateProps) => {
             </div>
             <div className="text-center">
               {/* Digital Signature Placeholder */}
-              <div className="w-48 h-16 mx-auto mb-2 flex items-center justify-center border-2 border-dashed border-gray-400">
-                <span className="text-gray-500 text-sm italic">Signature Placeholder</span>
+              <div className="w-48 h-16 mx-auto mb-2 flex items-center justify-center">
+                <img src="/signature.svg" alt="Principal's Signature" className="h-16" />
               </div>
               <p className="font-bold border-t-2 border-gray-700 pt-2">Principal</p>
               <p>Adhiyamaan College of Engineering</p>

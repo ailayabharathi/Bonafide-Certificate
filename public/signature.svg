@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+  <style>
+    .signature {
+      font-family: 'Brush Script MT', 'Brush Script Std', 'cursive';
+      font-size: 40px;
+      fill: #333;
+    }
+  </style>
+  <text x="10" y="45" class="signature">J. Doe</text>
+</svg>
