@@ -35,7 +35,7 @@ interface UserManagementTableProps {
 }
 
 type UserRole = 'student' | 'tutor' | 'hod' | 'admin';
-type SortableKey = 'name' | 'email' | 'role';
+type SortableKey = 'name' | 'email' | 'role' | 'department' | 'register_number';
 
 export function UserManagementTable({ users, onUserUpdate }: UserManagementTableProps) {
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
@@ -93,8 +93,10 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
       .filter(user => {
         const name = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
         const email = user.email?.toLowerCase() || '';
+        const department = user.department?.toLowerCase() || '';
+        const registerNumber = user.register_number?.toLowerCase() || '';
         const query = searchQuery.toLowerCase();
-        return name.includes(query) || email.includes(query);
+        return name.includes(query) || email.includes(query) || department.includes(query) || registerNumber.includes(query);
       })
       .filter(user => {
         if (roleFilter === "all") return true;
@@ -116,6 +118,14 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
           aValue = a.role.toLowerCase();
           bValue = b.role.toLowerCase();
           break;
+        case 'department':
+            aValue = a.department?.toLowerCase() || '';
+            bValue = b.department?.toLowerCase() || '';
+            break;
+        case 'register_number':
+            aValue = a.register_number?.toLowerCase() || '';
+            bValue = b.register_number?.toLowerCase() || '';
+            break;
         default:
           return 0;
       }
@@ -155,7 +165,7 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
       <div className="p-4 border rounded-md bg-background">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
           <Input
-            placeholder="Search by name or email..."
+            placeholder="Search by name, email, department..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -185,6 +195,8 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
               <TableRow>
                 <SortableHeader columnKey="name" title="Name" />
                 <SortableHeader columnKey="email" title="Email" />
+                <SortableHeader columnKey="register_number" title="Register No." />
+                <SortableHeader columnKey="department" title="Department" />
                 <SortableHeader columnKey="role" title="Role" />
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -195,6 +207,8 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
                   <TableRow key={user.id}>
                     <TableCell>{user.first_name} {user.last_name}</TableCell>
                     <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.register_number}</TableCell>
+                    <TableCell>{user.department}</TableCell>
                     <TableCell className="capitalize">{user.role}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="outline" size="sm" onClick={() => openDialog(user)}>
@@ -206,7 +220,7 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     No users found.
                   </TableCell>
                 </TableRow>

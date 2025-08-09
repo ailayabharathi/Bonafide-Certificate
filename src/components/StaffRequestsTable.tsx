@@ -166,7 +166,10 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
 
     const source = sortedRequests.filter(request => {
       const studentName = `${request.profiles?.first_name || ''} ${request.profiles?.last_name || ''}`.toLowerCase();
-      return studentName.includes(searchQuery.toLowerCase());
+      const registerNumber = request.profiles?.register_number?.toLowerCase() || '';
+      const department = request.profiles?.department?.toLowerCase() || '';
+      const query = searchQuery.toLowerCase();
+      return studentName.includes(query) || registerNumber.includes(query) || department.includes(query);
     });
 
     if (!profile) return { actionable: [], inProgress: [], completed: [], rejected: [], all: [] };
@@ -252,6 +255,8 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
                 />
               </TableHead>
               <SortableHeader columnKey="studentName" title="Student Name" />
+              <TableHead>Register No.</TableHead>
+              <TableHead>Department</TableHead>
               <SortableHeader columnKey="created_at" title="Submitted" />
               <TableHead>Reason</TableHead>
               <SortableHeader columnKey="status" title="Status" />
@@ -272,8 +277,10 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
                   />
                 </TableCell>
                 <TableCell>{request.profiles?.first_name} {request.profiles?.last_name}</TableCell>
+                <TableCell>{request.profiles?.register_number}</TableCell>
+                <TableCell>{request.profiles?.department}</TableCell>
                 <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
-                <TableCell className="max-w-xs truncate">{request.reason}</TableCell>
+                <TableCell className="max-w-[200px] truncate">{request.reason}</TableCell>
                 <TableCell>
                   <TooltipProvider>
                     <Tooltip>

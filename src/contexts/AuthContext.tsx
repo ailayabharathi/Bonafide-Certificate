@@ -9,6 +9,8 @@ export interface Profile {
   last_name: string | null;
   avatar_url: string | null;
   email?: string | null;
+  department?: string | null;
+  register_number?: string | null;
 }
 
 interface AuthContextType {

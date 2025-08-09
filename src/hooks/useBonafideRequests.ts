@@ -8,7 +8,7 @@ import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 const fetchRequests = async (userId?: string): Promise<BonafideRequestWithProfile[]> => {
   let query = supabase
     .from("bonafide_requests")
-    .select("*, profiles(first_name, last_name)")
+    .select("*, profiles(first_name, last_name, department, register_number)")
     .order("created_at", { ascending: false });
 
   if (userId) {

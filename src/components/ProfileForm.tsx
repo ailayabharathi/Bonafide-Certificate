@@ -25,6 +25,8 @@ const formSchema = z.object({
   last_name: z.string().min(2, {
     message: "Last name must be at least 2 characters.",
   }),
+  register_number: z.string().optional(),
+  department: z.string().optional(),
 });
 
 interface ProfileFormProps {
@@ -43,14 +45,24 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
     defaultValues: {
       first_name: profile?.first_name || "",
       last_name: profile?.last_name || "",
+      register_number: profile?.register_number || "",
+      department: profile?.department || "",
     },
   });
 
   useEffect(() => {
-    if (profile?.avatar_url) {
-      setAvatarPreview(profile.avatar_url);
+    if (profile) {
+        form.reset({
+            first_name: profile.first_name || "",
+            last_name: profile.last_name || "",
+            register_number: profile.register_number || "",
+            department: profile.department || "",
+        });
+        if (profile.avatar_url) {
+            setAvatarPreview(profile.avatar_url);
+        }
     }
-  }, [profile]);
+  }, [profile, form]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -76,7 +88,6 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
         const fileName = `avatar.${fileExt}`;
         const filePath = `${user.id}/${fileName}`;
 
-        // Clean up old avatars before uploading a new one to prevent orphans
         const { data: files, error: listError } = await supabase.storage
           .from('avatars')
           .list(user.id);
@@ -111,6 +122,8 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
           first_name: values.first_name,
           last_name: values.last_name,
           avatar_url: avatarUrl,
+          register_number: values.register_number,
+          department: values.department,
         })
         .eq("id", user.id);
 
@@ -131,6 +144,8 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
     const lastName = form.getValues().last_name || '';
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
+
+  const isStudent = profile?.role === 'student';
 
   return (
     <Form {...form}>
@@ -183,6 +198,32 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
               <FormLabel>Last Name</FormLabel>
               <FormControl>
                 <Input placeholder="Your last name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="register_number"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Register Number</FormLabel>
+              <FormControl>
+                <Input placeholder="Your register number" {...field} disabled={isStudent} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="department"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Department</FormLabel>
+              <FormControl>
+                <Input placeholder="Your department" {...field} disabled={isStudent} />
               </FormControl>
               <FormMessage />
             </FormItem>

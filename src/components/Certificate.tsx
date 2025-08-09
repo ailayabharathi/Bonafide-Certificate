@@ -31,10 +31,17 @@ export const Certificate = ({ request }: CertificateProps) => {
           <h2 className="text-2xl font-semibold mt-8 underline">BONAFIDE CERTIFICATE</h2>
         </div>
 
-        <div className="mt-12 text-lg leading-relaxed">
+        <div className="mt-12 text-lg leading-relaxed space-y-4">
           <p className="mb-6">Date: {issueDate}</p>
-          <p>This is to certify that <span className="font-bold">{profile.first_name} {profile.last_name}</span> is a bonafide student of this institution.</p>
-          <p className="mt-4">This certificate is issued upon their request for the purpose of: <span className="italic">{request.reason}</span>.</p>
+          <p>
+            This is to certify that <span className="font-bold">{profile.first_name} {profile.last_name}</span> 
+            (Register No: <span className="font-bold">{profile.register_number || 'N/A'}</span>) 
+            is a bonafide student of the <span className="font-bold">{profile.department || 'N/A'}</span> department 
+            at this institution.
+          </p>
+          <p>
+            This certificate is issued upon their request for the purpose of: <span className="italic">{request.reason}</span>.
+          </p>
           <p className="mt-8">We wish them all the best.</p>
         </div>
 

@@ -20,5 +20,7 @@ export interface BonafideRequestWithProfile extends BonafideRequest {
   profiles: {
     first_name: string | null;
     last_name: string | null;
+    department?: string | null;
+    register_number?: string | null;
   } | null;
 }
