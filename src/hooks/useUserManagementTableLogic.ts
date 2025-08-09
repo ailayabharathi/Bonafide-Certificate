@@ -9,16 +9,16 @@ const ITEMS_PER_PAGE = 10;
 
 export const useUserManagementTableLogic = (
   users: Profile[],
-  roleFilter: UserRole | 'all', // Now a prop
-  departmentFilter: string, // Now a prop
 ) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all'); // Managed internally
+  const [departmentFilter, setDepartmentFilter] = useState("all"); // Managed internally
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'ascending' | 'descending' }>({ key: 'name', direction: 'ascending' });
 
   useEffect(() => {
     setCurrentPage(1); // Reset page when filters or sort change
-  }, [searchQuery, roleFilter, departmentFilter, sortConfig]); // Dependencies now include props
+  }, [searchQuery, roleFilter, departmentFilter, sortConfig]);
 
   const handleSort = (key: SortableKey) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -91,6 +91,10 @@ export const useUserManagementTableLogic = (
   return {
     searchQuery,
     setSearchQuery,
+    roleFilter,
+    setRoleFilter,
+    departmentFilter,
+    setDepartmentFilter,
     currentPage,
     setCurrentPage,
     sortConfig,
