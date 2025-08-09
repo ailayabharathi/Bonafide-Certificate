@@ -18,7 +18,7 @@ const Footer = () => {
         <div>
           <h3 className="text-lg font-bold mb-4">Follow Us</h3>
           <div className="flex space-x-4 items-center">
-            <a href="#" className="text-muted-foreground hover:text-foreground"><Facebook /></a>
+            <a href="https://www.facebook.com/adhiyamaancollegeofengg/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground"><Facebook /></a>
             <a href="#" className="text-muted-foreground hover:text-foreground">
               <X className="h-6 w-6" />
             </a>
