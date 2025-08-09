@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { departments } from "@/lib/departments"; // Import the departments list
 
 interface TabInfo {
   value: string;
@@ -27,7 +28,6 @@ interface StaffRequestsToolbarProps {
   onSearchChange: (query: string) => void;
   departmentFilter: string; // New prop
   onDepartmentFilterChange: (value: string) => void; // New prop
-  departments: string[]; // New prop
   selectedIdsCount: number;
   onBulkAction: (type: 'approve' | 'reject') => void;
   onClearSelection: () => void;
@@ -44,7 +44,6 @@ export const StaffRequestsToolbar = ({
   onSearchChange,
   departmentFilter, // Destructure new prop
   onDepartmentFilterChange, // Destructure new prop
-  departments, // Destructure new prop
   selectedIdsCount,
   onBulkAction,
   onClearSelection,
