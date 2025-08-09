@@ -7,6 +7,8 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { useBonafideRequests } from "@/hooks/useBonafideRequests";
 import { showSuccess } from "@/utils/toast";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { StatusDistributionChart } from "@/components/StatusDistributionChart";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 const TutorPortal = () => {
   const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
@@ -44,6 +46,12 @@ const TutorPortal = () => {
     rejected: requests.filter((r) => r.status === "rejected_by_tutor").length,
   };
 
+  const chartData = [
+    { name: 'Pending', value: stats.pending },
+    { name: 'Approved', value: stats.approved },
+    { name: 'Rejected', value: stats.rejected },
+  ];
+
   return (
     <DashboardLayout title="Tutor Dashboard">
       {isLoading ? (
@@ -75,7 +83,26 @@ const TutorPortal = () => {
               icon={XCircle}
             />
           </div>
-          <StaffRequestsTable requests={requests} onAction={handleAction} onBulkAction={handleBulkAction} />
+           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <Card className="col-span-full lg:col-span-4">
+                <CardHeader>
+                    <CardTitle>Requests Queue</CardTitle>
+                    <CardDescription>All student requests awaiting your review or previously handled by you.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <StaffRequestsTable requests={requests} onAction={handleAction} onBulkAction={handleBulkAction} />
+                </CardContent>
+            </Card>
+            <Card className="col-span-full lg:col-span-3">
+                <CardHeader>
+                    <CardTitle>Status Overview</CardTitle>
+                    <CardDescription>A breakdown of requests you've processed.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <StatusDistributionChart data={chartData} />
+                </CardContent>
+            </Card>
+          </div>
         </div>
       )}
     </DashboardLayout>
