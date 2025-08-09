@@ -3,6 +3,8 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { MadeWithDyad } from "@/components/made-with-dyad";
+import KeyFeatures from "@/components/KeyFeatures";
+import HowItWorks from "@/components/HowItWorks";
 
 const Index = () => {
   return (
@@ -20,6 +22,10 @@ const Index = () => {
             </div>
           </div>
         </section>
+        
+        <KeyFeatures />
+        <HowItWorks />
+
         <section className="py-16 px-8">
           <div className="container mx-auto text-center">
             <h2 className="text-3xl font-bold mb-4 text-foreground">About Our Institution</h2>
