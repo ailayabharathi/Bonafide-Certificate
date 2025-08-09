@@ -1,6 +1,3 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -12,10 +9,6 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth, Profile } from "@/contexts/AuthContext";
-import { showSuccess, showError } from "@/utils/toast";
-import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Loader2 } from "lucide-react";
 import {
@@ -25,18 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { departments } from "@/lib/departments"; // Import the departments list
-
-const formSchema = z.object({
-  first_name: z.string().min(2, {
-    message: "First name must be at least 2 characters.",
-  }),
-  last_name: z.string().min(2, {
-    message: "Last name must be at least 2 characters.",
-  }),
-  register_number: z.string().optional(),
-  department: z.string().optional(),
-});
+import { departments } from "@/lib/departments";
+import { Profile } from "@/contexts/AuthContext";
+import { useProfileFormLogic } from "@/hooks/useProfileFormLogic"; // Import the new hook
 
 interface ProfileFormProps {
   onSuccess: () => void;
@@ -44,123 +28,20 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {
-  const { user, profile: currentUserProfile } = useAuth();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-
-  // Determine which profile we are working with and who is editing.
-  const targetProfile = profileToEdit || currentUserProfile;
-  const isEditingOwnProfile = !profileToEdit;
-  
-  // Sensitive fields can only be edited by an administrator.
-  const canEditSensitiveFields = currentUserProfile?.role === 'admin';
-  
-  // A user can edit their own register number/department if they are an admin OR if the field is currently empty.
-  // If an admin is editing another user's profile, they can always edit these fields.
-  const canEditRegisterNumber = canEditSensitiveFields || (isEditingOwnProfile && !targetProfile?.register_number);
-  const canEditDepartment = canEditSensitiveFields || (isEditingOwnProfile && !targetProfile?.department);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      first_name: "",
-      last_name: "",
-      register_number: "",
-      department: "",
-    },
-  });
-
-  useEffect(() => {
-    if (targetProfile) {
-      form.reset({
-        first_name: targetProfile.first_name || "",
-        last_name: targetProfile.last_name || "",
-        register_number: targetProfile.register_number || "",
-        department: targetProfile.department || "",
-      });
-      if (targetProfile.avatar_url) {
-        setAvatarPreview(targetProfile.avatar_url);
-      }
-    }
-  }, [targetProfile, form]);
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setAvatarFile(file);
-      setAvatarPreview(URL.createObjectURL(file));
-    }
-  };
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!targetProfile || !user) {
-      showError("User profile not found.");
-      return;
-    }
-    setIsSubmitting(true);
-
-    try {
-      let avatarUrl = targetProfile.avatar_url;
-
-      // Avatar can only be changed by the user themselves
-      if (avatarFile && isEditingOwnProfile) {
-        setIsUploading(true);
-        const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `avatar.${fileExt}`;
-        const filePath = `${targetProfile.id}/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(filePath, avatarFile, { upsert: true });
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(filePath);
-        
-        avatarUrl = publicUrl;
-        setIsUploading(false);
-      }
-
-      const updateData: { [key: string]: any } = {
-        first_name: values.first_name,
-        last_name: values.last_name,
-        avatar_url: avatarUrl,
-      };
-
-      // Only update if the user is allowed to edit or if it's an admin
-      if (canEditRegisterNumber) {
-        updateData.register_number = values.register_number;
-      }
-      if (canEditDepartment) {
-        updateData.department = values.department;
-      }
-
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update(updateData)
-        .eq("id", targetProfile.id);
-
-      if (updateError) throw updateError;
-
-      showSuccess("Profile updated successfully!");
-      onSuccess();
-    } catch (error: any) {
-      showError(error.message || "Failed to update profile.");
-    } finally {
-      setIsSubmitting(false);
-      setIsUploading(false);
-    }
-  }
-
-  const getInitials = () => {
-    const firstName = form.getValues().first_name || '';
-    const lastName = form.getValues().last_name || '';
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-  };
+  const {
+    form,
+    isSubmitting,
+    avatarPreview,
+    handleAvatarChange,
+    isUploading,
+    onSubmit,
+    getInitials,
+    isEditingOwnProfile,
+    canEditRegisterNumber,
+    canEditDepartment,
+    targetProfile,
+    canEditSensitiveFields,
+  } = useProfileFormLogic({ onSuccess, profileToEdit });
 
   return (
     <Form {...form}>
@@ -173,7 +54,7 @@ export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {
                 <FormLabel>
                   <Avatar className="h-24 w-24 cursor-pointer">
                     <AvatarImage src={avatarPreview || undefined} alt="User avatar" />
-                    <AvatarFallback>{getInitals()}</AvatarFallback>
+                    <AvatarFallback>{getInitials()}</AvatarFallback>
                   </Avatar>
                 </FormLabel>
                 <FormControl>
