@@ -67,9 +67,6 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const ITEMS_PER_PAGE = 10;
 
-  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
-  const [studentUserIdToView, setStudentUserIdToView] = useState<string | null>(null);
-
   useEffect(() => {
     setCurrentPage(1);
     setSelectedIds([]);
@@ -144,16 +141,6 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
       if (profile?.role === 'admin') return 'Mark as Completed';
       return 'Approve';
   }
-
-  const uniqueDepartments = useMemo(() => {
-    const departments = new Set<string>();
-    requests.forEach(req => {
-        if (req.profiles?.department) {
-            departments.add(req.profiles.department);
-        }
-    });
-    return Array.from(departments).sort();
-  }, [requests]);
 
   const processedRequests = useMemo(() => {
     let filteredRequests = [...requests];
@@ -421,7 +408,6 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
           onSearchChange={setSearchQuery}
           departmentFilter={departmentFilter} // Pass department filter
           onDepartmentFilterChange={setDepartmentFilter} // Pass department filter handler
-          departments={uniqueDepartments} // Pass unique departments
           selectedIdsCount={selectedIds.length}
           onBulkAction={(type) => openDialog(type, true)}
           onClearSelection={() => setSelectedIds([])}
