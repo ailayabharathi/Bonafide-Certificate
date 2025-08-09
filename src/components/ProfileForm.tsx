@@ -203,32 +203,47 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="register_number"
-          render={({ field }) => (
+        {isStudent ? (
+          <>
             <FormItem>
               <FormLabel>Register Number</FormLabel>
-              <FormControl>
-                <Input placeholder="Your register number" {...field} disabled={isStudent} />
-              </FormControl>
-              <FormMessage />
+              <p className="text-sm text-muted-foreground pt-2">{profile?.register_number || 'Not set'}</p>
             </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="department"
-          render={({ field }) => (
             <FormItem>
               <FormLabel>Department</FormLabel>
-              <FormControl>
-                <Input placeholder="Your department" {...field} disabled={isStudent} />
-              </FormControl>
-              <FormMessage />
+              <p className="text-sm text-muted-foreground pt-2">{profile?.department || 'Not set'}</p>
             </FormItem>
-          )}
-        />
+          </>
+        ) : (
+          <>
+            <FormField
+              control={form.control}
+              name="register_number"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Register Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Your register number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="department"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Department</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Your department" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </>
+        )}
         <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
