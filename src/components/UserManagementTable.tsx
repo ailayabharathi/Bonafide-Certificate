@@ -27,12 +27,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { EditUserDialog } from "./EditUserDialog";
-import { DeleteUserDialog } from "./DeleteUserDialog";
+import { DeleteUserDialog } => "./DeleteUserDialog";
 import { ExportButton } from "./ExportButton"; // Import ExportButton
 import { departments } from "@/lib/departments"; // Import the departments list
 import { EditUserRoleDialog } from "./EditUserRoleDialog"; // Import the new dialog
 import { DataTable } from "./DataTable"; // Import DataTable
 import { useUserManagementTableLogic } from "@/hooks/useUserManagementTableLogic"; // Import the new hook
+import { getUserManagementTableColumns } from "@/lib/user-management-table-columns"; // Import the new utility
 
 interface UserManagementTableProps {
   users: Profile[];
@@ -97,99 +98,13 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
     }
   };
 
-  const columns = useMemo(() => [
-    {
-      id: 'name',
-      header: 'Name',
-      cell: ({ row }: { row: Profile }) => `${row.first_name} ${row.last_name}`,
-      enableSorting: true,
-    },
-    {
-      id: 'email',
-      header: 'Email',
-      cell: ({ row }: { row: Profile }) => row.email,
-      enableSorting: true,
-    },
-    {
-      id: 'register_number',
-      header: 'Register No.',
-      cell: ({ row }: { row: Profile }) => row.register_number || 'N/A',
-      enableSorting: true,
-    },
-    {
-      id: 'department',
-      header: 'Department',
-      cell: ({ row }: { row: Profile }) => row.department || 'N/A',
-      enableSorting: true,
-    },
-    {
-      id: 'role',
-      header: 'Role',
-      cell: ({ row }: { row: Profile }) => <span className="capitalize">{row.role}</span>,
-      enableSorting: true,
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cell: ({ row }: { row: Profile }) => {
-        const isCurrentUser = row.id === currentUser?.id;
-        return (
-          <div className="flex gap-1 justify-end">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={() => setUserToEditProfile(row)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent><p>Edit Profile</p></TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0}>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setUserToEditRole(row)}
-                      disabled={isCurrentUser || currentUserProfile?.role !== 'admin'}
-                    >
-                      <UserCog className="h-4 w-4" />
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {isCurrentUser ? <p>You cannot edit your own role.</p> : currentUserProfile?.role !== 'admin' ? <p>Only administrators can edit roles.</p> : <p>Edit Role</p>}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0}>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setUserToDelete(row)}
-                      disabled={isCurrentUser || currentUserProfile?.role !== 'admin'}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {isCurrentUser ? <p>You cannot delete yourself.</p> : currentUserProfile?.role !== 'admin' ? <p>Only administrators can delete users.</p> : <p>Delete User</p>}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        );
-      },
-      className: "text-right",
-    },
-  ], [currentUser, currentUserProfile]);
+  const columns = useMemo(() => getUserManagementTableColumns({
+    currentUser,
+    currentUserProfile,
+    setUserToEditProfile,
+    setUserToEditRole,
+    setUserToDelete,
+  }), [currentUser, currentUserProfile, setUserToEditProfile, setUserToEditRole, setUserToDelete]);
 
   return (
     <>
