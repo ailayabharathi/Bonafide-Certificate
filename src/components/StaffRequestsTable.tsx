@@ -59,6 +59,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
   const [isBulk, setIsBulk] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("all"); // New state for department filter
   const [activeTab, setActiveTab] = useState("actionable");
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'descending' | 'ascending' }>({ key: 'created_at', direction: 'descending' });
@@ -72,7 +73,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
   useEffect(() => {
     setCurrentPage(1);
     setSelectedIds([]);
-  }, [activeTab, searchQuery, sortConfig]);
+  }, [activeTab, searchQuery, departmentFilter, sortConfig]); // Add departmentFilter to dependencies
 
   const handleSort = (key: SortableKey) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -160,9 +161,38 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
       return 'Approve';
   }
 
-  const categorizedRequests = useMemo(() => {
-    let sortedRequests = [...requests];
-    sortedRequests.sort((a, b) => {
+  const uniqueDepartments = useMemo(() => {
+    const departments = new Set<string>();
+    requests.forEach(req => {
+        if (req.profiles?.department) {
+            departments.add(req.profiles.department);
+        }
+    });
+    return Array.from(departments).sort();
+  }, [requests]);
+
+  const processedRequests = useMemo(() => {
+    let filteredRequests = [...requests];
+
+    // Apply department filter
+    if (departmentFilter !== "all") {
+      filteredRequests = filteredRequests.filter(r =>
+        r.profiles?.department === departmentFilter
+      );
+    }
+
+    // Apply search query filter
+    filteredRequests = filteredRequests.filter(request => {
+      const studentName = `${request.profiles?.first_name || ''} ${request.profiles?.last_name || ''}`.toLowerCase();
+      const registerNumber = request.profiles?.register_number?.toLowerCase() || '';
+      const department = request.profiles?.department?.toLowerCase() || '';
+      const reason = request.reason.toLowerCase();
+      const query = searchQuery.toLowerCase();
+      return studentName.includes(query) || registerNumber.includes(query) || department.includes(query) || reason.includes(query);
+    });
+
+    // Apply sorting
+    filteredRequests.sort((a, b) => {
         let aValue: any, bValue: any;
 
         if (sortConfig.key === 'studentName') {
@@ -178,31 +208,27 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
         return 0;
     });
 
-    const source = sortedRequests.filter(request => {
-      const studentName = `${request.profiles?.first_name || ''} ${request.profiles?.last_name || ''}`.toLowerCase();
-      const registerNumber = request.profiles?.register_number?.toLowerCase() || '';
-      const department = request.profiles?.department?.toLowerCase() || '';
-      const query = searchQuery.toLowerCase();
-      return studentName.includes(query) || registerNumber.includes(query) || department.includes(query);
-    });
+    return filteredRequests;
+  }, [requests, searchQuery, departmentFilter, sortConfig]); // Add departmentFilter to dependencies
 
+  const categorizedRequests = useMemo(() => {
     if (!profile) return { actionable: [], inProgress: [], completed: [], rejected: [], all: [] };
 
     const actionable = (() => {
-      if (profile.role === 'tutor') return source.filter(r => r.status === 'pending');
-      if (profile.role === 'hod') return source.filter(r => r.status === 'approved_by_tutor');
-      if (profile.role === 'admin') return source.filter(r => r.status === 'approved_by_hod');
+      if (profile.role === 'tutor') return processedRequests.filter(r => r.status === 'pending');
+      if (profile.role === 'hod') return processedRequests.filter(r => r.status === 'approved_by_tutor');
+      if (profile.role === 'admin') return processedRequests.filter(r => r.status === 'approved_by_hod');
       return [];
     })();
 
     return {
       actionable,
-      inProgress: source.filter(r => ['pending', 'approved_by_tutor', 'approved_by_hod'].includes(r.status)),
-      completed: source.filter(r => r.status === 'completed'),
-      rejected: source.filter(r => ['rejected_by_tutor', 'rejected_by_hod'].includes(r.status)),
-      all: source,
+      inProgress: processedRequests.filter(r => ['pending', 'approved_by_tutor', 'approved_by_hod'].includes(r.status)),
+      completed: processedRequests.filter(r => r.status === 'completed'),
+      rejected: processedRequests.filter(r => ['rejected_by_tutor', 'rejected_by_hod'].includes(r.status)),
+      all: processedRequests,
     };
-  }, [requests, searchQuery, profile, sortConfig]);
+  }, [processedRequests, profile]);
 
   const tabsInfo = useMemo(() => [
     { value: 'actionable', label: 'Action Required', count: categorizedRequests.actionable.length },
@@ -380,6 +406,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
 
   const handleClearFilters = () => {
     setSearchQuery("");
+    setDepartmentFilter("all"); // Clear department filter
     setActiveTab("actionable");
     setSelectedIds([]);
     onClearDateRange();
@@ -394,6 +421,9 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
           requestsForExport={categorizedRequests[activeTab as keyof typeof categorizedRequests]}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          departmentFilter={departmentFilter} // Pass department filter
+          onDepartmentFilterChange={setDepartmentFilter} // Pass department filter handler
+          departments={uniqueDepartments} // Pass unique departments
           selectedIdsCount={selectedIds.length}
           onBulkAction={(type) => openDialog(type, true)}
           onClearSelection={() => setSelectedIds([])}

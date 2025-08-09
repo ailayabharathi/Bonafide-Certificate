@@ -5,6 +5,13 @@ import { Profile } from "@/contexts/AuthContext";
 import { ExportButton } from "./ExportButton";
 import { BonafideRequestWithProfile } from "@/types";
 import { XCircle } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface TabInfo {
   value: string;
@@ -18,6 +25,9 @@ interface StaffRequestsToolbarProps {
   requestsForExport: BonafideRequestWithProfile[];
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  departmentFilter: string; // New prop
+  onDepartmentFilterChange: (value: string) => void; // New prop
+  departments: string[]; // New prop
   selectedIdsCount: number;
   onBulkAction: (type: 'approve' | 'reject') => void;
   onClearSelection: () => void;
@@ -32,6 +42,9 @@ export const StaffRequestsToolbar = ({
   requestsForExport,
   searchQuery,
   onSearchChange,
+  departmentFilter, // Destructure new prop
+  onDepartmentFilterChange, // Destructure new prop
+  departments, // Destructure new prop
   selectedIdsCount,
   onBulkAction,
   onClearSelection,
@@ -39,7 +52,7 @@ export const StaffRequestsToolbar = ({
   profile,
   onClearFilters,
 }: StaffRequestsToolbarProps) => {
-  const showClearFilters = searchQuery !== "" || activeTab !== "actionable";
+  const showClearFilters = searchQuery !== "" || departmentFilter !== "all" || activeTab !== "actionable";
   return (
     <div className="p-4 border-b space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -52,11 +65,22 @@ export const StaffRequestsToolbar = ({
         </TabsList>
         <div className="flex items-center gap-2">
           <Input
-            placeholder="Search by name, reg no, dept..."
+            placeholder="Search by name, reg no, dept, reason..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="max-w-xs"
           />
+          <Select value={departmentFilter} onValueChange={onDepartmentFilterChange}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by department" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Departments</SelectItem>
+              {departments.map(dept => (
+                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <ExportButton 
             data={requestsForExport}
             filename={`bonafide-requests-${activeTab}-${new Date().toISOString().split('T')[0]}.csv`}
