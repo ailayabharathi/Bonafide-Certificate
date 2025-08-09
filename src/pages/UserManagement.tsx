@@ -8,6 +8,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { UserPlus } from "lucide-react";
 import { InviteUserDialog } from "@/components/InviteUserDialog";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 const UserManagement = () => {
   const [users, setUsers] = useState<Profile[]>([]);
@@ -35,25 +36,35 @@ const UserManagement = () => {
     fetchUsers();
   }, []);
 
-  const headerActions = (
-    <Button onClick={() => setIsInviteDialogOpen(true)}>
-      <UserPlus className="mr-2 h-4 w-4" />
-      Invite User
-    </Button>
-  );
-
   return (
     <>
-      <DashboardLayout title="User Management" headerActions={headerActions}>
-        {loading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        ) : (
-          <UserManagementTable users={users} onUserUpdate={fetchUsers} />
-        )}
+      <DashboardLayout title="User Management">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Users</CardTitle>
+              <CardDescription>
+                Invite new users and manage existing user roles.
+              </CardDescription>
+            </div>
+            <Button onClick={() => setIsInviteDialogOpen(true)}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Invite User
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="space-y-2 pt-4">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ) : (
+              <UserManagementTable users={users} onUserUpdate={fetchUsers} />
+            )}
+          </CardContent>
+        </Card>
       </DashboardLayout>
       <InviteUserDialog
         isOpen={isInviteDialogOpen}

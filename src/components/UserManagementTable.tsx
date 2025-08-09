@@ -169,115 +169,113 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
 
   return (
     <>
-      <div className="p-4 border rounded-md bg-background">
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-          <Input
-            placeholder="Search by name, email, department..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="max-w-sm"
-          />
-          <Select value={roleFilter} onValueChange={(value: UserRole | "all") => {
-            setRoleFilter(value);
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
+        <Input
+          placeholder="Search by name, email, department..."
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
             setCurrentPage(1);
-          }}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="student">Student</SelectItem>
-              <SelectItem value="tutor">Tutor</SelectItem>
-              <SelectItem value="hod">HOD</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="border rounded-md">
-          <Table>
-            <TableHeader>
+          }}
+          className="max-w-sm"
+        />
+        <Select value={roleFilter} onValueChange={(value: UserRole | "all") => {
+          setRoleFilter(value);
+          setCurrentPage(1);
+        }}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Roles</SelectItem>
+            <SelectItem value="student">Student</SelectItem>
+            <SelectItem value="tutor">Tutor</SelectItem>
+            <SelectItem value="hod">HOD</SelectItem>
+            <SelectItem value="admin">Admin</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <SortableHeader columnKey="name" title="Name" />
+              <SortableHeader columnKey="email" title="Email" />
+              <SortableHeader columnKey="register_number" title="Register No." />
+              <SortableHeader columnKey="department" title="Department" />
+              <SortableHeader columnKey="role" title="Role" />
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedUsers.length > 0 ? (
+              paginatedUsers.map((user) => {
+                const isCurrentUser = user.id === currentUser?.id;
+                return (
+                  <TableRow key={user.id}>
+                    <TableCell>{user.first_name} {user.last_name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.register_number}</TableCell>
+                    <TableCell>{user.department}</TableCell>
+                    <TableCell className="capitalize">{user.role}</TableCell>
+                    <TableCell className="text-right">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span tabIndex={0}>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openDialog(user)}
+                                disabled={isCurrentUser}
+                              >
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit Role
+                              </Button>
+                            </span>
+                          </TooltipTrigger>
+                          {isCurrentUser && (
+                            <TooltipContent>
+                              <p>You cannot edit your own role.</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            ) : (
               <TableRow>
-                <SortableHeader columnKey="name" title="Name" />
-                <SortableHeader columnKey="email" title="Email" />
-                <SortableHeader columnKey="register_number" title="Register No." />
-                <SortableHeader columnKey="department" title="Department" />
-                <SortableHeader columnKey="role" title="Role" />
-                <TableHead className="text-right">Actions</TableHead>
+                <TableCell colSpan={6} className="h-24 text-center">
+                  No users found.
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedUsers.length > 0 ? (
-                paginatedUsers.map((user) => {
-                  const isCurrentUser = user.id === currentUser?.id;
-                  return (
-                    <TableRow key={user.id}>
-                      <TableCell>{user.first_name} {user.last_name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.register_number}</TableCell>
-                      <TableCell>{user.department}</TableCell>
-                      <TableCell className="capitalize">{user.role}</TableCell>
-                      <TableCell className="text-right">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span tabIndex={0}>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openDialog(user)}
-                                  disabled={isCurrentUser}
-                                >
-                                  <Pencil className="mr-2 h-4 w-4" />
-                                  Edit Role
-                                </Button>
-                              </span>
-                            </TooltipTrigger>
-                            {isCurrentUser && (
-                              <TooltipContent>
-                                <p>You cannot edit your own role.</p>
-                              </TooltipContent>
-                            )}
-                          </Tooltip>
-                        </TooltipProvider>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
-                    No users found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex items-center justify-end space-x-2 pt-4">
+        <div className="flex-1 text-sm text-muted-foreground">
+          Page {currentPage} of {totalPages || 1}
         </div>
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <div className="flex-1 text-sm text-muted-foreground">
-            Page {currentPage} of {totalPages || 1}
-          </div>
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage >= totalPages}
-            >
-              Next
-            </Button>
-          </div>
+        <div className="space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage >= totalPages}
+          >
+            Next
+          </Button>
         </div>
       </div>
 
