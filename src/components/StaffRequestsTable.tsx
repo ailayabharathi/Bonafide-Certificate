@@ -300,7 +300,8 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction }: StaffRe
                         </TooltipContent>
                       )}
                     </Tooltip>
-                  </TableCell>
+                  </TooltipProvider>
+                </TableCell>
                 <TableCell>
                   {getActionability(request.status) ? (
                     <div className="flex gap-2">
