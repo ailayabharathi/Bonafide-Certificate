@@ -29,6 +29,7 @@ import {
 import { EditUserDialog } from "./EditUserDialog";
 import { EditRoleDialog } from "./EditRoleDialog";
 import { DeleteUserDialog } from "./DeleteUserDialog";
+import { ExportButton } from "./ExportButton"; // Import ExportButton
 
 interface UserManagementTableProps {
   users: Profile[];
@@ -213,6 +214,10 @@ export function UserManagementTable({ users, onUserUpdate, roleFilter, onRoleFil
             <SelectItem value="admin">Admin</SelectItem>
           </SelectContent>
         </Select>
+        <ExportButton 
+          data={processedUsers}
+          filename={`user-management-${new Date().toISOString().split('T')[0]}.csv`}
+        />
         {showClearFilters && (
           <Button variant="outline" onClick={handleClearFilters}>
             <XCircle className="mr-2 h-4 w-4" />
