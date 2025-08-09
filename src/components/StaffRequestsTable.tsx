@@ -11,10 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
-import { cn } from "@/lib/utils";
+import { cn, getStatusVariant, formatStatus } from "@/lib/utils";
 import { useAuth, Profile } from "@/contexts/AuthContext";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { ArrowUpDown, ArrowUp, ArrowDown, User, Eye } from "lucide-react"; // Added Eye icon
+import { ArrowUpDown, ArrowUp, ArrowDown, User, Eye } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -26,9 +26,10 @@ import { RequestActionDialog } from "./RequestActionDialog";
 import { StudentProfileDialog } from "./StudentProfileDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/utils/toast";
-import { Link } from "react-router-dom"; // Added Link import
-import { RequestsTableContent } from "./RequestsTableContent"; // Import the new component
-import { useStaffRequestsTableLogic } from "@/hooks/useStaffRequestsTableLogic"; // Import the new hook
+import { Link } from "react-router-dom";
+import { DataTable } from "./DataTable";
+import { useStaffRequestsTableLogic } from "@/hooks/useStaffRequestsTableLogic";
+import { getStaffTableColumns } from "@/lib/staff-table-columns"; // Import the new utility
 
 interface StaffRequestsTableProps {
   requests: BonafideRequestWithProfile[];
@@ -124,6 +125,13 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
       return 'Approve';
   }
 
+  const columns = useMemo(() => getStaffTableColumns({
+    profile,
+    onViewProfile: handleViewProfile,
+    onOpenActionDialog: openActionDialog,
+    getApproveButtonText,
+  }), [profile, handleViewProfile, openActionDialog, getApproveButtonText]);
+
   return (
     <div className="border rounded-md bg-background">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -144,21 +152,20 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
         />
         {tabsInfo.map(tab => (
           <TabsContent key={tab.value} value={tab.value} className="m-0">
-            <RequestsTableContent
-              requestsToRender={paginatedRequestsForCurrentTab}
-              profile={profile}
-              onViewProfile={handleViewProfile}
-              onOpenActionDialog={openActionDialog}
-              getApproveButtonText={getApproveButtonText}
-              selectedIds={selectedIds}
-              onToggleSelect={handleToggleSelect}
-              onSelectAll={handleSelectAllOnPage}
+            <DataTable
+              columns={columns}
+              data={paginatedRequestsForCurrentTab}
               sortConfig={sortConfig as { key: string; direction: 'ascending' | 'descending' }}
               onSort={handleSort}
               currentPage={currentPage}
               onPageChange={(page) => setCurrentPage(page)}
               totalPages={totalPagesForCurrentTab}
+              enableRowSelection={true}
+              selectedIds={selectedIds}
+              onToggleSelect={handleToggleSelect}
+              onSelectAll={handleSelectAllOnPage}
               actionableIdsOnPage={actionableIdsOnPage}
+              rowKey={(row) => row.id}
             />
           </TabsContent>
         ))}
