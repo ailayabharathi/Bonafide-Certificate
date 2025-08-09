@@ -17,9 +17,9 @@ serve(async (req) => {
   }
 
   try {
-    const { requestId } = await req.json()
-    if (!requestId) {
-      throw new Error("Request ID is required.")
+    const { requestId, oldStatus, newStatus } = await req.json()
+    if (!requestId || !newStatus) {
+      throw new Error("Request ID and new status are required.")
     }
 
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
@@ -35,7 +35,7 @@ serve(async (req) => {
     if (!requestData) throw new Error("Request not found.")
     if (!requestData.profiles?.email) throw new Error("Student email not found.")
 
-    const { status, rejection_reason, user_id } = requestData;
+    const { rejection_reason, user_id } = requestData;
     const { first_name, email } = requestData.profiles;
 
     let subject = '';
@@ -43,39 +43,47 @@ serve(async (req) => {
     let notificationMessage = '';
     let notificationLink = '/student/dashboard';
 
-    switch (status) {
-      case 'approved_by_tutor':
-        subject = 'Request Approved by Tutor';
-        body = `Hi ${first_name},<br><br>Good news! Your bonafide certificate request has been approved by your tutor and is now with the HOD for further approval.<br><br>You can track its status on your dashboard.`;
-        notificationMessage = 'Your request was approved by your tutor.';
-        break;
-      case 'rejected_by_tutor':
-        subject = 'Update on Your Bonafide Request';
-        body = `Hi ${first_name},<br><br>Your bonafide certificate request has been rejected by your tutor. <br>Reason: ${rejection_reason}.<br><br>Please log in to your dashboard to edit and resubmit your request.`;
-        notificationMessage = `Your request was rejected by your tutor. Reason: ${rejection_reason}`;
-        break;
-      case 'approved_by_hod':
-        subject = 'Request Approved by HOD';
-        body = `Hi ${first_name},<br><br>Your bonafide certificate request has been approved by the HOD. It is now being processed by the college office.<br><br>You will be notified once the certificate is ready.`;
-        notificationMessage = 'Your request was approved by the HOD.';
-        break;
-      case 'rejected_by_hod':
-        subject = 'Update on Your Bonafide Request';
-        body = `Hi ${first_name},<br><br>Your bonafide certificate request has been rejected by the HOD. <br>Reason: ${rejection_reason}.<br><br>Please log in to your dashboard to edit and resubmit your request.`;
-        notificationMessage = `Your request was rejected by the HOD. Reason: ${rejection_reason}`;
-        break;
-      case 'completed':
-        subject = 'Your Bonafide Certificate is Ready!';
-        body = `Hi ${first_name},<br><br>Your bonafide certificate is now ready! You can view and download it from your dashboard.<br><br>Thank you.`;
-        notificationMessage = 'Your certificate is ready for download!';
-        notificationLink = `/certificate/${requestId}`;
-        break;
-      default:
-        // Don't send email or notification for 'pending' or other statuses
-        return new Response(JSON.stringify({ message: "No notification needed for this status." }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        })
+    // Handle specific revert scenario
+    if (oldStatus === 'completed' && newStatus === 'approved_by_hod') {
+      subject = 'Important: Your Bonafide Certificate Status Has Changed';
+      body = `Hi ${first_name},<br><br>Please be informed that your bonafide certificate (ID: ${requestId}) has been reverted from 'Completed' status. It is now back to 'Approved by HOD' and is being re-processed by the college office.<br><br>You will be notified once it's ready again.`;
+      notificationMessage = 'Your certificate status has been reverted. It is now being re-processed.';
+    } else {
+      // Handle other status changes
+      switch (newStatus) {
+        case 'approved_by_tutor':
+          subject = 'Request Approved by Tutor';
+          body = `Hi ${first_name},<br><br>Good news! Your bonafide certificate request has been approved by your tutor and is now with the HOD for further approval.<br><br>You can track its status on your dashboard.`;
+          notificationMessage = 'Your request was approved by your tutor.';
+          break;
+        case 'rejected_by_tutor':
+          subject = 'Update on Your Bonafide Request';
+          body = `Hi ${first_name},<br><br>Your bonafide certificate request has been rejected by your tutor. <br>Reason: ${rejection_reason}.<br><br>Please log in to your dashboard to edit and resubmit your request.`;
+          notificationMessage = `Your request was rejected by your tutor. Reason: ${rejection_reason}`;
+          break;
+        case 'approved_by_hod':
+          subject = 'Request Approved by HOD';
+          body = `Hi ${first_name},<br><br>Your bonafide certificate request has been approved by the HOD. It is now being processed by the college office.<br><br>You will be notified once the certificate is ready.`;
+          notificationMessage = 'Your request was approved by the HOD.';
+          break;
+        case 'rejected_by_hod':
+          subject = 'Update on Your Bonafide Request';
+          body = `Hi ${first_name},<br><br>Your bonafide certificate request has been rejected by the HOD. <br>Reason: ${rejection_reason}.<br><br>Please log in to your dashboard to edit and resubmit your request.`;
+          notificationMessage = `Your request was rejected by the HOD. Reason: ${rejection_reason}`;
+          break;
+        case 'completed':
+          subject = 'Your Bonafide Certificate is Ready!';
+          body = `Hi ${first_name},<br><br>Your bonafide certificate is now ready! You can view and download it from your dashboard.<br><br>Thank you.`;
+          notificationMessage = 'Your certificate is ready for download!';
+          notificationLink = `/certificate/${requestId}`;
+          break;
+        default:
+          // Don't send email or notification for 'pending' or other statuses that don't require a notification
+          return new Response(JSON.stringify({ message: "No notification needed for this status change." }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          })
+      }
     }
 
     // Create in-app notification

@@ -33,6 +33,18 @@ const updateRequestStatus = async ({
   newStatus: BonafideStatus;
   rejectionReason?: string;
 }) => {
+  // Fetch old status first
+  const { data: oldRequest, error: fetchError } = await supabase
+    .from("bonafide_requests")
+    .select("status")
+    .eq("id", requestId)
+    .single();
+
+  if (fetchError) {
+    throw new Error(fetchError.message);
+  }
+  const oldStatus = oldRequest?.status;
+
   const { error } = await supabase
     .from("bonafide_requests")
     .update({ status: newStatus, rejection_reason: rejectionReason || null })
@@ -42,6 +54,7 @@ const updateRequestStatus = async ({
     showError(error.message || "Failed to update request.");
     throw new Error(error.message);
   }
+  return { oldStatus, newStatus }; // Return both for notification
 };
 
 const bulkUpdateRequestStatus = async ({
@@ -53,6 +66,17 @@ const bulkUpdateRequestStatus = async ({
   newStatus: BonafideStatus;
   rejectionReason?: string;
 }) => {
+    // Fetch old statuses for all requests
+    const { data: oldRequests, error: fetchError } = await supabase
+        .from("bonafide_requests")
+        .select("id, status")
+        .in("id", requestIds);
+
+    if (fetchError) {
+        throw new Error(fetchError.message);
+    }
+    const oldStatusesMap = new Map(oldRequests?.map(r => [r.id, r.status]));
+
     const updates = requestIds.map(id => 
         supabase
             .from("bonafide_requests")
@@ -67,6 +91,11 @@ const bulkUpdateRequestStatus = async ({
         showError(firstError.error.message || "An error occurred during bulk update.");
         throw new Error(firstError.error.message);
     }
+    return requestIds.map(id => ({
+        requestId: id,
+        oldStatus: oldStatusesMap.get(id),
+        newStatus: newStatus
+    }));
 };
 
 const deleteRequest = async (requestId: string) => {
@@ -81,10 +110,10 @@ const deleteRequest = async (requestId: string) => {
   }
 };
 
-const invokeEmailNotification = async (requestId: string) => {
+const invokeEmailNotification = async (requestId: string, oldStatus: BonafideStatus | undefined, newStatus: BonafideStatus) => {
   try {
     const { error } = await supabase.functions.invoke('send-status-update-email', {
-      body: { requestId },
+      body: { requestId, oldStatus, newStatus },
     });
     if (error) throw error;
   } catch (error) {
@@ -130,17 +159,17 @@ export const useBonafideRequests = (
     onSuccess: (data, variables) => {
       showSuccess("Request updated successfully!");
       queryClient.invalidateQueries({ queryKey });
-      invokeEmailNotification(variables.requestId);
+      invokeEmailNotification(variables.requestId, data.oldStatus, data.newStatus);
     },
   });
 
   const bulkUpdateMutation = useMutation({
     mutationFn: bulkUpdateRequestStatus,
-    onSuccess: (data, variables) => {
-        showSuccess(`${variables.requestIds.length} requests updated successfully!`);
+    onSuccess: (data) => {
+        showSuccess(`${data.length} requests updated successfully!`);
         queryClient.invalidateQueries({ queryKey });
-        variables.requestIds.forEach(requestId => {
-          invokeEmailNotification(requestId);
+        data.forEach(result => {
+          invokeEmailNotification(result.requestId, result.oldStatus, result.newStatus);
         });
     }
   });
