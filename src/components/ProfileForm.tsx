@@ -207,11 +207,15 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
           <>
             <FormItem>
               <FormLabel>Register Number</FormLabel>
-              <p className="text-sm text-muted-foreground pt-2">{profile?.register_number || 'Not set'}</p>
+              <FormControl>
+                <Input disabled value={profile?.register_number || 'Not set'} />
+              </FormControl>
             </FormItem>
             <FormItem>
               <FormLabel>Department</FormLabel>
-              <p className="text-sm text-muted-foreground pt-2">{profile?.department || 'Not set'}</p>
+              <FormControl>
+                <Input disabled value={profile?.department || 'Not set'} />
+              </FormControl>
             </FormItem>
           </>
         ) : (
