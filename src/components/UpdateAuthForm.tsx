@@ -1,6 +1,3 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -12,79 +9,11 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
-import { showSuccess, showError } from "@/utils/toast";
-import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-
-const formSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address." }).optional().or(z.literal('')),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }).optional().or(z.literal('')),
-  confirmPassword: z.string().optional().or(z.literal('')),
-}).refine((data) => {
-  if (data.password && data.password !== data.confirmPassword) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Passwords do not match.",
-  path: ["confirmPassword"],
-}).refine((data) => {
-  if (!data.email && !data.password) {
-    return false; // At least one field must be provided
-  }
-  return true;
-}, {
-  message: "Please enter an email or a new password.",
-  path: ["email"],
-});
+import { useUpdateAuthFormLogic } from "@/hooks/useUpdateAuthFormLogic";
 
 export function UpdateAuthForm() {
-  const { user } = useAuth();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: user?.email || "",
-      password: "",
-      confirmPassword: "",
-    },
-  });
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsSubmitting(true);
-    try {
-      const updates: { email?: string; password?: string } = {};
-      if (values.email && values.email !== user?.email) {
-        updates.email = values.email;
-      }
-      if (values.password) {
-        updates.password = values.password;
-      }
-
-      if (Object.keys(updates).length === 0) {
-        showError("No changes detected. Please enter a new email or password.");
-        return;
-      }
-
-      const { error } = await supabase.auth.updateUser(updates);
-
-      if (error) throw error;
-
-      showSuccess("Account updated successfully! Check your email to confirm new email if changed.");
-      form.reset({
-        email: values.email || user?.email || "",
-        password: "",
-        confirmPassword: "",
-      });
-    } catch (error: any) {
-      showError(error.message || "Failed to update account.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+  const { form, isSubmitting, onSubmit } = useUpdateAuthFormLogic();
 
   return (
     <Form {...form}>
