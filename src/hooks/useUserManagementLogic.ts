@@ -1,17 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { FullUserProfile } from "@/types";
+import { Profile } from "@/contexts/AuthContext";
 import { showError } from "@/utils/toast";
 
 export const useUserManagementLogic = () => {
-  const [users, setUsers] = useState<FullUserProfile[]>([]);
+  const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('get-all-users');
+      const { data, error } = await supabase.from('profiles').select('*');
 
       if (error) throw error;
       setUsers(data || []);
