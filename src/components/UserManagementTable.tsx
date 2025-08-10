@@ -8,17 +8,19 @@ import { EditUserRoleDialog } from "./EditUserRoleDialog";
 import { useUserManagementTableLogic } from "@/hooks/useUserManagementTableLogic";
 import { getUserManagementTableColumns } from "@/lib/user-management-table-columns";
 import { UserManagementContent } from "./UserManagementContent";
+import { ManagedUser } from "@/types";
 
 interface UserManagementTableProps {
-  users: Profile[];
+  users: ManagedUser[];
   onUserUpdate: () => void;
+  onResendInvite: (email: string, role: 'student' | 'tutor' | 'hod' | 'admin') => Promise<void>;
 }
 
-export function UserManagementTable({ users, onUserUpdate }: UserManagementTableProps) {
+export function UserManagementTable({ users, onUserUpdate, onResendInvite }: UserManagementTableProps) {
   const { profile: currentUserProfile } = useAuth();
-  const [userToEditProfile, setUserToEditProfile] = useState<Profile | null>(null);
-  const [userToEditRole, setUserToEditRole] = useState<Profile | null>(null);
-  const [userToDelete, setUserToDelete] = useState<Profile | null>(null);
+  const [userToEditProfile, setUserToEditProfile] = useState<ManagedUser | null>(null);
+  const [userToEditRole, setUserToEditRole] = useState<ManagedUser | null>(null);
+  const [userToDelete, setUserToDelete] = useState<ManagedUser | null>(null);
   
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -66,7 +68,8 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
     setUserToEditProfile,
     setUserToEditRole,
     setUserToDelete,
-  }), [currentUserProfile]);
+    onResendInvite,
+  }), [currentUserProfile, onResendInvite]);
 
   return (
     <>

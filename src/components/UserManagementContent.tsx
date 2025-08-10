@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { Profile } from "@/contexts/AuthContext";
 import {
   Select,
   SelectContent,
@@ -12,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { XCircle } from "lucide-react";
 import { ExportButton } from "./ExportButton";
 import { DataTable } from "./DataTable";
-import { ColumnDef } from "@/types";
+import { ColumnDef, ManagedUser } from "@/types";
 import { departments } from "@/lib/departments";
 
 interface UserManagementContentProps {
@@ -24,9 +23,9 @@ interface UserManagementContentProps {
   setDepartmentFilter: (department: string) => void;
   handleClearFilters: () => void;
   showClearFilters: boolean;
-  processedUsers: Profile[];
-  paginatedUsers: Profile[];
-  columns: ColumnDef<Profile>[];
+  processedUsers: ManagedUser[];
+  paginatedUsers: ManagedUser[];
+  columns: ColumnDef<ManagedUser>[];
   sortConfig: { key: string; direction: 'ascending' | 'descending' };
   handleSort: (key: string) => void;
   currentPage: number;

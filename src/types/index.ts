@@ -25,6 +25,21 @@ export interface BonafideRequestWithProfile extends BonafideRequest {
   } | null;
 }
 
+// Represents a user in the user management context
+export interface ManagedUser {
+  id: string;
+  email?: string;
+  role: 'student' | 'tutor' | 'hod' | 'admin';
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  department?: string | null;
+  register_number?: string | null;
+  created_at: string;
+  last_sign_in_at?: string;
+  invited_at?: string;
+}
+
 // New ColumnDef interface for generic DataTable
 export interface ColumnDef<TData> {
   id: string;

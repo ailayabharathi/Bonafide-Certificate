@@ -5,15 +5,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Pencil, UserCog, Trash2 } from "lucide-react";
+import { Pencil, UserCog, Trash2, Send } from "lucide-react";
 import { Profile } from "@/contexts/AuthContext";
-import { ColumnDef } from "@/types";
+import { ManagedUser, ColumnDef } from "@/types";
+import { Badge } from "@/components/ui/badge";
 
 interface GetUserManagementTableColumnsProps {
   currentUserProfile: Profile | null;
-  setUserToEditProfile: (user: Profile) => void;
-  setUserToEditRole: (user: Profile) => void;
-  setUserToDelete: (user: Profile) => void;
+  setUserToEditProfile: (user: ManagedUser) => void;
+  setUserToEditRole: (user: ManagedUser) => void;
+  setUserToDelete: (user: ManagedUser) => void;
+  onResendInvite: (email: string, role: 'student' | 'tutor' | 'hod' | 'admin') => Promise<void>;
 }
 
 export const getUserManagementTableColumns = ({
@@ -21,33 +23,61 @@ export const getUserManagementTableColumns = ({
   setUserToEditProfile,
   setUserToEditRole,
   setUserToDelete,
-}: GetUserManagementTableColumnsProps): ColumnDef<Profile>[] => {
+  onResendInvite,
+}: GetUserManagementTableColumnsProps): ColumnDef<ManagedUser>[] => {
   return [
     {
       id: 'name',
       header: 'Name',
-      cell: ({ row }: { row: Profile }) => `${row.first_name} ${row.last_name}`,
+      cell: ({ row }: { row: ManagedUser }) => `${row.first_name || ''} ${row.last_name || ''}` || '(No name set)',
       enableSorting: true,
     },
     {
       id: 'email',
       header: 'Email',
-      cell: ({ row }: { row: Profile }) => row.email,
+      cell: ({ row }: { row: ManagedUser }) => row.email,
       enableSorting: true,
     },
     {
       id: 'role',
       header: 'Role',
-      cell: ({ row }: { row: Profile }) => <span className="capitalize">{row.role}</span>,
+      cell: ({ row }: { row: ManagedUser }) => <span className="capitalize">{row.role}</span>,
       enableSorting: true,
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      cell: ({ row }: { row: ManagedUser }) => {
+        const isInvited = row.invited_at && !row.last_sign_in_at;
+        return isInvited ? (
+          <Badge variant="secondary">Invited</Badge>
+        ) : (
+          <Badge variant="default" className="bg-green-500">Active</Badge>
+        );
+      },
+      enableSorting: false,
     },
     {
       id: 'actions',
       header: 'Actions',
-      cell: ({ row }: { row: Profile }) => {
+      cell: ({ row }: { row: ManagedUser }) => {
         const isCurrentUser = row.id === currentUserProfile?.id;
+        const isInvited = row.invited_at && !row.last_sign_in_at;
+
         return (
           <div className="flex gap-1 justify-end">
+            {isInvited && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={() => onResendInvite(row.email!, row.role)}>
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Resend Invitation</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>

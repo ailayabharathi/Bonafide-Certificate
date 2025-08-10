@@ -10,9 +10,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Profile } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
+import { ManagedUser } from "@/types";
 
 interface DeleteUserDialogProps {
-  user: Profile | null;
+  user: Profile | ManagedUser | null;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;

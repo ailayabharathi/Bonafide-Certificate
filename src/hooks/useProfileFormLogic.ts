@@ -5,6 +5,7 @@ import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, Profile } from "@/contexts/AuthContext";
 import { showSuccess, showError } from "@/utils/toast";
+import { ManagedUser } from "@/types";
 
 const formSchema = z.object({
   first_name: z.string().min(2, {
@@ -21,7 +22,7 @@ type ProfileFormValues = z.infer<typeof formSchema>;
 
 interface UseProfileFormLogicProps {
   onSuccess: () => void;
-  profileToEdit?: Profile;
+  profileToEdit?: Profile | ManagedUser;
 }
 
 export const useProfileFormLogic = ({ onSuccess, profileToEdit }: UseProfileFormLogicProps) => {

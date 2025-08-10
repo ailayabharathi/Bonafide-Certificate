@@ -31,6 +31,7 @@ import { showSuccess, showError } from "@/utils/toast";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Profile } from "@/contexts/AuthContext";
+import { ManagedUser } from "@/types";
 
 const formSchema = z.object({
   role: z.enum(["student", "tutor", "hod", "admin"], {
@@ -41,7 +42,7 @@ const formSchema = z.object({
 interface EditUserRoleDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  user: Profile | null;
+  user: Profile | ManagedUser | null;
   onRoleUpdated: () => void;
 }
 

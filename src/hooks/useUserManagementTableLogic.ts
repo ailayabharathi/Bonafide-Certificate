@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Profile } from "@/contexts/AuthContext";
+import { ManagedUser } from "@/types";
 import { departments } from "@/lib/departments";
 
 type UserRole = 'student' | 'tutor' | 'hod' | 'admin';
@@ -8,7 +8,7 @@ type SortableKey = 'name' | 'email' | 'role' | 'department' | 'register_number';
 const ITEMS_PER_PAGE = 10;
 
 export const useUserManagementTableLogic = (
-  users: Profile[],
+  users: ManagedUser[],
 ) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');

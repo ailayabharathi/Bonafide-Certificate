@@ -10,9 +10,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Profile } from "@/contexts/AuthContext";
 import { ProfileForm } from "./ProfileForm";
+import { ManagedUser } from "@/types";
 
 interface EditUserDialogProps {
-  user: Profile | null;
+  user: Profile | ManagedUser | null;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onUserUpdate: () => void;

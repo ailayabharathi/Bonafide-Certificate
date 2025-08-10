@@ -21,10 +21,11 @@ import {
 import { departments } from "@/lib/departments";
 import { Profile } from "@/contexts/AuthContext";
 import { useProfileFormLogic } from "@/hooks/useProfileFormLogic"; // Import the new hook
+import { ManagedUser } from "@/types";
 
 interface ProfileFormProps {
   onSuccess: () => void;
-  profileToEdit?: Profile; // If provided, we're in admin edit mode
+  profileToEdit?: Profile | ManagedUser; // If provided, we're in admin edit mode
 }
 
 export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {

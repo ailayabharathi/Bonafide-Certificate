@@ -14,6 +14,7 @@ const UserManagement = () => {
     isInviteDialogOpen,
     setIsInviteDialogOpen,
     fetchUsers,
+    resendInvite,
   } = useUserManagementLogic();
 
   return (
@@ -43,7 +44,8 @@ const UserManagement = () => {
             ) : (
               <UserManagementTable 
                 users={users} 
-                onUserUpdate={fetchUsers} 
+                onUserUpdate={fetchUsers}
+                onResendInvite={resendInvite}
               />
             )}
           </CardContent>
