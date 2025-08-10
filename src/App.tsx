@@ -17,6 +17,7 @@ import ProfilePage from "./pages/ProfilePage";
 import CertificatePage from "./pages/CertificatePage";
 import UserManagement from "./pages/UserManagement";
 import VerifyCertificatePage from "./pages/VerifyCertificatePage";
+import MyTuteesPage from "./pages/MyTuteesPage";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={["tutor"]}>
                       <TutorPortal />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/tutor/my-tutees"
+                  element={
+                    <ProtectedRoute allowedRoles={["tutor"]}>
+                      <MyTuteesPage />
                     </ProtectedRoute>
                   }
                 />
