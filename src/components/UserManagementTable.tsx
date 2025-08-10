@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { Profile, useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
-import { EditUserDialog } from "./EditUserDialog";
 import { DeleteUserDialog } from "./DeleteUserDialog";
 import { EditUserRoleDialog } from "./EditUserRoleDialog";
 import { useUserManagementTableLogic } from "@/hooks/useUserManagementTableLogic";
@@ -17,7 +16,6 @@ interface UserManagementTableProps {
 
 export function UserManagementTable({ users, onUserUpdate }: UserManagementTableProps) {
   const { profile: currentUserProfile } = useAuth();
-  const [userToEditProfile, setUserToEditProfile] = useState<ManagedUser | null>(null);
   const [userToEditRole, setUserToEditRole] = useState<ManagedUser | null>(null);
   const [userToDelete, setUserToDelete] = useState<ManagedUser | null>(null);
   
@@ -64,7 +62,6 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
 
   const columns = useMemo(() => getUserManagementTableColumns({
     currentUserProfile,
-    setUserToEditProfile,
     setUserToEditRole,
     setUserToDelete,
   }), [currentUserProfile]);
@@ -96,16 +93,6 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
         onOpenChange={() => setUserToDelete(null)}
         onConfirm={handleDeleteUser}
         isDeleting={isDeleting}
-      />
-
-      <EditUserDialog
-        user={userToEditProfile}
-        isOpen={!!userToEditProfile}
-        onOpenChange={() => setUserToEditProfile(null)}
-        onUserUpdate={() => {
-          onUserUpdate();
-          setUserToEditProfile(null);
-        }}
       />
 
       <EditUserRoleDialog

@@ -8,17 +8,16 @@ import {
 import { Pencil, UserCog, Trash2 } from "lucide-react";
 import { Profile } from "@/contexts/AuthContext";
 import { ManagedUser, ColumnDef } from "@/types";
+import { Link } from "react-router-dom";
 
 interface GetUserManagementTableColumnsProps {
   currentUserProfile: Profile | null;
-  setUserToEditProfile: (user: ManagedUser) => void;
   setUserToEditRole: (user: ManagedUser) => void;
   setUserToDelete: (user: ManagedUser) => void;
 }
 
 export const getUserManagementTableColumns = ({
   currentUserProfile,
-  setUserToEditProfile,
   setUserToEditRole,
   setUserToDelete,
 }: GetUserManagementTableColumnsProps): ColumnDef<ManagedUser>[] => {
@@ -52,8 +51,10 @@ export const getUserManagementTableColumns = ({
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={() => setUserToEditProfile(row)}>
-                    <Pencil className="h-4 w-4" />
+                  <Button asChild variant="ghost" size="icon">
+                    <Link to={`/admin/user/${row.id}/edit`}>
+                      <Pencil className="h-4 w-4" />
+                    </Link>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent><p>Edit Profile</p></TooltipContent>

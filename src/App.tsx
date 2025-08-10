@@ -19,6 +19,7 @@ import UserManagement from "./pages/UserManagement";
 import VerifyCertificatePage from "./pages/VerifyCertificatePage";
 import MyTuteesPage from "./pages/MyTuteesPage";
 import DepartmentStudentsPage from "./pages/DepartmentStudentsPage";
+import UserEditPage from "./pages/UserEditPage";
 
 const queryClient = new QueryClient();
 
@@ -104,6 +105,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={["admin"]}>
                       <UserManagement />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/user/:userId/edit"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <UserEditPage />
                     </ProtectedRoute>
                   }
                 />

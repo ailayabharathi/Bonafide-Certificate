@@ -85,7 +85,7 @@ export function CommandMenu({ open, setOpen }: CommandMenuProps) {
                 key={user.id}
                 value={`${user.first_name} ${user.last_name} ${user.email}`}
                 onSelect={() => {
-                  runCommand(() => navigate('/admin/user-management'));
+                  runCommand(() => navigate(`/admin/user/${user.id}/edit`));
                 }}
               >
                 <User className="mr-2 h-4 w-4" />
