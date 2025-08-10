@@ -39,3 +39,8 @@ export interface SortConfig {
   key: string;
   direction: 'ascending' | 'descending';
 }
+
+export interface FullUserProfile extends Profile {
+  status: 'Active' | 'Invited';
+  last_sign_in_at?: string;
+}
