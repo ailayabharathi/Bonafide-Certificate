@@ -1,47 +1,18 @@
 import { useState, useMemo } from "react";
 import { Profile, useAuth } from "@/contexts/AuthContext";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
-import { Pencil, ArrowUpDown, ArrowUp, ArrowDown, UserCog, Trash2, XCircle } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { EditUserDialog } from "./EditUserDialog";
 import { DeleteUserDialog } from "./DeleteUserDialog";
-import { ExportButton } from "./ExportButton";
-import { departments } from "@/lib/departments";
 import { EditUserRoleDialog } from "./EditUserRoleDialog";
-import { DataTable } from "./DataTable";
 import { useUserManagementTableLogic } from "@/hooks/useUserManagementTableLogic";
 import { getUserManagementTableColumns } from "@/lib/user-management-table-columns";
+import { UserManagementContent } from "./UserManagementContent"; // Import the new component
 
 interface UserManagementTableProps {
   users: Profile[];
   onUserUpdate: () => void;
 }
-
-type UserRole = 'student' | 'tutor' | 'hod' | 'admin';
-type SortableKey = 'name' | 'email' | 'role' | 'department' | 'register_number';
 
 export function UserManagementTable({ users, onUserUpdate }: UserManagementTableProps) {
   const { user: currentUser, profile: currentUserProfile } = useAuth();
@@ -65,7 +36,6 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
     processedUsers,
     totalPages,
     paginatedUsers,
-    ITEMS_PER_PAGE,
     handleClearFilters,
     showClearFilters,
   } = useUserManagementTableLogic(users);
@@ -101,61 +71,24 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-        <Input
-          placeholder="Search by name, email, department..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-sm"
-        />
-        <Select value={roleFilter} onValueChange={(value: UserRole | "all") => {
-          setRoleFilter(value);
-        }}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by role" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Roles</SelectItem>
-            <SelectItem value="student">Student</SelectItem>
-            <SelectItem value="tutor">Tutor</SelectItem>
-            <SelectItem value="hod">HOD</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by department" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Departments</SelectItem>
-            {departments.map(dept => (
-              <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <ExportButton 
-          data={processedUsers}
-          filename={`user-management-${new Date().toISOString().split('T')[0]}.csv`}
-        />
-        {showClearFilters && (
-          <Button variant="outline" onClick={handleClearFilters}>
-            <XCircle className="mr-2 h-4 w-4" />
-            Clear Filters
-          </Button>
-        )}
-      </div>
-      <div className="border rounded-md">
-        <DataTable
-          columns={columns}
-          data={paginatedUsers}
-          sortConfig={sortConfig as { key: string; direction: 'ascending' | 'descending' }}
-          onSort={handleSort}
-          currentPage={currentPage}
-          onPageChange={setCurrentPage}
-          totalPages={totalPages}
-          rowKey={(row) => row.id}
-        />
-      </div>
+      <UserManagementContent
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        roleFilter={roleFilter}
+        setRoleFilter={setRoleFilter}
+        departmentFilter={departmentFilter}
+        setDepartmentFilter={setDepartmentFilter}
+        handleClearFilters={handleClearFilters}
+        showClearFilters={showClearFilters}
+        processedUsers={processedUsers}
+        paginatedUsers={paginatedUsers}
+        columns={columns}
+        sortConfig={sortConfig as { key: string; direction: 'ascending' | 'descending' }}
+        handleSort={handleSort}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        totalPages={totalPages}
+      />
 
       <DeleteUserDialog
         user={userToDelete}
