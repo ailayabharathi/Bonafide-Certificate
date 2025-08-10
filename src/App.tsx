@@ -18,6 +18,7 @@ import CertificatePage from "./pages/CertificatePage";
 import UserManagement from "./pages/UserManagement";
 import VerifyCertificatePage from "./pages/VerifyCertificatePage";
 import MyTuteesPage from "./pages/MyTuteesPage";
+import DepartmentStudentsPage from "./pages/DepartmentStudentsPage";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={["hod"]}>
                       <HodPortal />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/hod/department-students"
+                  element={
+                    <ProtectedRoute allowedRoles={["hod"]}>
+                      <DepartmentStudentsPage />
                     </ProtectedRoute>
                   }
                 />

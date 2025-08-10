@@ -33,6 +33,12 @@ export const navItems: NavItem[] = [
     roles: ["hod"],
   },
   {
+    title: "Department Students",
+    href: "/hod/department-students",
+    icon: Users,
+    roles: ["hod"],
+  },
+  {
     title: "Dashboard",
     href: "/admin/dashboard",
     icon: LayoutDashboard,
