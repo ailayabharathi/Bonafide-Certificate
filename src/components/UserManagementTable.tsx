@@ -13,10 +13,9 @@ import { ManagedUser } from "@/types";
 interface UserManagementTableProps {
   users: ManagedUser[];
   onUserUpdate: () => void;
-  onResendInvite: (email: string, role: 'student' | 'tutor' | 'hod' | 'admin') => Promise<void>;
 }
 
-export function UserManagementTable({ users, onUserUpdate, onResendInvite }: UserManagementTableProps) {
+export function UserManagementTable({ users, onUserUpdate }: UserManagementTableProps) {
   const { profile: currentUserProfile } = useAuth();
   const [userToEditProfile, setUserToEditProfile] = useState<ManagedUser | null>(null);
   const [userToEditRole, setUserToEditRole] = useState<ManagedUser | null>(null);
@@ -68,8 +67,7 @@ export function UserManagementTable({ users, onUserUpdate, onResendInvite }: Use
     setUserToEditProfile,
     setUserToEditRole,
     setUserToDelete,
-    onResendInvite,
-  }), [currentUserProfile, onResendInvite]);
+  }), [currentUserProfile]);
 
   return (
     <>

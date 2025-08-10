@@ -5,17 +5,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Pencil, UserCog, Trash2, Send } from "lucide-react";
+import { Pencil, UserCog, Trash2 } from "lucide-react";
 import { Profile } from "@/contexts/AuthContext";
 import { ManagedUser, ColumnDef } from "@/types";
-import { Badge } from "@/components/ui/badge";
 
 interface GetUserManagementTableColumnsProps {
   currentUserProfile: Profile | null;
   setUserToEditProfile: (user: ManagedUser) => void;
   setUserToEditRole: (user: ManagedUser) => void;
   setUserToDelete: (user: ManagedUser) => void;
-  onResendInvite: (email: string, role: 'student' | 'tutor' | 'hod' | 'admin') => Promise<void>;
 }
 
 export const getUserManagementTableColumns = ({
@@ -23,7 +21,6 @@ export const getUserManagementTableColumns = ({
   setUserToEditProfile,
   setUserToEditRole,
   setUserToDelete,
-  onResendInvite,
 }: GetUserManagementTableColumnsProps): ColumnDef<ManagedUser>[] => {
   return [
     {
@@ -45,39 +42,13 @@ export const getUserManagementTableColumns = ({
       enableSorting: true,
     },
     {
-      id: 'status',
-      header: 'Status',
-      cell: ({ row }: { row: ManagedUser }) => {
-        const isInvited = row.invited_at && !row.last_sign_in_at;
-        return isInvited ? (
-          <Badge variant="secondary">Invited</Badge>
-        ) : (
-          <Badge variant="default" className="bg-green-500">Active</Badge>
-        );
-      },
-      enableSorting: false,
-    },
-    {
       id: 'actions',
       header: 'Actions',
       cell: ({ row }: { row: ManagedUser }) => {
         const isCurrentUser = row.id === currentUserProfile?.id;
-        const isInvited = row.invited_at && !row.last_sign_in_at;
 
         return (
           <div className="flex gap-1 justify-end">
-            {isInvited && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={() => onResendInvite(row.email!, row.role)}>
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent><p>Resend Invitation</p></TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
