@@ -11,6 +11,8 @@ const fetchRequests = async (userId?: string, startDate?: Date, endDate?: Date):
     .select("*, profiles(first_name, last_name, department, register_number)")
     .order("created_at", { ascending: false });
 
+  // If a userId is provided, fetch only for that user.
+  // If no userId is provided, it fetches all requests (for staff).
   if (userId) {
     query = query.eq("user_id", userId);
   }
