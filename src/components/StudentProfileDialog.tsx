@@ -6,49 +6,22 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Profile } from "@/contexts/AuthContext";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { showError } from "@/utils/toast";
+import { useStudentProfileLogic } from "@/hooks/useStudentProfileLogic";
 
 interface StudentProfileDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  userId: string | null; // Now accepts a userId
+  userId: string | null;
 }
-
-const fetchProfileById = async (userId: string): Promise<Profile | null> => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
-
-  if (error) {
-    showError("Failed to fetch student profile.");
-    throw new Error(error.message);
-  }
-  return data as Profile;
-};
 
 export function StudentProfileDialog({
   isOpen,
   onOpenChange,
   userId,
 }: StudentProfileDialogProps) {
-  const { data: profile, isLoading, isError, error } = useQuery<Profile | null>({
-    queryKey: ['studentProfile', userId],
-    queryFn: () => (userId ? fetchProfileById(userId) : Promise.resolve(null)),
-    enabled: isOpen && !!userId, // Only fetch when dialog is open and userId is available
-  });
-
-  const getInitials = (firstName: string | null | undefined, lastName: string | null | undefined) => {
-    const first = firstName?.charAt(0) || '';
-    const last = lastName?.charAt(0) || '';
-    return `${first}${last}`.toUpperCase();
-  };
+  const { profile, isLoading, isError, error, getInitials } = useStudentProfileLogic(userId, isOpen);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

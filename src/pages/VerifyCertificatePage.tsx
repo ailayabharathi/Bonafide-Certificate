@@ -1,51 +1,14 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { BonafideRequestWithProfile } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle, XCircle, ShieldCheck, Loader2 } from "lucide-react";
+import { ShieldCheck, XCircle } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { MadeWithDyad } from "@/components/made-with-dyad";
+import { useVerifyCertificatePageLogic } from "@/hooks/useVerifyCertificatePageLogic";
 
 const VerifyCertificatePage = () => {
-  const { requestId } = useParams<{ requestId: string }>();
-  const [request, setRequest] = useState<BonafideRequestWithProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchCertificate = async () => {
-      if (!requestId) {
-        setError("No Certificate ID provided.");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const { data, error: fetchError } = await supabase
-          .from("bonafide_requests")
-          .select("*, profiles(first_name, last_name, department, register_number)")
-          .eq("id", requestId)
-          .eq("status", "completed") // Only show completed certificates
-          .single();
-
-        if (fetchError || !data) {
-          throw new Error("Certificate not found, expired, or invalid. Please check the ID and try again.");
-        }
-
-        setRequest(data as BonafideRequestWithProfile);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCertificate();
-  }, [requestId]);
+  const { loading, error, request } = useVerifyCertificatePageLogic();
 
   const renderContent = () => {
     if (loading) {
