@@ -1,36 +1,10 @@
-import { useState, useMemo, useEffect } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { useMemo } from "react";
 import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
-import { cn } from "@/lib/utils";
-import { useAuth, Profile } from "@/contexts/AuthContext";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { ArrowUpDown, ArrowUp, ArrowDown, User, Eye } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { StaffRequestsToolbar } from "./StaffRequestsToolbar";
-import { RequestActionDialog } from "./RequestActionDialog";
-import { StudentProfileDialog } from "./StudentProfileDialog";
-import { supabase } from "@/integrations/supabase/client";
-import { showError } from "@/utils/toast";
-import { Link } from "react-router-dom";
-import { DataTable } from "./DataTable"; // Keep DataTable import
+import { useAuth } from "@/contexts/AuthContext";
 import { useStaffRequestsTableLogic } from "@/hooks/useStaffRequestsTableLogic";
 import { useStaffRequestsTableActions } from "@/hooks/useStaffRequestsTableActions";
-import { getStaffTableColumns } from "@/lib/staff-table-columns"; // Import getStaffTableColumns
+import { getStaffTableColumns } from "@/lib/staff-table-columns";
+import { StaffRequestsTabs } from "./StaffRequestsTabs"; // Import the new component
 
 interface StaffRequestsTableProps {
   requests: BonafideRequestWithProfile[];
@@ -57,7 +31,7 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
     handleToggleSelect,
     handleSelectAllOnPage,
     handleClearFilters,
-    requestsForCurrentTab,
+    requestsForCurrentTab, // This is needed for export button in toolbar
     paginatedRequestsForCurrentTab,
     totalPagesForCurrentTab,
     tabsInfo,
@@ -94,59 +68,40 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
 
   return (
     <div className="border rounded-md bg-background">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <StaffRequestsToolbar
-          tabs={tabsInfo}
-          activeTab={activeTab}
-          requestsForExport={requestsForCurrentTab}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          departmentFilter={departmentFilter}
-          onDepartmentFilterChange={setDepartmentFilter}
-          selectedIdsCount={selectedIds.length}
-          onBulkAction={(type) => openActionDialog(type, true)}
-          onClearSelection={() => setSelectedIds([])}
-          getApproveButtonText={getApproveButtonText}
-          profile={profile}
-          onClearFilters={handleClearFilters}
-        />
-        {tabsInfo.map(tab => (
-          <TabsContent key={tab.value} value={tab.value} className="m-0">
-            <DataTable
-              columns={columns}
-              data={paginatedRequestsForCurrentTab}
-              sortConfig={sortConfig as { key: string; direction: 'ascending' | 'descending' }}
-              onSort={handleSort}
-              currentPage={currentPage}
-              onPageChange={(page) => setCurrentPage(page)}
-              totalPages={totalPagesForCurrentTab}
-              enableRowSelection={true}
-              selectedIds={selectedIds}
-              onToggleSelect={handleToggleSelect}
-              onSelectAll={handleSelectAllOnPage}
-              actionableIdsOnPage={actionableIdsOnPage}
-              rowKey={(row) => row.id}
-            />
-          </TabsContent>
-        ))}
-      </Tabs>
-
-      <RequestActionDialog
-        isOpen={!!actionType}
-        onOpenChange={(open) => !open && closeActionDialog()}
+      <StaffRequestsTabs
+        tabsInfo={tabsInfo}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        requestsForExport={requestsForCurrentTab}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        departmentFilter={departmentFilter}
+        onDepartmentFilterChange={setDepartmentFilter}
+        selectedIds={selectedIds}
+        onToggleSelect={handleToggleSelect}
+        onSelectAll={handleSelectAllOnPage}
+        actionableIdsOnPage={actionableIdsOnPage}
+        onClearSelection={() => setSelectedIds([])}
+        getApproveButtonText={getApproveButtonText}
+        profile={profile}
+        onClearFilters={handleClearFilters}
+        columns={columns}
+        paginatedRequestsForCurrentTab={paginatedRequestsForCurrentTab}
+        sortConfig={sortConfig as { key: string; direction: 'ascending' | 'descending' }}
+        handleSort={handleSort}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        totalPagesForCurrentTab={totalPagesForCurrentTab}
+        actionRequest={actionRequest}
         actionType={actionType}
         isBulk={isBulk}
-        request={actionRequest}
-        selectedIdsCount={selectedIds.length}
-        onConfirm={handleConfirmAction}
         isSubmitting={isSubmitting}
-        getApproveButtonText={getApproveButtonText}
-      />
-
-      <StudentProfileDialog
-        isOpen={isProfileDialogOpen}
-        onOpenChange={setIsProfileDialogOpen}
-        userId={studentUserIdToView}
+        isProfileDialogOpen={isProfileDialogOpen}
+        studentUserIdToView={studentUserIdToView}
+        openActionDialog={openActionDialog}
+        closeActionDialog={closeActionDialog}
+        handleConfirmAction={handleConfirmAction}
+        setIsProfileDialogOpen={setIsProfileDialogOpen}
       />
     </div>
   );
