@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +8,9 @@ import { ColumnDef, ManagedUser } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Eye } from "lucide-react";
+import { TuteeRequestsDialog } from "@/components/TuteeRequestsDialog";
 
 const fetchTutees = async (department: string): Promise<ManagedUser[]> => {
   const { data, error } = await supabase
@@ -25,6 +28,7 @@ const fetchTutees = async (department: string): Promise<ManagedUser[]> => {
 
 const MyTuteesPage = () => {
   const { profile } = useAuth();
+  const [selectedTutee, setSelectedTutee] = useState<ManagedUser | null>(null);
 
   const { data: tutees = [], isLoading } = useQuery<ManagedUser[]>({
     queryKey: ["tutees", profile?.department],
@@ -59,41 +63,59 @@ const MyTuteesPage = () => {
       cell: ({ row }: { row: ManagedUser }) => row.email,
       enableSorting: true,
     },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }: { row: ManagedUser }) => (
+        <Button variant="outline" size="sm" onClick={() => setSelectedTutee(row)}>
+          <Eye className="mr-2 h-4 w-4" />
+          View Requests
+        </Button>
+      ),
+      className: "text-right",
+    },
   ], []);
 
   return (
-    <DashboardLayout title="My Tutees">
-      <Card>
-        <CardHeader>
-          <CardTitle>Student List</CardTitle>
-          <CardDescription>
-            A list of all students in the {profile?.department} department.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-            </div>
-          ) : (
-            <div className="border rounded-md">
-              <DataTable
-                columns={columns}
-                data={tutees}
-                sortConfig={{ key: 'name', direction: 'ascending' }}
-                onSort={() => {}} // Sorting is handled by the query for now
-                currentPage={1}
-                onPageChange={() => {}}
-                totalPages={1}
-                rowKey={(row) => row.id}
-              />
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </DashboardLayout>
+    <>
+      <DashboardLayout title="My Tutees">
+        <Card>
+          <CardHeader>
+            <CardTitle>Student List</CardTitle>
+            <CardDescription>
+              A list of all students in the {profile?.department} department.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ) : (
+              <div className="border rounded-md">
+                <DataTable
+                  columns={columns}
+                  data={tutees}
+                  sortConfig={{ key: 'name', direction: 'ascending' }}
+                  onSort={() => {}} // Sorting is handled by the query for now
+                  currentPage={1}
+                  onPageChange={() => {}}
+                  totalPages={1}
+                  rowKey={(row) => row.id}
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </DashboardLayout>
+      <TuteeRequestsDialog
+        tutee={selectedTutee}
+        isOpen={!!selectedTutee}
+        onOpenChange={(open) => !open && setSelectedTutee(null)}
+      />
+    </>
   );
 };
 
