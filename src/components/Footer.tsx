@@ -1,15 +1,10 @@
 import { Facebook, Linkedin, Twitter, Youtube } from "lucide-react";
 
-export function Footer() {
+export default function Footer() {
   return (
     <footer className="bg-background border-t">
       <div className="container mx-auto py-8 px-4 md:px-6">
-        <div className="grid<think>**Finalizing LinkedIn Link**
-
-I've completed the integration by importing the `Linkedin` icon and adding the appropriate `<a>` tag with the user-provided URL and necessary attributes within the `Footer.tsx` component. The LinkedIn icon is now properly positioned in the social media section.
-
-
-</think> grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-2">
             <h2 className="text-2xl font-bold mb-2">Adhiyamaan College of Engineering</h2>
             <p className="text-muted-foreground">Dr. M.G.R. Nagar, Hosur - 635130, Krishnagiri (Dt), Tamilnadu, India.</p>
