@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./components/ThemeProvider";
@@ -28,7 +27,6 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-          <Toaster />
           <Sonner />
           <BrowserRouter>
             <AuthProvider>
