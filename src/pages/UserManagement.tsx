@@ -13,6 +13,8 @@ const UserManagement = () => {
     isInviteDialogOpen,
     setIsInviteDialogOpen,
     handleInviteSent,
+    isExporting,
+    handleExport,
     ...tableProps
   } = useUserManagement();
 
@@ -41,7 +43,11 @@ const UserManagement = () => {
                 <Skeleton className="h-12 w-full" />
               </div>
             ) : (
-              <UserManagementTable {...tableProps} />
+              <UserManagementTable
+                {...tableProps}
+                isExporting={isExporting}
+                handleExport={handleExport}
+              />
             )}
           </CardContent>
         </Card>

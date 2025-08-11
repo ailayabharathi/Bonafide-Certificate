@@ -29,7 +29,6 @@ interface UserManagementTableProps {
   setDepartmentFilter: (department: string) => void;
   handleClearFilters: () => void;
   showClearFilters: boolean;
-  processedUsers: ManagedUser[];
   paginatedUsers: ManagedUser[];
   sortConfig: SortConfig;
   handleSort: (key: string) => void;
@@ -43,6 +42,8 @@ interface UserManagementTableProps {
   isDeleting: boolean;
   handleDeleteUser: () => void;
   handleRoleUpdated: () => void;
+  isExporting: boolean;
+  handleExport: () => void;
 }
 
 export function UserManagementTable({
@@ -54,7 +55,6 @@ export function UserManagementTable({
   setDepartmentFilter,
   handleClearFilters,
   showClearFilters,
-  processedUsers,
   paginatedUsers,
   sortConfig,
   handleSort,
@@ -68,6 +68,8 @@ export function UserManagementTable({
   isDeleting,
   handleDeleteUser,
   handleRoleUpdated,
+  isExporting,
+  handleExport,
 }: UserManagementTableProps) {
   const { profile: currentUserProfile } = useAuth();
 
@@ -110,8 +112,8 @@ export function UserManagementTable({
           </SelectContent>
         </Select>
         <ExportButton 
-          data={processedUsers}
-          filename={`user-management-${new Date().toISOString().split('T')[0]}.csv`}
+          onExport={handleExport}
+          isExporting={isExporting}
         />
         {showClearFilters && (
           <Button variant="outline" onClick={handleClearFilters}>

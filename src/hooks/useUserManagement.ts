@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ManagedUser, SortConfig } from "@/types";
 import { showError, showSuccess } from "@/utils/toast";
+import { exportToCsv } from "@/lib/utils";
 
 type UserRole = 'student' | 'tutor' | 'hod' | 'admin';
 const ITEMS_PER_PAGE = 10;
@@ -58,6 +59,7 @@ export const useUserManagement = () => {
   const [userToEditRole, setUserToEditRole] = useState<ManagedUser | null>(null);
   const [userToDelete, setUserToDelete] = useState<ManagedUser | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Filtering and sorting states
   const [searchQuery, setSearchQuery] = useState("");
@@ -123,6 +125,57 @@ export const useUserManagement = () => {
     queryClient.invalidateQueries({ queryKey: ['users'] });
   };
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      let query = supabase
+        .from('profiles')
+        .select('id, email, role, first_name, last_name, department, register_number, created_at');
+
+      if (searchQuery) {
+        const searchPattern = `%${searchQuery}%`;
+        query = query.or(`first_name.ilike.${searchPattern},last_name.ilike.${searchPattern},email.ilike.${searchPattern},register_number.ilike.${searchPattern}`);
+      }
+      if (roleFilter !== 'all') {
+        query = query.eq('role', roleFilter);
+      }
+      if (departmentFilter !== 'all') {
+        query = query.eq('department', departmentFilter);
+      }
+      const sortKey = sortConfig.key === 'name' ? 'first_name' : sortConfig.key;
+      query = query.order(sortKey, { ascending: sortConfig.direction === 'ascending' });
+      if (sortConfig.key === 'name') {
+        query = query.order('last_name', { ascending: sortConfig.direction === 'ascending' });
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        showError("No data to export for the current filters.");
+        return;
+      }
+      
+      const flattenedData = data.map(user => ({
+        id: user.id,
+        name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
+        email: user.email,
+        role: user.role,
+        department: user.department || '',
+        register_number: user.register_number || '',
+        date_joined: new Date(user.created_at).toISOString().split('T')[0],
+      }));
+
+      exportToCsv(`user-management-${new Date().toISOString().split('T')[0]}.csv`, flattenedData);
+      showSuccess("Data exported successfully!");
+
+    } catch (error: any) {
+      showError(error.message || "Failed to export users.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const showClearFilters = searchQuery !== "" || roleFilter !== "all" || departmentFilter !== "all";
 
   return {
@@ -140,7 +193,6 @@ export const useUserManagement = () => {
     setCurrentPage,
     sortConfig,
     handleSort,
-    processedUsers: users, // For export
     totalPages,
     paginatedUsers: users,
     handleClearFilters,
@@ -152,5 +204,7 @@ export const useUserManagement = () => {
     isDeleting,
     handleDeleteUser,
     handleRoleUpdated,
+    isExporting,
+    handleExport,
   };
 };
