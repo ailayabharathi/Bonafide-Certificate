@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { BonafideRequest, BonafideStatus } from "@/types";
+import { useState, useMemo } from "react";
+import { BonafideRequest, BonafideStatus, SortConfig } from "@/types";
 import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useBonafideRequests } from "@/hooks/useBonafideRequests";
@@ -10,67 +11,63 @@ import { useStaffDashboardData } from "@/hooks/useStaffDashboardData";
 import { useAuth, Profile } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
 import { DateRange } from "react-day-picker";
 
-const fetchAllUsers = async (): Promise<Profile[]> => {
-  const { data, error } = await supabase.from("profiles").select("*");
-  if (error) {
-    console.error("Failed to fetch users for dashboard", error);
-    return [];
-  }
-  return data || [];
+const fetchAllAdminData = async () => {
+  const usersPromise = supabase.from("profiles").select("*");
+  const requestsPromise = supabase.from("bonafide_requests").select("*, profiles!inner(first_name, last_name, department, register_number)");
+  
+  const [usersResult, requestsResult] = await Promise.all([usersPromise, requestsPromise]);
+
+  if (usersResult.error) console.error("Failed to fetch users for dashboard", usersResult.error);
+  if (requestsResult.error) console.error("Failed to fetch requests for dashboard", requestsResult.error);
+
+  return {
+    allUsers: (usersResult.data as Profile[]) || [],
+    allRequests: (requestsResult.data as BonafideRequest[]) || [],
+  };
 };
 
 const AdminDashboard = () => {
   const { profile } = useAuth();
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState("actionable");
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'created_at', direction: 'descending' });
 
-  const handleRealtimeEvent = (
-    payload: RealtimePostgresChangesPayload<BonafideRequest>,
-  ) => {
-    if (
-      payload.eventType === "UPDATE" &&
-      payload.new.status === "approved_by_hod"
-    ) {
+  const statusFilter = useMemo(() => {
+    if (activeTab === 'actionable') {
+      if (profile?.role === 'admin') return 'approved_by_hod';
+    }
+    return activeTab;
+  }, [activeTab, profile]);
+
+  const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
+    if (payload.eventType === "UPDATE" && payload.new.status === "approved_by_hod") {
       showSuccess("A request is ready for final processing.");
     }
   };
 
-  const {
-    requests,
-    isLoading: requestsLoading,
-    updateRequest,
-    bulkUpdateRequest,
-  } = useBonafideRequests(
-    "public:bonafide_requests:admin",
-    undefined,
-    handleRealtimeEvent,
-    dateRange?.from,
-    dateRange?.to,
-  );
-
-  const { data: allUsers = [], isLoading: usersLoading } = useQuery<Profile[]>({
-    queryKey: ["allUsers"],
-    queryFn: fetchAllUsers,
+  const { data: adminData, isLoading: allDataLoading } = useQuery({
+    queryKey: ["allAdminData"],
+    queryFn: fetchAllAdminData,
     enabled: profile?.role === "admin",
   });
 
-  const { stats, charts } = useStaffDashboardData(requests, profile, allUsers, dateRange);
+  const { requests, isLoading: filteredRequestsLoading, updateRequest, bulkUpdateRequest } = useBonafideRequests(
+    "public:bonafide_requests:admin",
+    { startDate: dateRange?.from, endDate: dateRange?.to, searchQuery, statusFilter, sortConfig, departmentFilter },
+    handleRealtimeEvent
+  );
 
-  const handleAction = async (
-    requestId: string,
-    newStatus: BonafideStatus,
-    rejectionReason?: string,
-  ) => {
+  const { stats, charts } = useStaffDashboardData(adminData?.allRequests || [], profile, adminData?.allUsers || [], dateRange);
+
+  const handleAction = async (requestId: string, newStatus: BonafideStatus, rejectionReason?: string) => {
     await updateRequest({ requestId, newStatus, rejectionReason });
   };
 
-  const handleBulkAction = async (
-    requestIds: string[],
-    newStatus: BonafideStatus,
-    rejectionReason?: string,
-  ) => {
+  const handleBulkAction = async (requestIds: string[], newStatus: BonafideStatus, rejectionReason?: string) => {
     await bulkUpdateRequest({ requestIds, newStatus, rejectionReason });
   };
 
@@ -89,12 +86,21 @@ const AdminDashboard = () => {
       headerActions={headerActions}
       stats={stats}
       charts={charts}
+      allRequests={adminData?.allRequests || []}
       requests={requests}
-      isLoading={requestsLoading || usersLoading}
+      isLoading={allDataLoading || filteredRequestsLoading}
       onAction={handleAction}
       onBulkAction={handleBulkAction}
       dateRange={dateRange}
       onDateRangeChange={setDateRange}
+      searchQuery={searchQuery}
+      onSearchQueryChange={setSearchQuery}
+      departmentFilter={departmentFilter}
+      onDepartmentFilterChange={setDepartmentFilter}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      sortConfig={sortConfig}
+      onSortChange={setSortConfig}
     />
   );
 };

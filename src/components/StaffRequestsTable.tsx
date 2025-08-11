@@ -1,42 +1,54 @@
 import { useMemo } from "react";
-import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
+import { BonafideRequestWithProfile, BonafideStatus, SortConfig } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStaffRequestsTableLogic } from "@/hooks/useStaffRequestsTableLogic";
 import { useStaffRequestsTableActions } from "@/hooks/useStaffRequestsTableActions";
 import { getStaffTableColumns } from "@/lib/staff-table-columns";
-import { StaffRequestsTabs } from "./StaffRequestsTabs"; // Import the new component
+import { StaffRequestsTabs } from "./StaffRequestsTabs";
 
 interface StaffRequestsTableProps {
   requests: BonafideRequestWithProfile[];
   onAction: (requestId: string, newStatus: BonafideStatus, rejectionReason?: string) => Promise<void>;
   onBulkAction: (requestIds: string[], newStatus: BonafideStatus, rejectionReason?: string) => Promise<void>;
-  onClearDateRange: () => void;
+  tabsInfo: { value: string; label: string; count: number }[];
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  departmentFilter: string;
+  onDepartmentFilterChange: (filter: string) => void;
+  onClearFilters: () => void;
+  sortConfig: SortConfig;
+  onSortChange: (config: SortConfig) => void;
 }
 
-export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDateRange }: StaffRequestsTableProps) {
+export function StaffRequestsTable({ 
+  requests, 
+  onAction, 
+  onBulkAction,
+  tabsInfo,
+  activeTab,
+  onTabChange,
+  searchQuery,
+  onSearchChange,
+  departmentFilter,
+  onDepartmentFilterChange,
+  onClearFilters,
+  sortConfig,
+  onSortChange,
+}: StaffRequestsTableProps) {
   const { profile } = useAuth();
   const {
-    searchQuery,
-    setSearchQuery,
-    departmentFilter,
-    setDepartmentFilter,
-    activeTab,
-    setActiveTab,
     currentPage,
     setCurrentPage,
-    sortConfig,
-    handleSort,
     selectedIds,
     setSelectedIds,
     handleToggleSelect,
     handleSelectAllOnPage,
-    handleClearFilters,
-    requestsForCurrentTab, // This is needed for export button in toolbar
-    paginatedRequestsForCurrentTab,
-    totalPagesForCurrentTab,
-    tabsInfo,
+    paginatedRequests,
+    totalPages,
     actionableIdsOnPage,
-  } = useStaffRequestsTableLogic(requests, profile, onClearDateRange);
+  } = useStaffRequestsTableLogic(requests, profile);
 
   const {
     actionRequest,
@@ -71,12 +83,12 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
       <StaffRequestsTabs
         tabsInfo={tabsInfo}
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        requestsForExport={requestsForCurrentTab}
+        setActiveTab={onTabChange}
+        requestsForExport={requests}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={onSearchChange}
         departmentFilter={departmentFilter}
-        onDepartmentFilterChange={setDepartmentFilter}
+        onDepartmentFilterChange={onDepartmentFilterChange}
         selectedIds={selectedIds}
         onToggleSelect={handleToggleSelect}
         onSelectAll={handleSelectAllOnPage}
@@ -84,14 +96,14 @@ export function StaffRequestsTable({ requests, onAction, onBulkAction, onClearDa
         onClearSelection={() => setSelectedIds([])}
         getApproveButtonText={getApproveButtonText}
         profile={profile}
-        onClearFilters={handleClearFilters}
+        onClearFilters={onClearFilters}
         columns={columns}
-        paginatedRequestsForCurrentTab={paginatedRequestsForCurrentTab}
+        paginatedRequestsForCurrentTab={paginatedRequests}
         sortConfig={sortConfig as { key: string; direction: 'ascending' | 'descending' }}
-        handleSort={handleSort}
+        handleSort={(key) => onSortChange({ key, direction: sortConfig.key === key && sortConfig.direction === 'ascending' ? 'descending' : 'ascending' })}
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
-        totalPagesForCurrentTab={totalPagesForCurrentTab}
+        totalPagesForCurrentTab={totalPages}
         actionRequest={actionRequest}
         actionType={actionType}
         isBulk={isBulk}

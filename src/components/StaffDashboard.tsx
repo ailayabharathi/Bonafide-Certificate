@@ -1,13 +1,14 @@
-import { ReactNode } from "react";
+import { ReactNode, useMemo } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatsCard } from "@/components/StatsCard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { StaffRequestsTable } from "@/components/StaffRequestsTable";
-import { BonafideRequestWithProfile, BonafideStatus } from "@/types";
+import { BonafideRequestWithProfile, BonafideStatus, SortConfig } from "@/types";
 import { LucideIcon } from "lucide-react";
 import { DateRangePicker } from "./DateRangePicker";
 import { DateRange } from "react-day-picker";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Stat {
   title: string;
@@ -32,12 +33,21 @@ interface StaffDashboardProps {
   headerActions?: ReactNode;
   stats: Stat[];
   charts: Chart[];
+  allRequests: BonafideRequestWithProfile[];
   requests: BonafideRequestWithProfile[];
   isLoading: boolean;
   onAction: (requestId: string, newStatus: BonafideStatus, rejectionReason?: string) => Promise<void>;
   onBulkAction: (requestIds: string[], newStatus: BonafideStatus, rejectionReason?: string) => Promise<void>;
   dateRange: DateRange | undefined;
   onDateRangeChange: (date: DateRange | undefined) => void;
+  searchQuery: string;
+  onSearchQueryChange: (query: string) => void;
+  departmentFilter: string;
+  onDepartmentFilterChange: (filter: string) => void;
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+  sortConfig: SortConfig;
+  onSortChange: (config: SortConfig) => void;
 }
 
 export const StaffDashboard = ({
@@ -45,14 +55,61 @@ export const StaffDashboard = ({
   headerActions,
   stats,
   charts,
+  allRequests,
   requests,
   isLoading,
   onAction,
   onBulkAction,
   dateRange,
   onDateRangeChange,
+  searchQuery,
+  onSearchQueryChange,
+  departmentFilter,
+  onDepartmentFilterChange,
+  activeTab,
+  onTabChange,
+  sortConfig,
+  onSortChange,
 }: StaffDashboardProps) => {
-  if (isLoading) {
+  const { profile } = useAuth();
+
+  const tabsInfo = useMemo(() => {
+    if (!profile) return [];
+    
+    const filteredByDate = dateRange?.from 
+      ? allRequests.filter(r => new Date(r.created_at) >= dateRange.from! && new Date(r.created_at) <= (dateRange.to || new Date()))
+      : allRequests;
+
+    const getCount = (status: BonafideStatus | 'actionable' | 'inProgress' | 'rejected' | 'all') => {
+      if (status === 'all') return filteredByDate.length;
+      if (status === 'inProgress') return filteredByDate.filter(r => ['pending', 'approved_by_tutor', 'approved_by_hod'].includes(r.status)).length;
+      if (status === 'rejected') return filteredByDate.filter(r => ['rejected_by_tutor', 'rejected_by_hod'].includes(r.status)).length;
+      if (status === 'actionable') {
+        if (profile.role === 'tutor') return filteredByDate.filter(r => r.status === 'pending').length;
+        if (profile.role === 'hod') return filteredByDate.filter(r => r.status === 'approved_by_tutor').length;
+        if (profile.role === 'admin') return filteredByDate.filter(r => r.status === 'approved_by_hod').length;
+        return 0;
+      }
+      return filteredByDate.filter(r => r.status === status).length;
+    };
+
+    return [
+      { value: 'actionable', label: 'Action Required', count: getCount('actionable') },
+      { value: 'inProgress', label: 'In Progress', count: getCount('inProgress') },
+      { value: 'completed', label: 'Completed', count: getCount('completed') },
+      { value: 'rejected', label: 'Rejected', count: getCount('rejected') },
+      { value: 'all', label: 'All', count: getCount('all') },
+    ];
+  }, [allRequests, profile, dateRange]);
+
+  const handleClearFilters = () => {
+    onDateRangeChange(undefined);
+    onSearchQueryChange("");
+    onDepartmentFilterChange("all");
+    onTabChange("actionable");
+  };
+
+  if (isLoading && allRequests.length === 0) {
     return (
       <DashboardLayout title={title} headerActions={headerActions}>
         <div className="space-y-4">
@@ -92,7 +149,21 @@ export const StaffDashboard = ({
           </div>
         )}
 
-        <StaffRequestsTable requests={requests} onAction={onAction} onBulkAction={onBulkAction} onClearDateRange={() => onDateRangeChange(undefined)} />
+        <StaffRequestsTable 
+          requests={requests} 
+          onAction={onAction} 
+          onBulkAction={onBulkAction}
+          tabsInfo={tabsInfo}
+          activeTab={activeTab}
+          onTabChange={onTabChange}
+          searchQuery={searchQuery}
+          onSearchChange={onSearchQueryChange}
+          departmentFilter={departmentFilter}
+          onDepartmentFilterChange={onDepartmentFilterChange}
+          onClearFilters={handleClearFilters}
+          sortConfig={sortConfig}
+          onSortChange={onSortChange}
+        />
       </div>
     </DashboardLayout>
   );
