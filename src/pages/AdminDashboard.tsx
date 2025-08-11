@@ -14,7 +14,7 @@ import { useState } from "react";
 import { DateRange } from "react-day-picker";
 
 const fetchAllUsers = async (): Promise<Profile[]> => {
-  const { data, error } = await supabase.from("profiles").select("role");
+  const { data, error } = await supabase.from("profiles").select("*");
   if (error) {
     console.error("Failed to fetch users for dashboard", error);
     return [];

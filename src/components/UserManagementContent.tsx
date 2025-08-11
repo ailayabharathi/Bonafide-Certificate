@@ -14,11 +14,13 @@ import { DataTable } from "./DataTable";
 import { ColumnDef, ManagedUser } from "@/types";
 import { departments } from "@/lib/departments";
 
+type UserRole = 'student' | 'tutor' | 'hod' | 'admin';
+
 interface UserManagementContentProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   roleFilter: string;
-  setRoleFilter: (role: string) => void;
+  setRoleFilter: (role: 'all' | UserRole) => void;
   departmentFilter: string;
   setDepartmentFilter: (department: string) => void;
   handleClearFilters: () => void;
@@ -60,7 +62,7 @@ export function UserManagementContent({
           onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-sm"
         />
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
+        <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as 'all' | UserRole)}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by role" />
           </SelectTrigger>

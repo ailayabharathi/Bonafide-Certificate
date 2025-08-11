@@ -10,7 +10,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { navItems } from "@/lib/navigation";
-import { useAuth, Profile } from "@/contexts/AuthContext";
+import { useAuth, type Profile } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { LogOut, User, Sun, Moon, Laptop } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
@@ -24,7 +24,7 @@ export function CommandMenu({ open, setOpen }: CommandMenuProps) {
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   const { setTheme } = useTheme();
-  const [users, setUsers] = React.useState<Profile[]>([]);
+  const [users, setUsers] = React.useState<Pick<Profile, 'id' | 'first_name' | 'last_name' | 'email'>[]>([]);
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
