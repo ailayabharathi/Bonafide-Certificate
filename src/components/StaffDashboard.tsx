@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatsCard } from "@/components/StatsCard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { StaffRequestsManager } from "@/components/StaffRequestsManager";
-import { BonafideRequestWithProfile, BonafideStatus, SortConfig } from "@/types";
+import { BonafideRequestWithProfile, SortConfig } from "@/types";
 import { LucideIcon } from "lucide-react";
 import { DateRangePicker } from "./DateRangePicker";
 import { DateRange } from "react-day-picker";
@@ -34,10 +34,7 @@ interface StaffDashboardProps {
   stats: Stat[];
   charts: Chart[];
   allRequests: BonafideRequestWithProfile[];
-  requests: BonafideRequestWithProfile[];
   isLoading: boolean;
-  onAction: (requestId: string, newStatus: BonafideStatus, rejectionReason?: string) => Promise<void>;
-  onBulkAction: (requestIds: string[], newStatus: BonafideStatus, rejectionReason?: string) => Promise<void>;
   dateRange: DateRange | undefined;
   onDateRangeChange: (date: DateRange | undefined) => void;
   searchQuery: string;
@@ -56,10 +53,7 @@ export const StaffDashboard = ({
   stats,
   charts,
   allRequests,
-  requests,
   isLoading,
-  onAction,
-  onBulkAction,
   dateRange,
   onDateRangeChange,
   searchQuery,
@@ -80,17 +74,18 @@ export const StaffDashboard = ({
       ? allRequests.filter(r => new Date(r.created_at) >= dateRange.from! && new Date(r.created_at) <= (dateRange.to || new Date()))
       : allRequests;
 
-    const getCount = (status: BonafideStatus | 'actionable' | 'inProgress' | 'rejected' | 'all') => {
-      if (status === 'all') return filteredByDate.length;
-      if (status === 'inProgress') return filteredByDate.filter(r => ['pending', 'approved_by_tutor', 'approved_by_hod'].includes(r.status)).length;
-      if (status === 'rejected') return filteredByDate.filter(r => ['rejected_by_tutor', 'rejected_by_hod'].includes(r.status)).length;
-      if (status === 'actionable') {
+    const getCount = (statusKey: 'actionable' | 'inProgress' | 'rejected' | 'completed' | 'all') => {
+      if (statusKey === 'all') return filteredByDate.length;
+      if (statusKey === 'inProgress') return filteredByDate.filter(r => ['pending', 'approved_by_tutor', 'approved_by_hod'].includes(r.status)).length;
+      if (statusKey === 'rejected') return filteredByDate.filter(r => ['rejected_by_tutor', 'rejected_by_hod'].includes(r.status)).length;
+      if (statusKey === 'completed') return filteredByDate.filter(r => r.status === 'completed').length;
+      if (statusKey === 'actionable') {
         if (profile.role === 'tutor') return filteredByDate.filter(r => r.status === 'pending').length;
         if (profile.role === 'hod') return filteredByDate.filter(r => r.status === 'approved_by_tutor').length;
         if (profile.role === 'admin') return filteredByDate.filter(r => r.status === 'approved_by_hod').length;
         return 0;
       }
-      return filteredByDate.filter(r => r.status === status).length;
+      return 0;
     };
 
     return [
@@ -150,9 +145,6 @@ export const StaffDashboard = ({
         )}
 
         <StaffRequestsManager 
-          requests={requests} 
-          onAction={onAction} 
-          onBulkAction={onBulkAction}
           tabsInfo={tabsInfo}
           activeTab={activeTab}
           onTabChange={onTabChange}
@@ -163,6 +155,8 @@ export const StaffDashboard = ({
           onClearFilters={handleClearFilters}
           sortConfig={sortConfig}
           onSortChange={onSortChange}
+          dateRange={dateRange}
+          allRequestsForExport={allRequests}
         />
       </div>
     </DashboardLayout>

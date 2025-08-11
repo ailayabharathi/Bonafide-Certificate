@@ -9,11 +9,13 @@ import { DataTable } from "@/components/DataTable";
 import { StaffRequestsToolbar } from "./StaffRequestsToolbar";
 import { RequestActionDialog } from "./RequestActionDialog";
 import { StudentProfileDialog } from "./StudentProfileDialog";
+import { useBonafideRequests } from "@/hooks/useBonafideRequests";
+import { DateRange } from "react-day-picker";
+import { showSuccess } from "@/utils/toast";
+import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { BonafideRequest } from "@/types";
 
 interface StaffRequestsManagerProps {
-  requests: BonafideRequestWithProfile[];
-  onAction: (requestId: string, newStatus: BonafideStatus, rejectionReason?: string) => Promise<void>;
-  onBulkAction: (requestIds: string[], newStatus: BonafideStatus, rejectionReason?: string) => Promise<void>;
   tabsInfo: { value: string; label: string; count: number }[];
   activeTab: string;
   onTabChange: (tab: string) => void;
@@ -24,12 +26,11 @@ interface StaffRequestsManagerProps {
   onClearFilters: () => void;
   sortConfig: SortConfig;
   onSortChange: (config: SortConfig) => void;
+  dateRange: DateRange | undefined;
+  allRequestsForExport: BonafideRequestWithProfile[];
 }
 
 export function StaffRequestsManager({ 
-  requests, 
-  onAction, 
-  onBulkAction,
   tabsInfo,
   activeTab,
   onTabChange,
@@ -40,8 +41,51 @@ export function StaffRequestsManager({
   onClearFilters,
   sortConfig,
   onSortChange,
+  dateRange,
+  allRequestsForExport,
 }: StaffRequestsManagerProps) {
   const { profile } = useAuth();
+
+  const statusFilter = useMemo(() => {
+    if (activeTab === 'actionable') {
+      if (profile?.role === 'tutor') return 'pending';
+      if (profile?.role === 'hod') return 'approved_by_tutor';
+      if (profile?.role === 'admin') return 'approved_by_hod';
+    }
+    if (activeTab === 'inProgress') return 'in_progress';
+    if (activeTab === 'rejected') return 'rejected';
+    if (activeTab === 'completed') return 'completed';
+    return 'all';
+  }, [activeTab, profile]);
+
+  const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
+    if (payload.eventType !== 'UPDATE' && payload.eventType !== 'INSERT') return;
+    const newStatus = payload.new.status;
+    let message = "";
+    if (profile?.role === 'tutor' && newStatus === 'pending' && payload.eventType === 'INSERT') {
+      message = "New request received for your review.";
+    } else if (profile?.role === 'hod' && newStatus === 'approved_by_tutor') {
+      message = "A request requires your approval.";
+    } else if (profile?.role === 'admin' && newStatus === 'approved_by_hod') {
+      message = "A request is ready for final processing.";
+    }
+    if (message) {
+      showSuccess(message);
+    }
+  };
+
+  const { requests, updateRequest, bulkUpdateRequest } = useBonafideRequests(
+    `staff-requests-manager:${profile?.role}`,
+    { 
+      startDate: dateRange?.from, 
+      endDate: dateRange?.to, 
+      searchQuery, 
+      statusFilter, 
+      sortConfig, 
+      departmentFilter 
+    },
+    handleRealtimeEvent
+  );
 
   const isRowSelectable = useCallback((request: BonafideRequestWithProfile) => {
     if (profile?.role === 'tutor') return request.status === 'pending';
@@ -81,8 +125,8 @@ export function StaffRequestsManager({
     setIsProfileDialogOpen,
   } = useStaffRequestsTableActions({
     profile,
-    onAction,
-    onBulkAction,
+    onAction: updateRequest,
+    onBulkAction: bulkUpdateRequest,
     selectedIds,
     setSelectedIds,
   });
@@ -100,7 +144,7 @@ export function StaffRequestsManager({
         <StaffRequestsToolbar
           tabs={tabsInfo}
           activeTab={activeTab}
-          requestsForExport={requests}
+          requestsForExport={allRequestsForExport}
           searchQuery={searchQuery}
           onSearchChange={onSearchChange}
           departmentFilter={departmentFilter}

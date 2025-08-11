@@ -2,12 +2,9 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, Profile } from "@/contexts/AuthContext";
-import { useBonafideRequests } from "./useBonafideRequests";
 import { useStaffDashboardData } from "./useStaffDashboardData";
 import { DateRange } from "react-day-picker";
-import { BonafideStatus, SortConfig, BonafideRequestWithProfile, BonafideRequest } from "@/types";
-import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
-import { showSuccess } from "@/utils/toast";
+import { SortConfig, BonafideRequestWithProfile } from "@/types";
 
 const fetchAllDashboardData = async (role: Profile['role']) => {
   const requestsPromise = supabase
@@ -45,55 +42,12 @@ export const useStaffPortal = (role: Profile['role']) => {
 
   const { profile } = useAuth();
 
-  const statusFilter = useMemo(() => {
-    if (activeTab === 'actionable') {
-      if (role === 'tutor') return 'pending';
-      if (role === 'hod') return 'approved_by_tutor';
-      if (role === 'admin') return 'approved_by_hod';
-    }
-    return activeTab;
-  }, [activeTab, role]);
-
-  const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
-    if (payload.eventType !== 'UPDATE' && payload.eventType !== 'INSERT') return;
-    const newStatus = payload.new.status;
-    let message = "";
-    if (role === 'tutor' && newStatus === 'pending' && payload.eventType === 'INSERT') {
-      message = "New request received for your review.";
-    } else if (role === 'hod' && newStatus === 'approved_by_tutor') {
-      message = "A request requires your approval.";
-    } else if (role === 'admin' && newStatus === 'approved_by_hod') {
-      message = "A request is ready for final processing.";
-    }
-    if (message) {
-      showSuccess(message);
-    }
-  };
-
-  // Data fetching and mutations
+  // Data fetching for dashboard stats and charts
   const { data: dashboardSourceData, isLoading: isSourceDataLoading } = useQuery({
-    queryKey: ['allDashboardData', role],
+    queryKey: ['allDashboardData', role, dateRange],
     queryFn: () => fetchAllDashboardData(role),
     enabled: !!profile,
   });
-
-  const { 
-    requests, 
-    isLoading: isFilteredRequestsLoading, 
-    updateRequest, 
-    bulkUpdateRequest 
-  } = useBonafideRequests(
-    `public:bonafide_requests:${role}`,
-    { 
-      startDate: dateRange?.from, 
-      endDate: dateRange?.to, 
-      searchQuery, 
-      statusFilter, 
-      sortConfig, 
-      departmentFilter 
-    },
-    onRealtimeEvent
-  );
 
   // Data processing for charts and stats
   const { stats, charts } = useStaffDashboardData(
@@ -103,31 +57,11 @@ export const useStaffPortal = (role: Profile['role']) => {
     dateRange
   );
 
-  // Action handlers
-  const handleAction = async (
-    requestId: string,
-    newStatus: BonafideStatus,
-    rejectionReason?: string,
-  ) => {
-    await updateRequest({ requestId, newStatus, rejectionReason });
-  };
-
-  const handleBulkAction = async (
-    requestIds: string[],
-    newStatus: BonafideStatus,
-    rejectionReason?: string,
-  ) => {
-    await bulkUpdateRequest({ requestIds, newStatus, rejectionReason });
-  };
-
   return {
     stats,
     charts,
     allRequests: dashboardSourceData?.allRequests || [],
-    requests,
-    isLoading: isSourceDataLoading || isFilteredRequestsLoading,
-    onAction: handleAction,
-    onBulkAction: handleBulkAction,
+    isLoading: isSourceDataLoading,
     dateRange,
     onDateRangeChange: setDateRange,
     searchQuery,
