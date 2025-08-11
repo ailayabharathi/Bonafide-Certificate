@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,34 +17,37 @@ import { StatusDistributionChart } from "@/components/StatusDistributionChart";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ExportButton } from "@/components/ExportButton";
 import { useStudentPortalLogic } from "@/hooks/useStudentPortalLogic";
+import { useBonafideRequests } from "@/hooks/useBonafideRequests";
+import { useAuth } from "@/contexts/AuthContext";
+import { SortConfig } from "@/types";
 
 const StudentPortal = () => {
+  const { user } = useAuth();
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'created_at', direction: 'descending' });
+
   const {
-    user,
     isDialogOpen,
     setIsDialogOpen,
     requestToEdit,
-    requests,
-    isLoading,
-    deleteRequest,
-    stats,
-    chartData,
     handleNewRequestClick,
     handleEditRequest,
+    handleRealtimeEvent,
   } = useStudentPortalLogic();
+
+  const { requests, isLoading, deleteRequest } = useBonafideRequests(
+    `student-requests:${user?.id}`,
+    { userId: user?.id, statusFilter, searchQuery, sortConfig },
+    handleRealtimeEvent,
+  );
+
+  const { stats, chartData } = useStudentPortalLogic().dashboardData;
 
   const headerActions = (
     <div className="flex gap-2">
       <ExportButton
-        data={requests.map(req => ({
-          ...req,
-          profiles: {
-            first_name: user?.user_metadata.first_name,
-            last_name: user?.user_metadata.last_name,
-            department: user?.user_metadata.department,
-            register_number: user?.user_metadata.register_number,
-          }
-        }))}
+        data={requests}
         filename={`my-bonafide-requests-${new Date().toISOString().split('T')[0]}.csv`}
       />
       <Button onClick={handleNewRequestClick}>
@@ -74,7 +78,17 @@ const StudentPortal = () => {
                 <CardDescription>A log of all your bonafide certificate requests.</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
-                <StudentRequestsTable requests={requests} onEdit={handleEditRequest} onCancel={deleteRequest} />
+                <StudentRequestsTable
+                  requests={requests}
+                  onEdit={handleEditRequest}
+                  onCancel={deleteRequest}
+                  statusFilter={statusFilter}
+                  onStatusChange={setStatusFilter}
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  sortConfig={sortConfig}
+                  onSortChange={setSortConfig}
+                />
               </CardContent>
             </Card>
             <Card className="col-span-full lg:col-span-3">

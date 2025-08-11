@@ -1,15 +1,37 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { BonafideRequest } from "@/types";
 import { showSuccess, showError } from "@/utils/toast";
-import { useBonafideRequests } from "@/hooks/useBonafideRequests";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { useStudentDashboardData } from "@/hooks/useStudentDashboardData";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+// Fetch all requests for the dashboard stats, unfiltered.
+const fetchAllStudentRequests = async (userId: string) => {
+    const { data, error } = await supabase
+        .from('bonafide_requests')
+        .select('*')
+        .eq('user_id', userId);
+    if (error) {
+        showError("Could not load dashboard data.");
+        return [];
+    }
+    return data;
+};
 
 export const useStudentPortalLogic = () => {
   const { user } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [requestToEdit, setRequestToEdit] = useState<BonafideRequest | null>(null);
+
+  const { data: allRequests = [] } = useQuery<BonafideRequest[]>({
+    queryKey: ['allStudentRequests', user?.id],
+    queryFn: () => fetchAllStudentRequests(user!.id),
+    enabled: !!user,
+  });
+
+  const dashboardData = useStudentDashboardData(allRequests);
 
   const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
     if (payload.eventType !== 'UPDATE' || !user || payload.new.user_id !== user.id) return;
@@ -39,14 +61,6 @@ export const useStudentPortalLogic = () => {
     }
   };
 
-  const { requests, isLoading, deleteRequest } = useBonafideRequests(
-    `student-requests:${user?.id}`,
-    user?.id,
-    handleRealtimeEvent,
-  );
-
-  const { stats, chartData } = useStudentDashboardData(requests);
-
   const handleNewRequestClick = () => {
     setRequestToEdit(null);
     setIsDialogOpen(true);
@@ -62,12 +76,9 @@ export const useStudentPortalLogic = () => {
     isDialogOpen,
     setIsDialogOpen,
     requestToEdit,
-    requests,
-    isLoading,
-    deleteRequest,
-    stats,
-    chartData,
+    dashboardData,
     handleNewRequestClick,
     handleEditRequest,
+    handleRealtimeEvent,
   };
 };

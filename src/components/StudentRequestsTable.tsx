@@ -1,16 +1,7 @@
 import { useState, useMemo } from "react";
-import { Badge } from "@/components/ui/badge";
-import { BonafideRequest } from "@/types";
-import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { BonafideRequest, SortConfig } from "@/types";
 import { Button } from "./ui/button";
-import { Link } from "react-router-dom";
-import { Eye, Edit, Trash2, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { StudentRequestsToolbar } from "./StudentRequestsToolbar";
 import {
   AlertDialog,
@@ -21,60 +12,89 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { DataTable } from "./DataTable"; // Import DataTable
-import { useStudentRequestsTableLogic } from "@/hooks/useStudentRequestsTableLogic"; // Import the new hook
-import { getStudentTableColumns } from "@/lib/student-table-columns"; // Import the new utility
+import { DataTable } from "./DataTable";
+import { getStudentTableColumns } from "@/lib/student-table-columns";
 
-interface StudentRequestsTableProps { // Renamed interface
+const ITEMS_PER_PAGE = 10;
+
+interface StudentRequestsTableProps {
   requests: BonafideRequest[];
   onEdit: (request: BonafideRequest) => void;
   onCancel: (requestId: string) => Promise<void>;
+  statusFilter: string;
+  onStatusChange: (value: string) => void;
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+  sortConfig: SortConfig;
+  onSortChange: (config: SortConfig) => void;
 }
 
-export function StudentRequestsTable({ requests, onEdit, onCancel }: StudentRequestsTableProps) { // Renamed component
-  const {
-    sortConfig,
-    handleSort,
-    currentPage,
-    setCurrentPage,
-    statusFilter,
-    setStatusFilter,
-    searchQuery,
-    setSearchQuery,
-    requestToCancel,
-    setRequestToCancel,
-    isCancelling,
-    handleConfirmCancel,
-    handleClearFilters,
-    processedRequests,
-    totalPages,
-    paginatedRequests,
-  } = useStudentRequestsTableLogic(requests, onCancel);
+export function StudentRequestsTable({
+  requests,
+  onEdit,
+  onCancel,
+  statusFilter,
+  onStatusChange,
+  searchQuery,
+  onSearchChange,
+  sortConfig,
+  onSortChange,
+}: StudentRequestsTableProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [requestToCancel, setRequestToCancel] = useState<BonafideRequest | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
-  const showClearFilters = statusFilter !== "all" || searchQuery !== "";
+  const handleSort = (key: string) => {
+    const direction = sortConfig.key === key && sortConfig.direction === 'ascending' ? 'descending' : 'ascending';
+    onSortChange({ key, direction });
+    setCurrentPage(1);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!requestToCancel) return;
+    setIsCancelling(true);
+    try {
+      await onCancel(requestToCancel.id);
+    } catch (error) {
+      console.error("Failed to cancel request:", error);
+    } finally {
+      setIsCancelling(false);
+      setRequestToCancel(null);
+    }
+  };
+
+  const handleClearFilters = () => {
+    onStatusChange("all");
+    onSearchChange("");
+    setCurrentPage(1);
+  };
+
+  const totalPages = Math.ceil(requests.length / ITEMS_PER_PAGE);
+  const paginatedRequests = requests.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const columns = useMemo(() => getStudentTableColumns({
     onEdit,
-    onCancel: (id) => setRequestToCancel(requests.find(r => r.id === id) || null), // Pass a function that sets requestToCancel
-  }), [onEdit, requests, setRequestToCancel]);
-
+    onCancel: (id) => setRequestToCancel(requests.find(r => r.id === id) || null),
+  }), [onEdit, requests]);
 
   return (
     <>
       <div className="border rounded-md">
         <StudentRequestsToolbar
           statusFilter={statusFilter}
-          onStatusChange={setStatusFilter}
+          onStatusChange={onStatusChange}
           searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
+          onSearchChange={onSearchChange}
           onClearFilters={handleClearFilters}
         />
         <DataTable
           columns={columns}
           data={paginatedRequests}
-          sortConfig={sortConfig as { key: string; direction: 'ascending' | 'descending' }}
+          sortConfig={sortConfig}
           onSort={handleSort}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
