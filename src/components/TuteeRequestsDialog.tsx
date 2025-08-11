@@ -19,10 +19,7 @@ interface TuteeRequestsDialogProps {
 export const TuteeRequestsDialog = ({ tutee, isOpen, onOpenChange }: TuteeRequestsDialogProps) => {
   const { requests, isLoading } = useBonafideRequests(
     `tutee-requests:${tutee?.id}`,
-    tutee?.id,
-    undefined,
-    undefined,
-    undefined,
+    { userId: tutee?.id, page: 1 }, // Simplified params for fetching all requests for a user
   );
 
   return (
