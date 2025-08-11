@@ -25,7 +25,7 @@ interface DataTableProps<TData> {
   selectedIds?: string[];
   onToggleSelect?: (id: string, checked: boolean) => void;
   onSelectAll?: (checked: boolean) => void;
-  actionableIdsOnPage?: string[]; // For staff table, to know which rows can be selected
+  selectableRowIds?: string[];
   rowKey: (row: TData) => string; // Function to get a unique key for each row
 }
 
@@ -41,11 +41,11 @@ export function DataTable<TData>({
   selectedIds = [],
   onToggleSelect,
   onSelectAll,
-  actionableIdsOnPage = [],
+  selectableRowIds = [],
   rowKey,
 }: DataTableProps<TData>) {
 
-  const numSelectedOnPage = selectedIds.filter(id => actionableIdsOnPage.includes(id)).length;
+  const numSelectedOnPage = selectedIds.filter(id => selectableRowIds.includes(id)).length;
 
   return (
     <>
@@ -56,15 +56,15 @@ export function DataTable<TData>({
               <TableHead className="w-12">
                 <Checkbox
                   checked={
-                    actionableIdsOnPage.length > 0 && numSelectedOnPage === actionableIdsOnPage.length
+                    selectableRowIds.length > 0 && numSelectedOnPage === selectableRowIds.length
                       ? true
-                      : numSelectedOnPage > 0 && numSelectedOnPage < actionableIdsOnPage.length
+                      : numSelectedOnPage > 0 && numSelectedOnPage < selectableRowIds.length
                       ? "indeterminate"
                       : false
                   }
                   onCheckedChange={(checked) => onSelectAll?.(!!checked)}
                   aria-label="Select all on page"
-                  disabled={actionableIdsOnPage.length === 0}
+                  disabled={selectableRowIds.length === 0}
                 />
               </TableHead>
             )}
@@ -96,7 +96,7 @@ export function DataTable<TData>({
                       checked={selectedIds.includes(rowKey(row))}
                       onCheckedChange={(checked) => onToggleSelect?.(rowKey(row), !!checked)}
                       aria-label={`Select row ${rowKey(row)}`}
-                      disabled={!actionableIdsOnPage.includes(rowKey(row))} // Disable if not actionable
+                      disabled={!selectableRowIds.includes(rowKey(row))} // Disable if not selectable
                     />
                   </TableCell>
                 )}

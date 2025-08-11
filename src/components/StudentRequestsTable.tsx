@@ -3,8 +3,7 @@ import { BonafideRequest, SortConfig } from "@/types";
 import { StudentRequestsToolbar } from "./StudentRequestsToolbar";
 import { DataTable } from "./DataTable";
 import { getStudentTableColumns } from "@/lib/student-table-columns";
-
-const ITEMS_PER_PAGE = 10;
+import { useDataTable } from "@/hooks/useDataTable";
 
 interface StudentRequestsTableProps {
   requests: BonafideRequest[];
@@ -31,19 +30,20 @@ export function StudentRequestsTable({
   onSortChange,
   onClearFilters,
 }: StudentRequestsTableProps) {
-  const [currentPage, setCurrentPage] = useState(1);
+  const {
+    paginatedRows,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+  } = useDataTable({
+    data: requests,
+    rowKey: (row) => row.id,
+  });
 
   const handleSort = (key: string) => {
     const direction = sortConfig.key === key && sortConfig.direction === 'ascending' ? 'descending' : 'ascending';
     onSortChange({ key, direction });
-    setCurrentPage(1);
   };
-
-  const totalPages = Math.ceil(requests.length / ITEMS_PER_PAGE);
-  const paginatedRequests = requests.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
 
   const columns = useMemo(() => getStudentTableColumns({
     onEdit,
@@ -66,7 +66,7 @@ export function StudentRequestsTable({
       />
       <DataTable
         columns={columns}
-        data={paginatedRequests}
+        data={paginatedRows}
         sortConfig={sortConfig}
         onSort={handleSort}
         currentPage={currentPage}

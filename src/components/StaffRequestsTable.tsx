@@ -1,7 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { BonafideRequestWithProfile, BonafideStatus, SortConfig } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { useStaffRequestsTableLogic } from "@/hooks/useStaffRequestsTableLogic";
+import { useDataTable } from "@/hooks/useDataTable";
 import { useStaffRequestsTableActions } from "@/hooks/useStaffRequestsTableActions";
 import { getStaffTableColumns } from "@/lib/staff-table-columns";
 import { StaffRequestsTabs } from "./StaffRequestsTabs";
@@ -38,17 +38,29 @@ export function StaffRequestsTable({
   onSortChange,
 }: StaffRequestsTableProps) {
   const { profile } = useAuth();
+
+  const isRowSelectable = useCallback((request: BonafideRequestWithProfile) => {
+    if (profile?.role === 'tutor') return request.status === 'pending';
+    if (profile?.role === 'hod') return request.status === 'approved_by_tutor';
+    if (profile?.role === 'admin') return request.status === 'approved_by_hod';
+    return false;
+  }, [profile]);
+
   const {
+    paginatedRows,
     currentPage,
     setCurrentPage,
+    totalPages,
     selectedIds,
     setSelectedIds,
     handleToggleSelect,
     handleSelectAllOnPage,
-    paginatedRequests,
-    totalPages,
-    actionableIdsOnPage,
-  } = useStaffRequestsTableLogic(requests, profile);
+    selectableRowIdsOnPage,
+  } = useDataTable({
+    data: requests,
+    rowKey: (row) => row.id,
+    isRowSelectable,
+  });
 
   const {
     actionRequest,
@@ -92,13 +104,13 @@ export function StaffRequestsTable({
         selectedIds={selectedIds}
         onToggleSelect={handleToggleSelect}
         onSelectAll={handleSelectAllOnPage}
-        actionableIdsOnPage={actionableIdsOnPage}
+        actionableIdsOnPage={selectableRowIdsOnPage}
         onClearSelection={() => setSelectedIds([])}
         getApproveButtonText={getApproveButtonText}
         profile={profile}
         onClearFilters={onClearFilters}
         columns={columns}
-        paginatedRequestsForCurrentTab={paginatedRequests}
+        paginatedRequestsForCurrentTab={paginatedRows}
         sortConfig={sortConfig as { key: string; direction: 'ascending' | 'descending' }}
         handleSort={(key) => onSortChange({ key, direction: sortConfig.key === key && sortConfig.direction === 'ascending' ? 'descending' : 'ascending' })}
         currentPage={currentPage}
