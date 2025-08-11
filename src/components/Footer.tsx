@@ -1,5 +1,6 @@
 import { Facebook, Linkedin } from "lucide-react";
 import { XLogo } from "./icons/XLogo";
+import { Link } from "react-router-dom";
 
 export default function Footer() {
   return (
@@ -15,10 +16,10 @@ export default function Footer() {
           <div>
             <h3 className="text-lg font-bold mb-4">Quick Links</h3>
             <ul className="space-y-2">
-              <li><a href="#" className="text-muted-foreground hover:text-foreground">Home</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-foreground">About Us</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-foreground">Admissions</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-foreground">Contact</a></li>
+              <li><Link to="/" className="text-muted-foreground hover:text-foreground">Home</Link></li>
+              <li><a href="https://www.adhiyamaan.ac.in/about-us/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">About Us</a></li>
+              <li><a href="https://www.adhiyamaan.ac.in/admissions/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">Admissions</a></li>
+              <li><a href="https://www.adhiyamaan.ac.in/contact-us/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">Contact</a></li>
             </ul>
           </div>
           <div>
