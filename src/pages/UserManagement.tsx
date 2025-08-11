@@ -5,16 +5,16 @@ import { Button } from "@/components/ui/button";
 import { UserPlus } from "lucide-react";
 import { InviteUserDialog } from "@/components/InviteUserDialog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useUserManagementLogic } from "@/hooks/useUserManagementLogic";
+import { useUserManagement } from "@/hooks/useUserManagement";
 
 const UserManagement = () => {
   const {
-    users,
     loading,
     isInviteDialogOpen,
     setIsInviteDialogOpen,
     fetchUsers,
-  } = useUserManagementLogic();
+    ...tableProps
+  } = useUserManagement();
 
   return (
     <>
@@ -41,10 +41,7 @@ const UserManagement = () => {
                 <Skeleton className="h-12 w-full" />
               </div>
             ) : (
-              <UserManagementTable 
-                users={users} 
-                onUserUpdate={fetchUsers}
-              />
+              <UserManagementTable {...tableProps} />
             )}
           </CardContent>
         </Card>
