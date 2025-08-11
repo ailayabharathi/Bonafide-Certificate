@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ManagedUser, SortConfig } from "@/types";
 import { showError, showSuccess } from "@/utils/toast";
 import { exportToCsv } from "@/lib/utils";
+import { useDebounce } from "./useDebounce";
 
 type UserRole = 'student' | 'tutor' | 'hod' | 'admin';
 const ITEMS_PER_PAGE = 10;
@@ -67,12 +68,13 @@ export const useUserManagement = () => {
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'ascending' });
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   // Data fetching with react-query
-  const queryKey = ['users', searchQuery, roleFilter, departmentFilter, sortConfig, currentPage];
+  const queryKey = ['users', debouncedSearchQuery, roleFilter, departmentFilter, sortConfig, currentPage];
   const { data, isLoading: loading } = useQuery({
     queryKey,
-    queryFn: () => fetchUsers({ searchQuery, roleFilter, departmentFilter, sortConfig, page: currentPage }),
+    queryFn: () => fetchUsers({ searchQuery: debouncedSearchQuery, roleFilter, departmentFilter, sortConfig, page: currentPage }),
   });
 
   const users = data?.data || [];
@@ -81,7 +83,7 @@ export const useUserManagement = () => {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, roleFilter, departmentFilter, sortConfig]);
+  }, [debouncedSearchQuery, roleFilter, departmentFilter, sortConfig]);
 
   // Pagination
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);

@@ -13,6 +13,7 @@ import { DateRange } from "react-day-picker";
 import { showSuccess } from "@/utils/toast";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { BonafideRequest } from "@/types";
+import { useDebounce } from "@/hooks/useDebounce";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -46,11 +47,12 @@ export function StaffRequestsManager({
   const { profile } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   useEffect(() => {
     setCurrentPage(1);
     setSelectedIds([]);
-  }, [activeTab, searchQuery, departmentFilter, sortConfig, dateRange]);
+  }, [activeTab, debouncedSearchQuery, departmentFilter, sortConfig, dateRange]);
 
   const statusFilter = useMemo(() => {
     if (activeTab === 'actionable') {
@@ -85,7 +87,7 @@ export function StaffRequestsManager({
     { 
       startDate: dateRange?.from, 
       endDate: dateRange?.to, 
-      searchQuery, 
+      searchQuery: debouncedSearchQuery, 
       statusFilter, 
       sortConfig, 
       departmentFilter,

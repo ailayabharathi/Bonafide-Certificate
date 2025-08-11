@@ -8,6 +8,7 @@ import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { useStudentDashboardData } from "@/hooks/useStudentDashboardData";
 import { useBonafideRequests } from "@/hooks/useBonafideRequests";
 import { exportToCsv } from "@/lib/utils";
+import { useDebounce } from "./useDebounce";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -27,10 +28,11 @@ export const useStudentPortalLogic = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'created_at', direction: 'descending' });
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, searchQuery, sortConfig]);
+  }, [statusFilter, debouncedSearchQuery, sortConfig]);
 
   // Realtime event handler
   const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
@@ -85,7 +87,7 @@ export const useStudentPortalLogic = () => {
     { 
       userId: user?.id,
       statusFilter,
-      searchQuery,
+      searchQuery: debouncedSearchQuery,
       sortConfig,
       page: currentPage,
     },

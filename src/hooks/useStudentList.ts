@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ManagedUser, SortConfig } from "@/types";
+import { useDebounce } from "./useDebounce";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -49,19 +50,20 @@ export const useStudentList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'ascending' });
   const [selectedStudent, setSelectedStudent] = useState<ManagedUser | null>(null);
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   const department = profile?.department || "";
 
-  const queryKey = ["students", department, searchQuery, sortConfig, currentPage];
+  const queryKey = ["students", department, debouncedSearchQuery, sortConfig, currentPage];
   const { data, isLoading } = useQuery({
     queryKey,
-    queryFn: () => fetchStudents({ department, searchQuery, sortConfig, page: currentPage }),
+    queryFn: () => fetchStudents({ department, searchQuery: debouncedSearchQuery, sortConfig, page: currentPage }),
     enabled: !!department,
   });
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, sortConfig]);
+  }, [debouncedSearchQuery, sortConfig]);
 
   const students = data?.data || [];
   const totalCount = data?.count || 0;
