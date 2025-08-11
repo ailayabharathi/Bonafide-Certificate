@@ -1,22 +1,8 @@
-import { useBonafideRequests } from "@/hooks/useBonafideRequests";
 import { StaffDashboard } from "@/components/StaffDashboard";
-import { useStaffDashboardData } from "@/hooks/useStaffDashboardData";
-import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useStaffPortalLogic } from "@/hooks/useStaffPortalLogic";
-import { BonafideStatus } from "@/types";
-
-const fetchAllHodRequests = async () => {
-  const { data, error } = await supabase
-    .from("bonafide_requests")
-    .select("*, profiles!inner(first_name, last_name, department, register_number)");
-  if (error) return [];
-  return data;
-};
+import { useStaffPortalData } from "@/hooks/useStaffPortalData";
 
 const HodPortal = () => {
-  const { profile } = useAuth();
   const {
     dateRange,
     setDateRange,
@@ -32,34 +18,23 @@ const HodPortal = () => {
     handleRealtimeEvent,
   } = useStaffPortalLogic('hod');
 
-  const { data: allRequests = [], isLoading: allRequestsLoading } = useQuery({
-    queryKey: ['allHodRequests'],
-    queryFn: fetchAllHodRequests,
+  const {
+    stats,
+    charts,
+    allRequests,
+    requests,
+    isLoading,
+    handleAction,
+    handleBulkAction,
+  } = useStaffPortalData({
+    role: 'hod',
+    dateRange,
+    searchQuery,
+    statusFilter,
+    sortConfig,
+    departmentFilter,
+    onRealtimeEvent: handleRealtimeEvent,
   });
-
-  const { requests, isLoading: filteredRequestsLoading, updateRequest, bulkUpdateRequest } = useBonafideRequests(
-    "public:bonafide_requests:hod",
-    { startDate: dateRange?.from, endDate: dateRange?.to, searchQuery, statusFilter, sortConfig, departmentFilter },
-    handleRealtimeEvent
-  );
-
-  const { stats, charts } = useStaffDashboardData(allRequests, profile, [], dateRange);
-
-  const handleAction = async (
-    requestId: string,
-    newStatus: BonafideStatus,
-    rejectionReason?: string,
-  ) => {
-    await updateRequest({ requestId, newStatus, rejectionReason });
-  };
-
-  const handleBulkAction = async (
-    requestIds: string[],
-    newStatus: BonafideStatus,
-    rejectionReason?: string,
-  ) => {
-    await bulkUpdateRequest({ requestIds, newStatus, rejectionReason });
-  };
 
   return (
     <StaffDashboard
@@ -68,7 +43,7 @@ const HodPortal = () => {
       charts={charts}
       allRequests={allRequests}
       requests={requests}
-      isLoading={allRequestsLoading || filteredRequestsLoading}
+      isLoading={isLoading}
       onAction={handleAction}
       onBulkAction={handleBulkAction}
       dateRange={dateRange}
