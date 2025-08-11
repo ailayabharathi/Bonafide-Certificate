@@ -3,7 +3,7 @@ import { ManagedUser } from "@/types";
 import { departments } from "@/lib/departments";
 
 type UserRole = 'student' | 'tutor' | 'hod' | 'admin';
-type SortableKey = 'name' | 'email' | 'role' | 'department' | 'register_number';
+type SortableKey = 'name' | 'email' | 'role' | 'department' | 'register_number' | 'status' | 'last_sign_in_at';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -55,7 +55,7 @@ export const useUserManagementTableLogic = (
       });
 
     filteredUsers.sort((a, b) => {
-      let aValue: string, bValue: string;
+      let aValue: string | number, bValue: string | number;
       switch (sortConfig.key) {
         case 'name':
           aValue = `${a.first_name || ''} ${a.last_name || ''}`.toLowerCase();
@@ -76,6 +76,14 @@ export const useUserManagementTableLogic = (
         case 'register_number':
             aValue = a.register_number?.toLowerCase() || '';
             bValue = b.register_number?.toLowerCase() || '';
+            break;
+        case 'status':
+            aValue = (a.invited_at && !a.last_sign_in_at) ? 'invited' : 'active';
+            bValue = (b.invited_at && !b.last_sign_in_at) ? 'invited' : 'active';
+            break;
+        case 'last_sign_in_at':
+            aValue = a.last_sign_in_at ? new Date(a.last_sign_in_at).getTime() : (a.invited_at ? new Date(a.invited_at).getTime() : 0);
+            bValue = b.last_sign_in_at ? new Date(b.last_sign_in_at).getTime() : (b.invited_at ? new Date(b.invited_at).getTime() : 0);
             break;
         default:
           return 0;

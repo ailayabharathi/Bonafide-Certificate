@@ -29,6 +29,9 @@ export function DeleteUserDialog({
 }: DeleteUserDialogProps) {
   if (!user) return null;
 
+  const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+  const userIdentifier = userName || user.email;
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -36,7 +39,7 @@ export function DeleteUserDialog({
           <DialogTitle>Delete User</DialogTitle>
           <DialogDescription>
             Are you sure you want to permanently delete the user{' '}
-            <span className="font-semibold">{user.first_name} {user.last_name}</span>?
+            <span className="font-semibold">{userIdentifier}</span>?
             This action cannot be undone.
           </DialogDescription>
         </DialogHeader>

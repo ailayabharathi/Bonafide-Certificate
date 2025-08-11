@@ -5,27 +5,31 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Pencil, UserCog, Trash2 } from "lucide-react";
+import { Pencil, UserCog, Trash2, Send } from "lucide-react";
 import { Profile } from "@/contexts/AuthContext";
 import { ManagedUser, ColumnDef } from "@/types";
 import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { formatDistanceToNow } from 'date-fns';
 
 interface GetUserManagementTableColumnsProps {
   currentUserProfile: Profile | null;
   setUserToEditRole: (user: ManagedUser) => void;
   setUserToDelete: (user: ManagedUser) => void;
+  onResendInvite: (email: string) => void;
 }
 
 export const getUserManagementTableColumns = ({
   currentUserProfile,
   setUserToEditRole,
   setUserToDelete,
+  onResendInvite,
 }: GetUserManagementTableColumnsProps): ColumnDef<ManagedUser>[] => {
   return [
     {
       id: 'name',
       header: 'Name',
-      cell: ({ row }: { row: ManagedUser }) => `${row.first_name || ''} ${row.last_name || ''}` || '(No name set)',
+      cell: ({ row }: { row: ManagedUser }) => `${row.first_name || ''} ${row.last_name || ''}`.trim() || '(No name set)',
       enableSorting: true,
     },
     {
@@ -41,25 +45,64 @@ export const getUserManagementTableColumns = ({
       enableSorting: true,
     },
     {
+      id: 'status',
+      header: 'Status',
+      cell: ({ row }: { row: ManagedUser }) => {
+        if (row.invited_at && !row.last_sign_in_at) {
+          return <Badge variant="secondary">Invited</Badge>;
+        }
+        return <Badge variant="default" className="bg-green-500">Active</Badge>;
+      },
+      enableSorting: true,
+    },
+    {
+      id: 'last_sign_in_at',
+      header: 'Last Active',
+      cell: ({ row }: { row: ManagedUser }) => {
+        if (row.last_sign_in_at) {
+          return formatDistanceToNow(new Date(row.last_sign_in_at), { addSuffix: true });
+        }
+        if (row.invited_at) {
+          return `Invited ${formatDistanceToNow(new Date(row.invited_at), { addSuffix: true })}`;
+        }
+        return 'Never';
+      },
+      enableSorting: true,
+    },
+    {
       id: 'actions',
       header: 'Actions',
       cell: ({ row }: { row: ManagedUser }) => {
         const isCurrentUser = row.id === currentUserProfile?.id;
+        const isInvited = row.invited_at && !row.last_sign_in_at;
 
         return (
           <div className="flex gap-1 justify-end">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button asChild variant="ghost" size="icon">
-                    <Link to={`/admin/user/${row.id}/edit`}>
-                      <Pencil className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent><p>Edit Profile</p></TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            {isInvited ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={() => onResendInvite(row.email!)}>
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Resend Invitation</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button asChild variant="ghost" size="icon">
+                      <Link to={`/admin/user/${row.id}/edit`}>
+                        <Pencil className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Edit Profile</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>

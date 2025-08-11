@@ -50,7 +50,7 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
 
       if (error) throw new Error(error.message);
 
-      showSuccess(`Successfully deleted user ${userToDelete.first_name} ${userToDelete.last_name}.`);
+      showSuccess(`Successfully deleted user ${userToDelete.first_name || userToDelete.email}.`);
       onUserUpdate();
       setUserToDelete(null);
     } catch (error: any) {
@@ -60,10 +60,24 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
     }
   };
 
+  const handleResendInvite = async (email: string) => {
+    try {
+      const { error } = await supabase.functions.invoke('resend-invite', {
+        body: { email },
+      });
+      if (error) throw error;
+      showSuccess(`Invitation resent to ${email}.`);
+      onUserUpdate(); // Refresh the list to update the 'invited_at' timestamp
+    } catch (error: any) {
+      showError(error.message || "Failed to resend invitation.");
+    }
+  };
+
   const columns = useMemo(() => getUserManagementTableColumns({
     currentUserProfile,
     setUserToEditRole,
     setUserToDelete,
+    onResendInvite: handleResendInvite,
   }), [currentUserProfile]);
 
   return (
