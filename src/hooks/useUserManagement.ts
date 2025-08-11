@@ -1,17 +1,44 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ManagedUser, SortConfig } from "@/types";
 import { showError, showSuccess } from "@/utils/toast";
 
 type UserRole = 'student' | 'tutor' | 'hod' | 'admin';
-type SortableKey = 'name' | 'email' | 'role' | 'department' | 'register_number' | 'created_at';
 const ITEMS_PER_PAGE = 10;
 
-const fetchAllUsers = async (): Promise<ManagedUser[]> => {
-  const { data, error } = await supabase
+const fetchUsers = async (params: {
+  searchQuery: string;
+  roleFilter: UserRole | 'all';
+  departmentFilter: string;
+  sortConfig: SortConfig;
+}): Promise<ManagedUser[]> => {
+  const { searchQuery, roleFilter, departmentFilter, sortConfig } = params;
+
+  let query = supabase
     .from('profiles')
     .select('id, email, role, first_name, last_name, avatar_url, department, register_number, created_at');
-  
+
+  if (searchQuery) {
+    const searchPattern = `%${searchQuery}%`;
+    query = query.or(`first_name.ilike.${searchPattern},last_name.ilike.${searchPattern},email.ilike.${searchPattern},register_number.ilike.${searchPattern}`);
+  }
+
+  if (roleFilter !== 'all') {
+    query = query.eq('role', roleFilter);
+  }
+
+  if (departmentFilter !== 'all') {
+    query = query.eq('department', departmentFilter);
+  }
+
+  const sortKey = sortConfig.key === 'name' ? 'first_name' : sortConfig.key;
+  query = query.order(sortKey, { ascending: sortConfig.direction === 'ascending' });
+  if (sortConfig.key === 'name') {
+    query = query.order('last_name', { ascending: sortConfig.direction === 'ascending' });
+  }
+
+  const { data, error } = await query;
   if (error) {
     throw new Error(error.message);
   }
@@ -19,9 +46,7 @@ const fetchAllUsers = async (): Promise<ManagedUser[]> => {
 };
 
 export const useUserManagement = () => {
-  // Data and loading state
-  const [users, setUsers] = useState<ManagedUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   // Dialog states
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
@@ -36,70 +61,21 @@ export const useUserManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'ascending' });
 
-  // Fetch users logic
-  const fetchUsers = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await fetchAllUsers();
-      setUsers(data || []);
-    } catch (error: any) {
-      showError(error.message || "Failed to fetch users.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+  // Data fetching with react-query
+  const queryKey = ['users', searchQuery, roleFilter, departmentFilter, sortConfig];
+  const { data: users = [], isLoading: loading } = useQuery<ManagedUser[]>({
+    queryKey,
+    queryFn: () => fetchUsers({ searchQuery, roleFilter, departmentFilter, sortConfig }),
+  });
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, roleFilter, departmentFilter, sortConfig]);
 
-  // Memoized processing of users
-  const processedUsers = useMemo(() => {
-    let filteredUsers = users
-      .filter(user => {
-        const name = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
-        const email = user.email?.toLowerCase() || '';
-        const department = user.department?.toLowerCase() || '';
-        const registerNumber = user.register_number?.toLowerCase() || '';
-        const query = searchQuery.toLowerCase();
-        return name.includes(query) || email.includes(query) || department.includes(query) || registerNumber.includes(query);
-      })
-      .filter(user => roleFilter === "all" || user.role === roleFilter)
-      .filter(user => departmentFilter === "all" || user.department === departmentFilter);
-
-    filteredUsers.sort((a, b) => {
-      let aValue: string | number, bValue: string | number;
-      switch (sortConfig.key as SortableKey) {
-        case 'name':
-          aValue = `${a.first_name || ''} ${a.last_name || ''}`.toLowerCase();
-          bValue = `${b.first_name || ''} ${b.last_name || ''}`.toLowerCase();
-          break;
-        case 'created_at':
-            aValue = new Date(a.created_at).getTime();
-            bValue = new Date(b.created_at).getTime();
-            break;
-        default:
-          aValue = (a[sortConfig.key as keyof ManagedUser] as string)?.toLowerCase() || '';
-          bValue = (b[sortConfig.key as keyof ManagedUser] as string)?.toLowerCase() || '';
-          break;
-      }
-
-      if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
-      if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
-      return 0;
-    });
-
-    return filteredUsers;
-  }, [users, searchQuery, roleFilter, departmentFilter, sortConfig]);
-
   // Pagination
-  const totalPages = Math.ceil(processedUsers.length / ITEMS_PER_PAGE);
-  const paginatedUsers = processedUsers.slice(
+  const totalPages = Math.ceil(users.length / ITEMS_PER_PAGE);
+  const paginatedUsers = users.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -125,7 +101,7 @@ export const useUserManagement = () => {
       const { error } = await supabase.auth.admin.deleteUser(userToDelete.id);
       if (error) throw error;
       showSuccess(`User ${userToDelete.email} has been deleted.`);
-      fetchUsers(); // Refresh user list
+      queryClient.invalidateQueries({ queryKey: ['users'] });
       setUserToDelete(null);
     } catch (error: any) {
       showError(error.message || "Failed to delete user.");
@@ -135,8 +111,12 @@ export const useUserManagement = () => {
   };
 
   const handleRoleUpdated = () => {
-    fetchUsers();
+    queryClient.invalidateQueries({ queryKey: ['users'] });
     setUserToEditRole(null);
+  };
+  
+  const handleInviteSent = () => {
+    queryClient.invalidateQueries({ queryKey: ['users'] });
   };
 
   const showClearFilters = searchQuery !== "" || roleFilter !== "all" || departmentFilter !== "all";
@@ -145,7 +125,7 @@ export const useUserManagement = () => {
     loading,
     isInviteDialogOpen,
     setIsInviteDialogOpen,
-    fetchUsers,
+    handleInviteSent,
     searchQuery,
     setSearchQuery,
     roleFilter,
@@ -156,7 +136,7 @@ export const useUserManagement = () => {
     setCurrentPage,
     sortConfig,
     handleSort,
-    processedUsers,
+    processedUsers: users, // For export
     totalPages,
     paginatedUsers,
     handleClearFilters,

@@ -12,7 +12,7 @@ const UserManagement = () => {
     loading,
     isInviteDialogOpen,
     setIsInviteDialogOpen,
-    fetchUsers,
+    handleInviteSent,
     ...tableProps
   } = useUserManagement();
 
@@ -33,7 +33,7 @@ const UserManagement = () => {
             </Button>
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {loading && tableProps.paginatedUsers.length === 0 ? (
               <div className="space-y-2 pt-4">
                 <Skeleton className="h-12 w-full" />
                 <Skeleton className="h-12 w-full" />
@@ -49,7 +49,7 @@ const UserManagement = () => {
       <InviteUserDialog
         isOpen={isInviteDialogOpen}
         onOpenChange={setIsInviteDialogOpen}
-        onInviteSent={fetchUsers}
+        onInviteSent={handleInviteSent}
       />
     </>
   );
