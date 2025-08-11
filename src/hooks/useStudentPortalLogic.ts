@@ -2,11 +2,12 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { BonafideRequest, SortConfig } from "@/types";
+import { BonafideRequest, BonafideStatus, SortConfig } from "@/types";
 import { showSuccess, showError } from "@/utils/toast";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { useStudentDashboardData } from "@/hooks/useStudentDashboardData";
 import { useBonafideRequests } from "@/hooks/useBonafideRequests";
+import { exportToCsv } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -20,6 +21,7 @@ export const useStudentPortalLogic = () => {
   const [requestToCancel, setRequestToCancel] = useState<BonafideRequest | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isExporting, setIsExporting] = useState(false);
 
   // State for data filtering and sorting
   const [statusFilter, setStatusFilter] = useState("all");
@@ -120,6 +122,58 @@ export const useStudentPortalLogic = () => {
     setSearchQuery("");
   };
 
+  const handleExport = async () => {
+    if (!user) return;
+    setIsExporting(true);
+    try {
+      let query = supabase
+        .from("bonafide_requests")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (statusFilter && statusFilter !== 'all') {
+        if (statusFilter === 'in_progress') {
+          query = query.in('status', ['pending', 'approved_by_tutor', 'approved_by_hod']);
+        } else if (statusFilter === 'rejected') {
+          query = query.in('status', ['rejected_by_tutor', 'rejected_by_hod']);
+        } else {
+          query = query.eq('status', statusFilter as BonafideStatus);
+        }
+      }
+
+      if (searchQuery) {
+        query = query.ilike('reason', `%${searchQuery}%`);
+      }
+
+      query = query.order(sortConfig.key, { ascending: sortConfig.direction === 'ascending' });
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        showError("No data to export for the current filters.");
+        return;
+      }
+
+      const formattedData = data.map(request => ({
+        id: request.id,
+        reason: request.reason,
+        status: request.status,
+        rejection_reason: request.rejection_reason || '',
+        submitted_at: new Date(request.created_at).toISOString(),
+        last_updated_at: new Date(request.updated_at).toISOString(),
+      }));
+
+      exportToCsv(`my-bonafide-requests-${new Date().toISOString().split('T')[0]}.csv`, formattedData);
+      showSuccess("Data exported successfully!");
+
+    } catch (error: any) {
+      showError(error.message || "Failed to export data.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return {
     isApplyDialogOpen,
     setIsApplyDialogOpen,
@@ -143,5 +197,7 @@ export const useStudentPortalLogic = () => {
     currentPage,
     totalPages,
     onPageChange: setCurrentPage,
+    isExporting,
+    handleExport,
   };
 };

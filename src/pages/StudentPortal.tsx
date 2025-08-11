@@ -51,14 +51,13 @@ const StudentPortal = () => {
     currentPage,
     totalPages,
     onPageChange,
+    isExporting,
+    handleExport,
   } = useStudentPortalLogic();
 
   const headerActions = (
     <div className="flex gap-2">
-      <ExportButton
-        data={requests}
-        filename={`my-bonafide-requests-${new Date().toISOString().split('T')[0]}.csv`}
-      />
+      <ExportButton onExport={handleExport} isExporting={isExporting} />
       <Button onClick={handleNewRequestClick}>
         <PlusCircle className="mr-2 h-4 w-4" />
         Apply for Certificate
