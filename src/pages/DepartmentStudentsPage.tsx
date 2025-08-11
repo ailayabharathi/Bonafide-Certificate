@@ -9,6 +9,7 @@ const DepartmentStudentsPage = () => {
     <StudentListView 
       title="Department Students"
       description={description}
+      fetchMode="department"
     />
   );
 };

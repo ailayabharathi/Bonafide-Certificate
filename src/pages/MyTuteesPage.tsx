@@ -4,7 +4,8 @@ const MyTuteesPage = () => {
   return (
     <StudentListView 
       title="My Tutees"
-      description="A list of all students assigned to you in your department."
+      description="A list of all students assigned to you as their tutor."
+      fetchMode="tutees"
     />
   );
 };

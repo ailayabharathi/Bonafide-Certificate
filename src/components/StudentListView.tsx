@@ -12,9 +12,10 @@ import { getStudentListColumns } from "@/lib/student-list-columns";
 interface StudentListViewProps {
     title: string;
     description: string;
+    fetchMode: 'department' | 'tutees';
 }
 
-export const StudentListView = ({ title, description }: StudentListViewProps) => {
+export const StudentListView = ({ title, description, fetchMode }: StudentListViewProps) => {
   const {
     students,
     isLoading,
@@ -27,7 +28,7 @@ export const StudentListView = ({ title, description }: StudentListViewProps) =>
     setCurrentPage,
     selectedStudent,
     setSelectedStudent,
-  } = useStudentList();
+  } = useStudentList(fetchMode);
 
   const columns = useMemo(() => getStudentListColumns({
     onViewRequests: (student) => setSelectedStudent(student),

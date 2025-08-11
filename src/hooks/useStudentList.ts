@@ -1,27 +1,34 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, Profile } from "@/contexts/AuthContext";
 import { ManagedUser, SortConfig } from "@/types";
 import { useDebounce } from "./useDebounce";
 
 const ITEMS_PER_PAGE = 10;
 
 const fetchStudents = async (params: {
-  department: string;
+  fetchMode: 'department' | 'tutees';
+  profile: Profile;
   searchQuery: string;
   sortConfig: SortConfig;
   page: number;
 }) => {
-  const { department, searchQuery, sortConfig, page } = params;
+  const { fetchMode, profile, searchQuery, sortConfig, page } = params;
   const from = (page - 1) * ITEMS_PER_PAGE;
   const to = from + ITEMS_PER_PAGE - 1;
 
   let query = supabase
     .from("profiles")
     .select("*", { count: "exact" })
-    .eq("role", "student")
-    .eq("department", department);
+    .eq("role", "student");
+
+  if (fetchMode === 'tutees') {
+    query = query.eq("tutor_id", profile.id);
+  } else { // 'department'
+    if (!profile.department) return { data: [], count: 0 };
+    query = query.eq("department", profile.department);
+  }
 
   if (searchQuery) {
     const searchPattern = `%${searchQuery}%`;
@@ -44,7 +51,7 @@ const fetchStudents = async (params: {
   return { data: data as ManagedUser[], count: count ?? 0 };
 };
 
-export const useStudentList = () => {
+export const useStudentList = (fetchMode: 'department' | 'tutees') => {
   const { profile } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,13 +59,11 @@ export const useStudentList = () => {
   const [selectedStudent, setSelectedStudent] = useState<ManagedUser | null>(null);
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
-  const department = profile?.department || "";
-
-  const queryKey = ["students", department, debouncedSearchQuery, sortConfig, currentPage];
+  const queryKey = ["students", fetchMode, profile?.id, debouncedSearchQuery, sortConfig, currentPage];
   const { data, isLoading } = useQuery({
     queryKey,
-    queryFn: () => fetchStudents({ department, searchQuery: debouncedSearchQuery, sortConfig, page: currentPage }),
-    enabled: !!department,
+    queryFn: () => fetchStudents({ fetchMode, profile: profile!, searchQuery: debouncedSearchQuery, sortConfig, page: currentPage }),
+    enabled: !!profile,
   });
 
   useEffect(() => {
