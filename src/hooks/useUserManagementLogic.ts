@@ -3,18 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { ManagedUser } from "@/types";
 import { showError } from "@/utils/toast";
 
+// Fetches user data from the public profiles table.
+// Note: This does not include auth-specific data like last sign-in time.
 const fetchAllUsers = async (): Promise<ManagedUser[]> => {
-  // This is a fallback since the 'get-users' function is unavailable.
-  // It will not include auth data like last_sign_in_at or invited_at.
   const { data, error } = await supabase
     .from('profiles')
-    .select('*');
+    .select('id, email, role, first_name, last_name, avatar_url, department, register_number, created_at');
   
   if (error) {
     throw new Error(error.message);
   }
-  // The data from 'profiles' table matches most of the ManagedUser type.
-  // The missing fields will be undefined, which is acceptable.
   return data as ManagedUser[];
 };
 

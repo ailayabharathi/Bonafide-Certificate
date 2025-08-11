@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Profile, useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { showError, showSuccess, showLoading, dismissToast } from "@/utils/toast";
+import { showError, showSuccess } from "@/utils/toast";
 import { DeleteUserDialog } from "./DeleteUserDialog";
 import { EditUserRoleDialog } from "./EditUserRoleDialog";
 import { useUserManagementTableLogic } from "@/hooks/useUserManagementTableLogic";
@@ -57,27 +57,10 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
     }
   };
 
-  const handleResendInvite = async (email: string) => {
-    if (!email) return;
-    const toastId = showLoading("Resending invitation...");
-    try {
-      const { error } = await supabase.auth.admin.inviteUserByEmail(email, {
-        redirectTo: window.location.origin,
-      });
-      if (error) throw error;
-      dismissToast(toastId);
-      showSuccess(`Invitation resent to ${email}.`);
-    } catch (error: any) {
-      dismissToast(toastId);
-      showError(error.message || "Failed to resend invitation.");
-    }
-  };
-
   const columns = useMemo(() => getUserManagementTableColumns({
     currentUserProfile,
     setUserToEditRole,
     setUserToDelete,
-    onResendInvite: handleResendInvite,
   }), [currentUserProfile]);
 
   return (

@@ -3,7 +3,7 @@ import { ManagedUser } from "@/types";
 import { departments } from "@/lib/departments";
 
 type UserRole = 'student' | 'tutor' | 'hod' | 'admin';
-type SortableKey = 'name' | 'email' | 'role' | 'department' | 'register_number' | 'status' | 'last_sign_in_at';
+type SortableKey = 'name' | 'email' | 'role' | 'department' | 'register_number' | 'created_at';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -77,13 +77,9 @@ export const useUserManagementTableLogic = (
             aValue = a.register_number?.toLowerCase() || '';
             bValue = b.register_number?.toLowerCase() || '';
             break;
-        case 'status':
-            aValue = (a.invited_at && !a.last_sign_in_at) ? 'invited' : 'active';
-            bValue = (b.invited_at && !b.last_sign_in_at) ? 'invited' : 'active';
-            break;
-        case 'last_sign_in_at':
-            aValue = a.last_sign_in_at ? new Date(a.last_sign_in_at).getTime() : (a.invited_at ? new Date(a.invited_at).getTime() : 0);
-            bValue = b.last_sign_in_at ? new Date(b.last_sign_in_at).getTime() : (b.invited_at ? new Date(b.invited_at).getTime() : 0);
+        case 'created_at':
+            aValue = new Date(a.created_at).getTime();
+            bValue = new Date(b.created_at).getTime();
             break;
         default:
           return 0;

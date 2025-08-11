@@ -41,7 +41,6 @@ export const ExportButton = ({ data, filename }: ExportButtonProps) => {
           department: user.department,
           register_number: user.register_number,
           created_at: user.created_at,
-          last_sign_in_at: user.last_sign_in_at,
         }));
       }
       
