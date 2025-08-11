@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BonafideRequest, BonafideRequestWithProfile, BonafideStatus, SortConfig } from "@/types";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { showError, showSuccess } from "@/utils/toast";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { exportToCsv } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -18,10 +19,8 @@ interface FetchRequestsParams {
   page: number;
 }
 
-const fetchRequests = async (params: FetchRequestsParams): Promise<{ data: BonafideRequestWithProfile[], count: number }> => {
-  const { userId, startDate, endDate, searchQuery, statusFilter, sortConfig, departmentFilter, page } = params;
-  const from = (page - 1) * ITEMS_PER_PAGE;
-  const to = from + ITEMS_PER_PAGE - 1;
+const buildBonafideRequestQuery = (params: Omit<FetchRequestsParams, 'page'>) => {
+  const { userId, startDate, endDate, searchQuery, statusFilter, sortConfig, departmentFilter } = params;
 
   let query = supabase
     .from("bonafide_requests")
@@ -74,6 +73,16 @@ const fetchRequests = async (params: FetchRequestsParams): Promise<{ data: Bonaf
   } else {
     query = query.order("created_at", { ascending: false });
   }
+
+  return query;
+};
+
+const fetchRequests = async (params: FetchRequestsParams): Promise<{ data: BonafideRequestWithProfile[], count: number }> => {
+  const { page } = params;
+  const from = (page - 1) * ITEMS_PER_PAGE;
+  const to = from + ITEMS_PER_PAGE - 1;
+
+  let query = buildBonafideRequestQuery(params);
 
   query = query.range(from, to);
 
@@ -150,6 +159,7 @@ export const useBonafideRequests = (
 ) => {
   const queryClient = useQueryClient();
   const queryKey = ["bonafide_requests", params];
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     const channel = supabase
@@ -198,6 +208,43 @@ export const useBonafideRequests = (
     },
   });
 
+  const exportData = async () => {
+    setIsExporting(true);
+    try {
+      const query = buildBonafideRequestQuery(params);
+      const { data: exportData, error } = await query;
+
+      if (error) throw error;
+      if (!exportData || exportData.length === 0) {
+        showError("There is no data to export for the current filters.");
+        return;
+      }
+
+      const flattenedData = (exportData as BonafideRequestWithProfile[]).map(request => ({
+        id: request.id,
+        student_name: `${request.profiles?.first_name || ''} ${request.profiles?.last_name || ''}`,
+        register_number: request.profiles?.register_number || '',
+        department: request.profiles?.department || '',
+        reason: request.reason,
+        status: request.status,
+        rejection_reason: request.rejection_reason || '',
+        submitted_at: new Date(request.created_at).toISOString(),
+        last_updated_at: new Date(request.updated_at).toISOString(),
+      }));
+
+      exportToCsv(
+        `bonafide-requests-${params.statusFilter || 'all'}-${new Date().toISOString().split('T')[0]}.csv`,
+        flattenedData
+      );
+      showSuccess("Data exported successfully!");
+
+    } catch (error: any) {
+      showError(error.message || "An error occurred during the export.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return {
     requests: data?.data || [],
     count: data?.count || 0,
@@ -205,5 +252,7 @@ export const useBonafideRequests = (
     updateRequest: mutation.mutateAsync,
     bulkUpdateRequest: bulkUpdateMutation.mutateAsync,
     deleteRequest: deleteMutation.mutateAsync,
+    exportData,
+    isExporting,
   };
 };

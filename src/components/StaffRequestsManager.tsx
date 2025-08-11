@@ -80,7 +80,7 @@ export function StaffRequestsManager({
     }
   };
 
-  const { requests, count, updateRequest, bulkUpdateRequest } = useBonafideRequests(
+  const { requests, count, updateRequest, bulkUpdateRequest, exportData, isExporting } = useBonafideRequests(
     `staff-requests-manager:${profile?.role}`,
     { 
       startDate: dateRange?.from, 
@@ -163,8 +163,8 @@ export function StaffRequestsManager({
           onClearSelection={() => setSelectedIds([])}
           profile={profile}
           onClearFilters={onClearFilters}
-          statusFilter={statusFilter}
-          dateRange={dateRange}
+          onExport={exportData}
+          isExporting={isExporting}
         />
         {tabsInfo.map(tab => (
           <TabsContent key={tab.value} value={tab.value} className="m-0">
