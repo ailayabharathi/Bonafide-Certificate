@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatsCard } from "@/components/StatsCard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { StaffRequestsTable } from "@/components/StaffRequestsTable";
+import { StaffRequestsManager } from "@/components/StaffRequestsManager";
 import { BonafideRequestWithProfile, BonafideStatus, SortConfig } from "@/types";
 import { LucideIcon } from "lucide-react";
 import { DateRangePicker } from "./DateRangePicker";
@@ -149,7 +149,7 @@ export const StaffDashboard = ({
           </div>
         )}
 
-        <StaffRequestsTable 
+        <StaffRequestsManager 
           requests={requests} 
           onAction={onAction} 
           onBulkAction={onBulkAction}

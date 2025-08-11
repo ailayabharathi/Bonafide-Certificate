@@ -4,9 +4,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useDataTable } from "@/hooks/useDataTable";
 import { useStaffRequestsTableActions } from "@/hooks/useStaffRequestsTableActions";
 import { getStaffTableColumns } from "@/lib/staff-table-columns";
-import { StaffRequestsTabs } from "./StaffRequestsTabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { DataTable } from "@/components/DataTable";
+import { StaffRequestsToolbar } from "./StaffRequestsToolbar";
+import { RequestActionDialog } from "./RequestActionDialog";
+import { StudentProfileDialog } from "./StudentProfileDialog";
 
-interface StaffRequestsTableProps {
+interface StaffRequestsManagerProps {
   requests: BonafideRequestWithProfile[];
   onAction: (requestId: string, newStatus: BonafideStatus, rejectionReason?: string) => Promise<void>;
   onBulkAction: (requestIds: string[], newStatus: BonafideStatus, rejectionReason?: string) => Promise<void>;
@@ -22,7 +26,7 @@ interface StaffRequestsTableProps {
   onSortChange: (config: SortConfig) => void;
 }
 
-export function StaffRequestsTable({ 
+export function StaffRequestsManager({ 
   requests, 
   onAction, 
   onBulkAction,
@@ -36,7 +40,7 @@ export function StaffRequestsTable({
   onClearFilters,
   sortConfig,
   onSortChange,
-}: StaffRequestsTableProps) {
+}: StaffRequestsManagerProps) {
   const { profile } = useAuth();
 
   const isRowSelectable = useCallback((request: BonafideRequestWithProfile) => {
@@ -92,40 +96,59 @@ export function StaffRequestsTable({
 
   return (
     <div className="border rounded-md bg-background">
-      <StaffRequestsTabs
-        tabsInfo={tabsInfo}
-        activeTab={activeTab}
-        setActiveTab={onTabChange}
-        requestsForExport={requests}
-        searchQuery={searchQuery}
-        onSearchChange={onSearchChange}
-        departmentFilter={departmentFilter}
-        onDepartmentFilterChange={onDepartmentFilterChange}
-        selectedIds={selectedIds}
-        onToggleSelect={handleToggleSelect}
-        onSelectAll={handleSelectAllOnPage}
-        actionableIdsOnPage={selectableRowIdsOnPage}
-        onClearSelection={() => setSelectedIds([])}
-        getApproveButtonText={getApproveButtonText}
-        profile={profile}
-        onClearFilters={onClearFilters}
-        columns={columns}
-        paginatedRequestsForCurrentTab={paginatedRows}
-        sortConfig={sortConfig as { key: string; direction: 'ascending' | 'descending' }}
-        handleSort={(key) => onSortChange({ key, direction: sortConfig.key === key && sortConfig.direction === 'ascending' ? 'descending' : 'ascending' })}
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        totalPagesForCurrentTab={totalPages}
-        actionRequest={actionRequest}
+      <Tabs value={activeTab} onValueChange={onTabChange}>
+        <StaffRequestsToolbar
+          tabs={tabsInfo}
+          activeTab={activeTab}
+          requestsForExport={requests}
+          searchQuery={searchQuery}
+          onSearchChange={onSearchChange}
+          departmentFilter={departmentFilter}
+          onDepartmentFilterChange={onDepartmentFilterChange}
+          selectedIdsCount={selectedIds.length}
+          onBulkAction={(type) => openActionDialog(type, true)}
+          onClearSelection={() => setSelectedIds([])}
+          getApproveButtonText={getApproveButtonText}
+          profile={profile}
+          onClearFilters={onClearFilters}
+        />
+        {tabsInfo.map(tab => (
+          <TabsContent key={tab.value} value={tab.value} className="m-0">
+            <DataTable
+              columns={columns}
+              data={paginatedRows}
+              sortConfig={sortConfig as { key: string; direction: 'ascending' | 'descending' }}
+              onSort={(key) => onSortChange({ key, direction: sortConfig.key === key && sortConfig.direction === 'ascending' ? 'descending' : 'ascending' })}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+              totalPages={totalPages}
+              enableRowSelection={true}
+              selectedIds={selectedIds}
+              onToggleSelect={handleToggleSelect}
+              onSelectAll={handleSelectAllOnPage}
+              selectableRowIds={selectableRowIdsOnPage}
+              rowKey={(row) => row.id}
+            />
+          </TabsContent>
+        ))}
+      </Tabs>
+
+      <RequestActionDialog
+        isOpen={!!actionType}
+        onOpenChange={(open) => !open && closeActionDialog()}
         actionType={actionType}
         isBulk={isBulk}
+        request={actionRequest}
+        selectedIdsCount={selectedIds.length}
+        onConfirm={handleConfirmAction}
         isSubmitting={isSubmitting}
-        isProfileDialogOpen={isProfileDialogOpen}
-        studentUserIdToView={studentUserIdToView}
-        openActionDialog={openActionDialog}
-        closeActionDialog={closeActionDialog}
-        handleConfirmAction={handleConfirmAction}
-        setIsProfileDialogOpen={setIsProfileDialogOpen}
+        getApproveButtonText={getApproveButtonText}
+      />
+
+      <StudentProfileDialog
+        isOpen={isProfileDialogOpen}
+        onOpenChange={setIsProfileDialogOpen}
+        userId={studentUserIdToView}
       />
     </div>
   );
