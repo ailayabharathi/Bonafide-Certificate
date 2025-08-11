@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useState, useEffect } from "react";
-import { BonafideRequestWithProfile, BonafideStatus, SortConfig } from "@/types";
+import { BonafideRequestWithProfile, SortConfig } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStaffRequestsTableActions } from "@/hooks/useStaffRequestsTableActions";
 import { getStaffTableColumns } from "@/lib/staff-table-columns";
@@ -28,7 +28,6 @@ interface StaffRequestsManagerProps {
   sortConfig: SortConfig;
   onSortChange: (config: SortConfig) => void;
   dateRange: DateRange | undefined;
-  allRequestsForExport: BonafideRequestWithProfile[];
 }
 
 export function StaffRequestsManager({ 
@@ -43,7 +42,6 @@ export function StaffRequestsManager({
   sortConfig,
   onSortChange,
   dateRange,
-  allRequestsForExport,
 }: StaffRequestsManagerProps) {
   const { profile } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
@@ -156,7 +154,6 @@ export function StaffRequestsManager({
         <StaffRequestsToolbar
           tabs={tabsInfo}
           activeTab={activeTab}
-          requestsForExport={allRequestsForExport}
           searchQuery={searchQuery}
           onSearchChange={onSearchChange}
           departmentFilter={departmentFilter}
@@ -166,6 +163,8 @@ export function StaffRequestsManager({
           onClearSelection={() => setSelectedIds([])}
           profile={profile}
           onClearFilters={onClearFilters}
+          statusFilter={statusFilter}
+          dateRange={dateRange}
         />
         {tabsInfo.map(tab => (
           <TabsContent key={tab.value} value={tab.value} className="m-0">

@@ -4,11 +4,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatsCard } from "@/components/StatsCard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { StaffRequestsManager } from "@/components/StaffRequestsManager";
-import { BonafideRequestWithProfile, SortConfig } from "@/types";
+import { SortConfig } from "@/types";
 import { LucideIcon } from "lucide-react";
 import { DateRangePicker } from "./DateRangePicker";
 import { DateRange } from "react-day-picker";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Stat {
   title: string;
@@ -33,8 +35,7 @@ interface StaffDashboardProps {
   headerActions?: ReactNode;
   stats: Stat[];
   charts: Chart[];
-  allRequests: BonafideRequestWithProfile[];
-  isLoading: boolean;
+  isAnalyticsLoading: boolean;
   dateRange: DateRange | undefined;
   onDateRangeChange: (date: DateRange | undefined) => void;
   searchQuery: string;
@@ -47,13 +48,43 @@ interface StaffDashboardProps {
   onSortChange: (config: SortConfig) => void;
 }
 
+const fetchTabCounts = async (role: string, dateRange?: DateRange) => {
+    let query = supabase.from('bonafide_requests').select('status', { count: 'exact', head: true });
+    if (dateRange?.from) {
+        query = query.gte('created_at', dateRange.from.toISOString());
+    }
+    if (dateRange?.to) {
+        query = query.lte('created_at', dateRange.to.toISOString());
+    }
+
+    const getCountForStatuses = (statuses: string[]) => {
+        let statusQuery = query; // Important: create a new reference for each count
+        return statusQuery.in('status', statuses).then(res => res.count || 0);
+    }
+
+    const actionableStatuses = {
+        tutor: ['pending'],
+        hod: ['approved_by_tutor'],
+        admin: ['approved_by_hod'],
+    }[role] || [];
+
+    const [actionable, inProgress, completed, rejected, all] = await Promise.all([
+        actionableStatuses.length > 0 ? getCountForStatuses(actionableStatuses) : Promise.resolve(0),
+        getCountForStatuses(['pending', 'approved_by_tutor', 'approved_by_hod']),
+        getCountForStatuses(['completed']),
+        getCountForStatuses(['rejected_by_tutor', 'rejected_by_hod']),
+        supabase.from('bonafide_requests').select('status', { count: 'exact', head: true }).gte('created_at', dateRange?.from?.toISOString() || '1970-01-01').lte('created_at', dateRange?.to?.toISOString() || new Date().toISOString()).then(res => res.count || 0)
+    ]);
+
+    return { actionable, inProgress, completed, rejected, all };
+}
+
 export const StaffDashboard = ({
   title,
   headerActions,
   stats,
   charts,
-  allRequests,
-  isLoading,
+  isAnalyticsLoading,
   dateRange,
   onDateRangeChange,
   searchQuery,
@@ -67,35 +98,19 @@ export const StaffDashboard = ({
 }: StaffDashboardProps) => {
   const { profile } = useAuth();
 
-  const tabsInfo = useMemo(() => {
-    if (!profile) return [];
-    
-    const filteredByDate = dateRange?.from 
-      ? allRequests.filter(r => new Date(r.created_at) >= dateRange.from! && new Date(r.created_at) <= (dateRange.to || new Date()))
-      : allRequests;
+  const { data: tabCounts } = useQuery({
+    queryKey: ['tabCounts', profile?.role, dateRange],
+    queryFn: () => fetchTabCounts(profile!.role, dateRange),
+    enabled: !!profile,
+  });
 
-    const getCount = (statusKey: 'actionable' | 'inProgress' | 'rejected' | 'completed' | 'all') => {
-      if (statusKey === 'all') return filteredByDate.length;
-      if (statusKey === 'inProgress') return filteredByDate.filter(r => ['pending', 'approved_by_tutor', 'approved_by_hod'].includes(r.status)).length;
-      if (statusKey === 'rejected') return filteredByDate.filter(r => ['rejected_by_tutor', 'rejected_by_hod'].includes(r.status)).length;
-      if (statusKey === 'completed') return filteredByDate.filter(r => r.status === 'completed').length;
-      if (statusKey === 'actionable') {
-        if (profile.role === 'tutor') return filteredByDate.filter(r => r.status === 'pending').length;
-        if (profile.role === 'hod') return filteredByDate.filter(r => r.status === 'approved_by_tutor').length;
-        if (profile.role === 'admin') return filteredByDate.filter(r => r.status === 'approved_by_hod').length;
-        return 0;
-      }
-      return 0;
-    };
-
-    return [
-      { value: 'actionable', label: 'Action Required', count: getCount('actionable') },
-      { value: 'inProgress', label: 'In Progress', count: getCount('inProgress') },
-      { value: 'completed', label: 'Completed', count: getCount('completed') },
-      { value: 'rejected', label: 'Rejected', count: getCount('rejected') },
-      { value: 'all', label: 'All', count: getCount('all') },
-    ];
-  }, [allRequests, profile, dateRange]);
+  const tabsInfo = useMemo(() => [
+      { value: 'actionable', label: 'Action Required', count: tabCounts?.actionable ?? 0 },
+      { value: 'inProgress', label: 'In Progress', count: tabCounts?.inProgress ?? 0 },
+      { value: 'completed', label: 'Completed', count: tabCounts?.completed ?? 0 },
+      { value: 'rejected', label: 'Rejected', count: tabCounts?.rejected ?? 0 },
+      { value: 'all', label: 'All', count: tabCounts?.all ?? 0 },
+    ], [tabCounts]);
 
   const handleClearFilters = () => {
     onDateRangeChange(undefined);
@@ -104,7 +119,7 @@ export const StaffDashboard = ({
     onTabChange("actionable");
   };
 
-  if (isLoading && allRequests.length === 0) {
+  if (isAnalyticsLoading) {
     return (
       <DashboardLayout title={title} headerActions={headerActions}>
         <div className="space-y-4">
@@ -156,7 +171,6 @@ export const StaffDashboard = ({
           sortConfig={sortConfig}
           onSortChange={onSortChange}
           dateRange={dateRange}
-          allRequestsForExport={allRequests}
         />
       </div>
     </DashboardLayout>
