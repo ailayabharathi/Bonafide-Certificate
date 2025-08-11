@@ -1,17 +1,14 @@
 import { Link } from "react-router-dom";
-import { useState, useMemo } from "react";
-import { BonafideRequest, BonafideStatus, SortConfig } from "@/types";
 import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useBonafideRequests } from "@/hooks/useBonafideRequests";
-import { showSuccess } from "@/utils/toast";
-import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { StaffDashboard } from "@/components/StaffDashboard";
 import { useStaffDashboardData } from "@/hooks/useStaffDashboardData";
 import { useAuth, Profile } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { DateRange } from "react-day-picker";
+import { useStaffPortalLogic } from "@/hooks/useStaffPortalLogic";
+import { BonafideStatus, BonafideRequest } from "@/types";
 
 const fetchAllAdminData = async () => {
   const usersPromise = supabase.from("profiles").select("*");
@@ -30,24 +27,20 @@ const fetchAllAdminData = async () => {
 
 const AdminDashboard = () => {
   const { profile } = useAuth();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState("all");
-  const [activeTab, setActiveTab] = useState("actionable");
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'created_at', direction: 'descending' });
-
-  const statusFilter = useMemo(() => {
-    if (activeTab === 'actionable') {
-      if (profile?.role === 'admin') return 'approved_by_hod';
-    }
-    return activeTab;
-  }, [activeTab, profile]);
-
-  const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
-    if (payload.eventType === "UPDATE" && payload.new.status === "approved_by_hod") {
-      showSuccess("A request is ready for final processing.");
-    }
-  };
+  const {
+    dateRange,
+    setDateRange,
+    searchQuery,
+    setSearchQuery,
+    departmentFilter,
+    setDepartmentFilter,
+    activeTab,
+    setActiveTab,
+    sortConfig,
+    setSortConfig,
+    statusFilter,
+    handleRealtimeEvent,
+  } = useStaffPortalLogic('admin');
 
   const { data: adminData, isLoading: allDataLoading } = useQuery({
     queryKey: ["allAdminData"],
