@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { BonafideRequest, SortConfig } from "@/types";
 import { showSuccess, showError } from "@/utils/toast";
@@ -53,53 +54,33 @@ export const useStudentPortalLogic = () => {
     }
   };
 
-  // Fetch ALL requests for the student once.
-  const { requests: allRequests, isLoading, deleteRequest: deleteRequestFn } = useBonafideRequests(
+  // Fetch all requests for the dashboard stats and charts
+  const { data: allRequests = [], isLoading: isDashboardDataLoading } = useQuery({
+    queryKey: ['bonafide_requests', 'dashboard', user?.id],
+    queryFn: async (): Promise<BonafideRequest[]> => {
+        if (!user) return [];
+        const { data, error } = await supabase.from('bonafide_requests').select('*').eq('user_id', user.id);
+        if (error) {
+            showError("Failed to load dashboard data.");
+            return [];
+        }
+        return data;
+    },
+    enabled: !!user,
+  });
+  const dashboardData = useStudentDashboardData(allRequests);
+
+  // Fetch filtered and sorted requests for the table view
+  const { requests: tableRequests, isLoading: isTableDataLoading, deleteRequest: deleteRequestFn } = useBonafideRequests(
     `student-requests:${user?.id}`,
-    { userId: user?.id },
+    { 
+      userId: user?.id,
+      statusFilter,
+      searchQuery,
+      sortConfig,
+    },
     handleRealtimeEvent
   );
-
-  // Memoize filtered and sorted requests for the table
-  const filteredAndSortedRequests = useMemo(() => {
-    let filtered = [...allRequests];
-
-    if (statusFilter && statusFilter !== 'all') {
-      if (statusFilter === 'in_progress') {
-        filtered = filtered.filter(r => ['pending', 'approved_by_tutor', 'approved_by_hod'].includes(r.status));
-      } else if (statusFilter === 'rejected') {
-        filtered = filtered.filter(r => ['rejected_by_tutor', 'rejected_by_hod'].includes(r.status));
-      } else {
-        filtered = filtered.filter(r => r.status === statusFilter);
-      }
-    }
-
-    if (searchQuery) {
-      filtered = filtered.filter(r => r.reason.toLowerCase().includes(searchQuery.toLowerCase()));
-    }
-
-    if (sortConfig.key) {
-      filtered.sort((a, b) => {
-        const aValue = a[sortConfig.key as keyof BonafideRequest];
-        const bValue = b[sortConfig.key as keyof BonafideRequest];
-
-        if (aValue === null || aValue === undefined) return 1;
-        if (bValue === null || bValue === undefined) return -1;
-
-        if (aValue < bValue) {
-          return sortConfig.direction === 'ascending' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'ascending' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-
-    return filtered;
-  }, [allRequests, statusFilter, searchQuery, sortConfig]);
-
-  const dashboardData = useStudentDashboardData(allRequests);
 
   const handleNewRequestClick = () => {
     setRequestToEdit(null);
@@ -147,7 +128,7 @@ export const useStudentPortalLogic = () => {
     setSearchQuery,
     sortConfig,
     setSortConfig,
-    requests: filteredAndSortedRequests,
-    isLoading,
+    requests: tableRequests,
+    isLoading: isDashboardDataLoading || isTableDataLoading,
   };
 };
