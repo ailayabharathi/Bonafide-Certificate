@@ -12,8 +12,9 @@ import {
 import { navItems } from "@/lib/navigation";
 import { useAuth, type Profile } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, User, Sun, Moon, Laptop } from "lucide-react";
+import { LogOut, User, Sun, Moon, Laptop, FileText } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
+import { BonafideRequestWithProfile } from "@/types";
 
 interface CommandMenuProps {
   open: boolean;
@@ -25,6 +26,7 @@ export function CommandMenu({ open, setOpen }: CommandMenuProps) {
   const { profile, signOut } = useAuth();
   const { setTheme } = useTheme();
   const [users, setUsers] = React.useState<Pick<Profile, 'id' | 'first_name' | 'last_name' | 'email'>[]>([]);
+  const [requests, setRequests] = React.useState<BonafideRequestWithProfile[]>([]);
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -38,15 +40,37 @@ export function CommandMenu({ open, setOpen }: CommandMenuProps) {
   }, [open, setOpen]);
 
   React.useEffect(() => {
-    if (profile?.role === 'admin' && open) {
+    if (!open || !profile) return;
+
+    if (profile.role === 'admin') {
         const fetchUsers = async () => {
             const { data } = await supabase.from('profiles').select('id, first_name, last_name, email');
-            if (data) {
-                setUsers(data);
-            }
+            if (data) setUsers(data);
         };
         fetchUsers();
     }
+
+    if (profile.role !== 'student') {
+        const fetchInitialRequests = async () => {
+            let statusFilter: string[] = [];
+            if (profile.role === 'tutor') statusFilter = ['pending'];
+            if (profile.role === 'hod') statusFilter = ['approved_by_tutor'];
+            if (profile.role === 'admin') statusFilter = ['approved_by_hod'];
+
+            if (statusFilter.length === 0) return;
+
+            const { data } = await supabase
+                .from('bonafide_requests')
+                .select('*, profiles!inner(first_name, last_name, register_number)')
+                .in('status', statusFilter)
+                .order('created_at', { ascending: false })
+                .limit(10);
+            
+            if (data) setRequests(data as BonafideRequestWithProfile[]);
+        };
+        fetchInitialRequests();
+    }
+
   }, [profile, open]);
 
   const runCommand = React.useCallback((command: () => unknown) => {
@@ -94,6 +118,28 @@ export function CommandMenu({ open, setOpen }: CommandMenuProps) {
               </CommandItem>
             ))}
           </CommandGroup>
+        )}
+        {requests.length > 0 && (
+            <CommandGroup heading="Actionable Requests">
+                {requests.map((request) => (
+                    <CommandItem
+                        key={request.id}
+                        value={`Request from ${request.profiles?.first_name} ${request.profiles?.last_name} for ${request.reason}`}
+                        onSelect={() => {
+                            runCommand(() => navigate(`/${profile.role}/dashboard`, { 
+                                state: { 
+                                    initialSearch: request.profiles?.register_number || request.id,
+                                    initialTab: 'actionable' 
+                                } 
+                            }));
+                        }}
+                    >
+                        <FileText className="mr-2 h-4 w-4" />
+                        <span>{request.profiles?.first_name} {request.profiles?.last_name}</span>
+                        <span className="ml-auto text-xs text-muted-foreground truncate max-w-[200px]">{request.reason}</span>
+                    </CommandItem>
+                ))}
+            </CommandGroup>
         )}
         <CommandSeparator />
         <CommandGroup heading="Settings">
