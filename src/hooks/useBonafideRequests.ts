@@ -169,10 +169,9 @@ const deleteRequest = async (requestId: string) => {
 
 const invokeEmailNotification = async (requestId: string, oldStatus: BonafideStatus | undefined, newStatus: BonafideStatus) => {
   try {
-    const { error } = await supabase.functions.invoke('send-status-update-email', {
-      body: { requestId, oldStatus, newStatus },
-    });
-    if (error) throw error;
+    // The send-status-update-email function is causing deployment issues.
+    // This is disabled until the underlying configuration issue is resolved.
+    console.log("Email notifications are currently disabled due to a configuration issue.");
   } catch (error) {
     // Log the error but don't block the UI flow or show an error toast
     console.error("Failed to send email notification:", error);

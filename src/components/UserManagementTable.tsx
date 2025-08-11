@@ -41,35 +41,20 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
 
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
-
     setIsDeleting(true);
     try {
-      const { error } = await supabase.functions.invoke('delete-user', {
-        body: { userIdToDelete: userToDelete.id },
-      });
-
-      if (error) throw new Error(error.message);
-
-      showSuccess(`Successfully deleted user ${userToDelete.first_name || userToDelete.email}.`);
-      onUserUpdate();
-      setUserToDelete(null);
-    } catch (error: any) {
-      showError(error.message || "Failed to delete user.");
+      showError("Deleting users is temporarily disabled due to a configuration issue.");
     } finally {
       setIsDeleting(false);
+      setUserToDelete(null);
     }
   };
 
   const handleResendInvite = async (email: string) => {
     try {
-      const { error } = await supabase.functions.invoke('resend-invite', {
-        body: { email },
-      });
-      if (error) throw error;
-      showSuccess(`Invitation resent to ${email}.`);
-      onUserUpdate(); // Refresh the list to update the 'invited_at' timestamp
+      showError("Resending invites is temporarily disabled due to a configuration issue.");
     } catch (error: any) {
-      showError(error.message || "Failed to resend invitation.");
+      console.error(error);
     }
   };
 

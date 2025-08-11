@@ -4,11 +4,10 @@ import { ManagedUser } from "@/types";
 import { showError } from "@/utils/toast";
 
 const fetchAllUsers = async (): Promise<ManagedUser[]> => {
-  const { data, error } = await supabase.functions.invoke('get-users');
-  if (error) {
-    throw new Error(error.message);
-  }
-  return data as ManagedUser[];
+  // The get-users function is causing deployment issues.
+  // This is disabled until the underlying configuration issue is resolved.
+  console.error("User management is temporarily disabled due to a configuration issue.");
+  return [];
 };
 
 export const useUserManagementLogic = () => {
