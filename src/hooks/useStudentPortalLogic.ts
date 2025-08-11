@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { BonafideRequest, SortConfig } from "@/types";
@@ -24,7 +24,6 @@ export const useStudentPortalLogic = () => {
 
   // Realtime event handler
   const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
-    // Invalidate ALL queries for bonafide_requests to ensure data consistency
     queryClient.invalidateQueries({ queryKey: ['bonafide_requests'] });
     
     if (payload.eventType !== 'UPDATE' || !user || payload.new.user_id !== user.id) return;
@@ -54,23 +53,54 @@ export const useStudentPortalLogic = () => {
     }
   };
 
-  // Fetch ALL requests for dashboard stats (unfiltered)
-  const { requests: allRequestsForStats } = useBonafideRequests(
-    `student-all-requests:${user?.id}`,
+  // Fetch ALL requests for the student once.
+  const { requests: allRequests, isLoading, deleteRequest: deleteRequestFn } = useBonafideRequests(
+    `student-requests:${user?.id}`,
     { userId: user?.id },
     handleRealtimeEvent
   );
 
-  // Fetch requests for the table (filtered and sorted)
-  const { requests, isLoading, deleteRequest: deleteRequestFn } = useBonafideRequests(
-    `student-filtered-requests:${user?.id}`,
-    { userId: user?.id, statusFilter, searchQuery, sortConfig }
-  );
+  // Memoize filtered and sorted requests for the table
+  const filteredAndSortedRequests = useMemo(() => {
+    let filtered = [...allRequests];
 
-  // Dashboard data calculation
-  const dashboardData = useStudentDashboardData(allRequestsForStats);
+    if (statusFilter && statusFilter !== 'all') {
+      if (statusFilter === 'in_progress') {
+        filtered = filtered.filter(r => ['pending', 'approved_by_tutor', 'approved_by_hod'].includes(r.status));
+      } else if (statusFilter === 'rejected') {
+        filtered = filtered.filter(r => ['rejected_by_tutor', 'rejected_by_hod'].includes(r.status));
+      } else {
+        filtered = filtered.filter(r => r.status === statusFilter);
+      }
+    }
 
-  // Handlers for UI actions
+    if (searchQuery) {
+      filtered = filtered.filter(r => r.reason.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
+
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        const aValue = a[sortConfig.key as keyof BonafideRequest];
+        const bValue = b[sortConfig.key as keyof BonafideRequest];
+
+        if (aValue === null || aValue === undefined) return 1;
+        if (bValue === null || bValue === undefined) return -1;
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [allRequests, statusFilter, searchQuery, sortConfig]);
+
+  const dashboardData = useStudentDashboardData(allRequests);
+
   const handleNewRequestClick = () => {
     setRequestToEdit(null);
     setIsApplyDialogOpen(true);
@@ -117,7 +147,7 @@ export const useStudentPortalLogic = () => {
     setSearchQuery,
     sortConfig,
     setSortConfig,
-    requests,
+    requests: filteredAndSortedRequests,
     isLoading,
   };
 };
