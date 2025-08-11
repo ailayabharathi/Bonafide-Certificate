@@ -41,21 +41,15 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
 
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
+
     setIsDeleting(true);
-    try {
-      showError("Deleting users is temporarily disabled due to a configuration issue.");
-    } finally {
-      setIsDeleting(false);
-      setUserToDelete(null);
-    }
+    showError("Deleting users is temporarily disabled due to a system issue.");
+    setIsDeleting(false);
+    setUserToDelete(null);
   };
 
   const handleResendInvite = async (email: string) => {
-    try {
-      showError("Resending invites is temporarily disabled due to a configuration issue.");
-    } catch (error: any) {
-      console.error(error);
-    }
+    showError("Resending invitations is temporarily disabled due to a system issue.");
   };
 
   const columns = useMemo(() => getUserManagementTableColumns({

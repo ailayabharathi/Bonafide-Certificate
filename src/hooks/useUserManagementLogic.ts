@@ -4,10 +4,18 @@ import { ManagedUser } from "@/types";
 import { showError } from "@/utils/toast";
 
 const fetchAllUsers = async (): Promise<ManagedUser[]> => {
-  // The get-users function is causing deployment issues.
-  // This is disabled until the underlying configuration issue is resolved.
-  console.error("User management is temporarily disabled due to a configuration issue.");
-  return [];
+  // This is a fallback since the 'get-users' function is unavailable.
+  // It will not include auth data like last_sign_in_at or invited_at.
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*');
+  
+  if (error) {
+    throw new Error(error.message);
+  }
+  // The data from 'profiles' table matches most of the ManagedUser type.
+  // The missing fields will be undefined, which is acceptable.
+  return data as ManagedUser[];
 };
 
 export const useUserManagementLogic = () => {

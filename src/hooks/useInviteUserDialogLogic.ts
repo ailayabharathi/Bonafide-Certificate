@@ -30,9 +30,27 @@ export const useInviteUserDialogLogic = ({ onOpenChange, onInviteSent }: UseInvi
 
   async function onSubmit(values: InviteUserFormValues) {
     setIsSubmitting(true);
-    showError("Inviting users is temporarily disabled due to a configuration issue.");
+
+    const emailList = values.emails
+      .split(/[\n,]+/)
+      .map(email => email.trim())
+      .filter(email => email.length > 0);
+
+    if (emailList.length === 0) {
+      showError("Please enter at least one valid email.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    const invalidEmails = emailList.filter(email => !z.string().email().safeParse(email).success);
+    if (invalidEmails.length > 0) {
+      showError(`Invalid email format for: ${invalidEmails.join(', ')}`);
+      setIsSubmitting(false);
+      return;
+    }
+
+    showError("Inviting users is temporarily disabled due to a system issue.");
     setIsSubmitting(false);
-    onOpenChange(false);
   }
 
   return {
