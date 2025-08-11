@@ -12,12 +12,15 @@ const fetchUsers = async (params: {
   roleFilter: UserRole | 'all';
   departmentFilter: string;
   sortConfig: SortConfig;
-}): Promise<ManagedUser[]> => {
-  const { searchQuery, roleFilter, departmentFilter, sortConfig } = params;
+  page: number;
+}) => {
+  const { searchQuery, roleFilter, departmentFilter, sortConfig, page } = params;
+  const from = (page - 1) * ITEMS_PER_PAGE;
+  const to = from + ITEMS_PER_PAGE - 1;
 
   let query = supabase
     .from('profiles')
-    .select('id, email, role, first_name, last_name, avatar_url, department, register_number, created_at');
+    .select('id, email, role, first_name, last_name, avatar_url, department, register_number, created_at', { count: 'exact' });
 
   if (searchQuery) {
     const searchPattern = `%${searchQuery}%`;
@@ -38,11 +41,13 @@ const fetchUsers = async (params: {
     query = query.order('last_name', { ascending: sortConfig.direction === 'ascending' });
   }
 
-  const { data, error } = await query;
+  query = query.range(from, to);
+
+  const { data, error, count } = await query;
   if (error) {
     throw new Error(error.message);
   }
-  return data as ManagedUser[];
+  return { data: data as ManagedUser[], count: count ?? 0 };
 };
 
 export const useUserManagement = () => {
@@ -62,11 +67,14 @@ export const useUserManagement = () => {
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'ascending' });
 
   // Data fetching with react-query
-  const queryKey = ['users', searchQuery, roleFilter, departmentFilter, sortConfig];
-  const { data: users = [], isLoading: loading } = useQuery<ManagedUser[]>({
+  const queryKey = ['users', searchQuery, roleFilter, departmentFilter, sortConfig, currentPage];
+  const { data, isLoading: loading } = useQuery({
     queryKey,
-    queryFn: () => fetchUsers({ searchQuery, roleFilter, departmentFilter, sortConfig }),
+    queryFn: () => fetchUsers({ searchQuery, roleFilter, departmentFilter, sortConfig, page: currentPage }),
   });
+
+  const users = data?.data || [];
+  const totalCount = data?.count || 0;
 
   // Reset page when filters change
   useEffect(() => {
@@ -74,11 +82,7 @@ export const useUserManagement = () => {
   }, [searchQuery, roleFilter, departmentFilter, sortConfig]);
 
   // Pagination
-  const totalPages = Math.ceil(users.length / ITEMS_PER_PAGE);
-  const paginatedUsers = users.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   // Action handlers
   const handleSort = (key: string) => {
@@ -138,7 +142,7 @@ export const useUserManagement = () => {
     handleSort,
     processedUsers: users, // For export
     totalPages,
-    paginatedUsers,
+    paginatedUsers: users,
     handleClearFilters,
     showClearFilters,
     userToEditRole,

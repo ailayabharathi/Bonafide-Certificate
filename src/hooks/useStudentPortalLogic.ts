@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,6 +7,8 @@ import { showSuccess, showError } from "@/utils/toast";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { useStudentDashboardData } from "@/hooks/useStudentDashboardData";
 import { useBonafideRequests } from "@/hooks/useBonafideRequests";
+
+const ITEMS_PER_PAGE = 10;
 
 export const useStudentPortalLogic = () => {
   const { user } = useAuth();
@@ -17,11 +19,16 @@ export const useStudentPortalLogic = () => {
   const [requestToEdit, setRequestToEdit] = useState<BonafideRequest | null>(null);
   const [requestToCancel, setRequestToCancel] = useState<BonafideRequest | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // State for data filtering and sorting
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'created_at', direction: 'descending' });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchQuery, sortConfig]);
 
   // Realtime event handler
   const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
@@ -71,16 +78,19 @@ export const useStudentPortalLogic = () => {
   const dashboardData = useStudentDashboardData(allRequests);
 
   // Fetch filtered and sorted requests for the table view
-  const { requests: tableRequests, isLoading: isTableDataLoading, deleteRequest: deleteRequestFn } = useBonafideRequests(
+  const { requests: tableRequests, count: totalCount, isLoading: isTableDataLoading, deleteRequest: deleteRequestFn } = useBonafideRequests(
     `student-requests:${user?.id}`,
     { 
       userId: user?.id,
       statusFilter,
       searchQuery,
       sortConfig,
+      page: currentPage,
     },
     handleRealtimeEvent
   );
+
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   const handleNewRequestClick = () => {
     setRequestToEdit(null);
@@ -130,5 +140,8 @@ export const useStudentPortalLogic = () => {
     setSortConfig,
     requests: tableRequests,
     isLoading: isDashboardDataLoading || isTableDataLoading,
+    currentPage,
+    totalPages,
+    onPageChange: setCurrentPage,
   };
 };

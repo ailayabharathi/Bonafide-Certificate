@@ -48,6 +48,9 @@ const StudentPortal = () => {
     setSortConfig,
     requests,
     isLoading,
+    currentPage,
+    totalPages,
+    onPageChange,
   } = useStudentPortalLogic();
 
   const headerActions = (
@@ -96,6 +99,9 @@ const StudentPortal = () => {
                     sortConfig={sortConfig}
                     onSortChange={setSortConfig}
                     onClearFilters={handleClearFilters}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={onPageChange}
                   />
                 </CardContent>
               </Card>

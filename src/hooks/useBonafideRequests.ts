@@ -5,6 +5,8 @@ import { useEffect } from "react";
 import { showError, showSuccess } from "@/utils/toast";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
+const ITEMS_PER_PAGE = 10;
+
 interface FetchRequestsParams {
   userId?: string;
   startDate?: Date;
@@ -13,15 +15,17 @@ interface FetchRequestsParams {
   statusFilter?: string;
   sortConfig?: SortConfig;
   departmentFilter?: string;
+  page: number;
 }
 
-const fetchRequests = async (params: FetchRequestsParams): Promise<BonafideRequestWithProfile[]> => {
-  const { userId, startDate, endDate, searchQuery, statusFilter, sortConfig, departmentFilter } = params;
+const fetchRequests = async (params: FetchRequestsParams): Promise<{ data: BonafideRequestWithProfile[], count: number }> => {
+  const { userId, startDate, endDate, searchQuery, statusFilter, sortConfig, departmentFilter, page } = params;
+  const from = (page - 1) * ITEMS_PER_PAGE;
+  const to = from + ITEMS_PER_PAGE - 1;
 
   let query = supabase
     .from("bonafide_requests")
-    .select("*, profiles!inner(first_name, last_name, department, register_number)")
-    .order("created_at", { ascending: false });
+    .select("*, profiles!inner(first_name, last_name, department, register_number)", { count: 'exact' });
 
   if (userId) {
     query = query.eq("user_id", userId);
@@ -37,7 +41,6 @@ const fetchRequests = async (params: FetchRequestsParams): Promise<BonafideReque
   }
 
   if (searchQuery) {
-    // For student portal, search is simple. For staff, it's more complex.
     if (userId) {
       query = query.ilike('reason', `%${searchQuery}%`);
     } else {
@@ -72,13 +75,15 @@ const fetchRequests = async (params: FetchRequestsParams): Promise<BonafideReque
     query = query.order("created_at", { ascending: false });
   }
 
-  const { data, error } = await query;
+  query = query.range(from, to);
+
+  const { data, error, count } = await query;
 
   if (error) {
     showError("Failed to fetch requests.");
     throw new Error(error.message);
   }
-  return (data as BonafideRequestWithProfile[]) || [];
+  return { data: (data as BonafideRequestWithProfile[]) || [], count: count ?? 0 };
 };
 
 const updateRequestStatus = async ({
@@ -162,12 +167,11 @@ export const useBonafideRequests = (
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient, channelName, onRealtimeEvent]);
+  }, [queryClient, channelName, onRealtimeEvent, queryKey]);
 
-  const { data: requests, isLoading } = useQuery<BonafideRequestWithProfile[]>({
+  const { data, isLoading } = useQuery({
     queryKey,
     queryFn: () => fetchRequests(params),
-    initialData: [],
   });
 
   const mutation = useMutation({
@@ -195,8 +199,9 @@ export const useBonafideRequests = (
   });
 
   return {
-    requests: requests || [],
-    isLoading: isLoading && (!requests || requests.length === 0),
+    requests: data?.data || [],
+    count: data?.count || 0,
+    isLoading: isLoading && (!data?.data || data.data.length === 0),
     updateRequest: mutation.mutateAsync,
     bulkUpdateRequest: bulkUpdateMutation.mutateAsync,
     deleteRequest: deleteMutation.mutateAsync,

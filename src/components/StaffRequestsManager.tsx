@@ -1,7 +1,6 @@
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState, useEffect } from "react";
 import { BonafideRequestWithProfile, BonafideStatus, SortConfig } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { useDataTable } from "@/hooks/useDataTable";
 import { useStaffRequestsTableActions } from "@/hooks/useStaffRequestsTableActions";
 import { getStaffTableColumns } from "@/lib/staff-table-columns";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -14,6 +13,8 @@ import { DateRange } from "react-day-picker";
 import { showSuccess } from "@/utils/toast";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { BonafideRequest } from "@/types";
+
+const ITEMS_PER_PAGE = 10;
 
 interface StaffRequestsManagerProps {
   tabsInfo: { value: string; label: string; count: number }[];
@@ -45,6 +46,13 @@ export function StaffRequestsManager({
   allRequestsForExport,
 }: StaffRequestsManagerProps) {
   const { profile } = useAuth();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setSelectedIds([]);
+  }, [activeTab, searchQuery, departmentFilter, sortConfig, dateRange]);
 
   const statusFilter = useMemo(() => {
     if (activeTab === 'actionable') {
@@ -74,7 +82,7 @@ export function StaffRequestsManager({
     }
   };
 
-  const { requests, updateRequest, bulkUpdateRequest } = useBonafideRequests(
+  const { requests, count, updateRequest, bulkUpdateRequest } = useBonafideRequests(
     `staff-requests-manager:${profile?.role}`,
     { 
       startDate: dateRange?.from, 
@@ -82,10 +90,13 @@ export function StaffRequestsManager({
       searchQuery, 
       statusFilter, 
       sortConfig, 
-      departmentFilter 
+      departmentFilter,
+      page: currentPage,
     },
     handleRealtimeEvent
   );
+
+  const totalPages = Math.ceil(count / ITEMS_PER_PAGE);
 
   const isRowSelectable = useCallback((request: BonafideRequestWithProfile) => {
     if (profile?.role === 'tutor') return request.status === 'pending';
@@ -94,21 +105,24 @@ export function StaffRequestsManager({
     return false;
   }, [profile]);
 
-  const {
-    paginatedRows,
-    currentPage,
-    setCurrentPage,
-    totalPages,
-    selectedIds,
-    setSelectedIds,
-    handleToggleSelect,
-    handleSelectAllOnPage,
-    selectableRowIdsOnPage,
-  } = useDataTable({
-    data: requests,
-    rowKey: (row) => row.id,
-    isRowSelectable,
-  });
+  const selectableRowIdsOnPage = useMemo(() => 
+    isRowSelectable 
+      ? requests.filter(isRowSelectable).map(r => r.id)
+      : [],
+    [requests, isRowSelectable]
+  );
+
+  const handleToggleSelect = (id: string, checked: boolean) => {
+    setSelectedIds(prev => checked ? [...prev, id] : prev.filter(item => item !== id));
+  };
+
+  const handleSelectAllOnPage = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(prev => [...new Set([...prev, ...selectableRowIdsOnPage])]);
+    } else {
+      setSelectedIds(prev => prev.filter(id => !selectableRowIdsOnPage.includes(id)));
+    }
+  };
 
   const {
     actionRequest,
@@ -157,7 +171,7 @@ export function StaffRequestsManager({
           <TabsContent key={tab.value} value={tab.value} className="m-0">
             <DataTable
               columns={columns}
-              data={paginatedRows}
+              data={requests}
               sortConfig={sortConfig as { key: string; direction: 'ascending' | 'descending' }}
               onSort={(key) => onSortChange({ key, direction: sortConfig.key === key && sortConfig.direction === 'ascending' ? 'descending' : 'ascending' })}
               currentPage={currentPage}

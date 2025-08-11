@@ -1,9 +1,8 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { BonafideRequest, SortConfig } from "@/types";
 import { StudentRequestsToolbar } from "./StudentRequestsToolbar";
 import { DataTable } from "./DataTable";
 import { getStudentTableColumns } from "@/lib/student-table-columns";
-import { useDataTable } from "@/hooks/useDataTable";
 
 interface StudentRequestsTableProps {
   requests: BonafideRequest[];
@@ -16,6 +15,9 @@ interface StudentRequestsTableProps {
   sortConfig: SortConfig;
   onSortChange: (config: SortConfig) => void;
   onClearFilters: () => void;
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
 }
 
 export function StudentRequestsTable({
@@ -29,17 +31,10 @@ export function StudentRequestsTable({
   sortConfig,
   onSortChange,
   onClearFilters,
+  currentPage,
+  totalPages,
+  onPageChange,
 }: StudentRequestsTableProps) {
-  const {
-    paginatedRows,
-    currentPage,
-    setCurrentPage,
-    totalPages,
-  } = useDataTable({
-    data: requests,
-    rowKey: (row) => row.id,
-  });
-
   const handleSort = (key: string) => {
     const direction = sortConfig.key === key && sortConfig.direction === 'ascending' ? 'descending' : 'ascending';
     onSortChange({ key, direction });
@@ -66,11 +61,11 @@ export function StudentRequestsTable({
       />
       <DataTable
         columns={columns}
-        data={paginatedRows}
+        data={requests}
         sortConfig={sortConfig}
         onSort={handleSort}
         currentPage={currentPage}
-        onPageChange={setCurrentPage}
+        onPageChange={onPageChange}
         totalPages={totalPages}
         rowKey={(row) => row.id}
       />
