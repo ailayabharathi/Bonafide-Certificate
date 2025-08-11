@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { BonafideRequest } from "@/types";
+import { BonafideRequest, SortConfig } from "@/types";
 import { showSuccess, showError } from "@/utils/toast";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { useStudentDashboardData } from "@/hooks/useStudentDashboardData";
@@ -22,18 +23,35 @@ const fetchAllStudentRequests = async (userId: string) => {
 
 export const useStudentPortalLogic = () => {
   const { user } = useAuth();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [requestToEdit, setRequestToEdit] = useState<BonafideRequest | null>(null);
+  const queryClient = useQueryClient();
 
-  const { data: allRequests = [] } = useQuery<BonafideRequest[]>({
+  // State for UI controls
+  const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
+  const [requestToEdit, setRequestToEdit] = useState<BonafideRequest | null>(null);
+  const [requestToCancel, setRequestToCancel] = useState<BonafideRequest | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  // State for data filtering and sorting, to be passed to useBonafideRequests
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'created_at', direction: 'descending' });
+
+  // Fetch all requests for dashboard stats (unfiltered)
+  const { data: allRequestsForStats = [] } = useQuery<BonafideRequest[]>({
     queryKey: ['allStudentRequests', user?.id],
     queryFn: () => fetchAllStudentRequests(user!.id),
     enabled: !!user,
   });
 
-  const dashboardData = useStudentDashboardData(allRequests);
+  // Dashboard data calculation
+  const dashboardData = useStudentDashboardData(allRequestsForStats);
 
+  // Realtime event handler
   const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
+    // Invalidate queries to refetch data
+    queryClient.invalidateQueries({ queryKey: ['bonafide_requests'] });
+    queryClient.invalidateQueries({ queryKey: ['allStudentRequests'] });
+    
     if (payload.eventType !== 'UPDATE' || !user || payload.new.user_id !== user.id) return;
 
     const oldStatus = (payload.old as BonafideRequest)?.status;
@@ -61,24 +79,55 @@ export const useStudentPortalLogic = () => {
     }
   };
 
+  // Handlers for UI actions
   const handleNewRequestClick = () => {
     setRequestToEdit(null);
-    setIsDialogOpen(true);
+    setIsApplyDialogOpen(true);
   };
 
   const handleEditRequest = (request: BonafideRequest) => {
     setRequestToEdit(request);
-    setIsDialogOpen(true);
+    setIsApplyDialogOpen(true);
+  };
+
+  const handleConfirmCancel = async (deleteRequestFn: (id: string) => Promise<void>) => {
+    if (!requestToCancel) return;
+    setIsCancelling(true);
+    try {
+      await deleteRequestFn(requestToCancel.id);
+    } catch (error) {
+      console.error("Failed to cancel request:", error);
+    } finally {
+      setIsCancelling(false);
+      setRequestToCancel(null);
+    }
+  };
+
+  const handleClearFilters = () => {
+    setStatusFilter("all");
+    setSearchQuery("");
   };
 
   return {
     user,
-    isDialogOpen,
-    setIsDialogOpen,
+    isApplyDialogOpen,
+    setIsApplyDialogOpen,
     requestToEdit,
+    requestToCancel,
+    setRequestToCancel,
+    isCancelling,
     dashboardData,
     handleNewRequestClick,
     handleEditRequest,
     handleRealtimeEvent,
+    handleConfirmCancel,
+    handleClearFilters,
+    // Filter and sort state
+    statusFilter,
+    setStatusFilter,
+    searchQuery,
+    setSearchQuery,
+    sortConfig,
+    setSortConfig,
   };
 };
