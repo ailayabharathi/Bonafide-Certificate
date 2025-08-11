@@ -36,6 +36,7 @@ export interface ManagedUser {
   department?: string | null;
   register_number?: string | null;
   created_at: string;
+  tutor_id?: string | null;
 }
 
 // New ColumnDef interface for generic DataTable

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { DeleteUserDialog } from "./DeleteUserDialog";
 import { EditUserRoleDialog } from "./EditUserRoleDialog";
+import { AssignTutorDialog } from "./AssignTutorDialog";
 import { getUserManagementTableColumns } from "@/lib/user-management-table-columns";
 import { ManagedUser, SortConfig } from "@/types";
 import {
@@ -44,6 +45,9 @@ interface UserManagementTableProps {
   handleRoleUpdated: () => void;
   isExporting: boolean;
   handleExport: () => void;
+  userToAssignTutor: ManagedUser | null;
+  setUserToAssignTutor: (user: ManagedUser | null) => void;
+  handleAssignTutorSuccess: () => void;
 }
 
 export function UserManagementTable({
@@ -70,6 +74,9 @@ export function UserManagementTable({
   handleRoleUpdated,
   isExporting,
   handleExport,
+  userToAssignTutor,
+  setUserToAssignTutor,
+  handleAssignTutorSuccess,
 }: UserManagementTableProps) {
   const { profile: currentUserProfile } = useAuth();
 
@@ -77,7 +84,8 @@ export function UserManagementTable({
     currentUserProfile,
     setUserToEditRole,
     setUserToDelete,
-  }), [currentUserProfile, setUserToEditRole, setUserToDelete]);
+    onAssignTutor: setUserToAssignTutor,
+  }), [currentUserProfile, setUserToEditRole, setUserToDelete, setUserToAssignTutor]);
 
   return (
     <>
@@ -148,6 +156,13 @@ export function UserManagementTable({
         isOpen={!!userToEditRole}
         onOpenChange={() => setUserToEditRole(null)}
         onRoleUpdated={handleRoleUpdated}
+      />
+
+      <AssignTutorDialog
+        student={userToAssignTutor}
+        isOpen={!!userToAssignTutor}
+        onOpenChange={() => setUserToAssignTutor(null)}
+        onSuccess={handleAssignTutorSuccess}
       />
     </>
   );

@@ -5,7 +5,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Pencil, UserCog, Trash2 } from "lucide-react";
+import { Pencil, UserCog, Trash2, GraduationCap } from "lucide-react";
 import { Profile } from "@/contexts/AuthContext";
 import { ManagedUser, ColumnDef } from "@/types";
 import { Link } from "react-router-dom";
@@ -14,12 +14,14 @@ interface GetUserManagementTableColumnsProps {
   currentUserProfile: Profile | null;
   setUserToEditRole: (user: ManagedUser) => void;
   setUserToDelete: (user: ManagedUser) => void;
+  onAssignTutor: (user: ManagedUser) => void;
 }
 
 export const getUserManagementTableColumns = ({
   currentUserProfile,
   setUserToEditRole,
   setUserToDelete,
+  onAssignTutor,
 }: GetUserManagementTableColumnsProps): ColumnDef<ManagedUser>[] => {
   return [
     {
@@ -54,6 +56,22 @@ export const getUserManagementTableColumns = ({
 
         return (
           <div className="flex gap-1 justify-end">
+            {row.role === 'student' && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onAssignTutor(row)}
+                    >
+                      <GraduationCap className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Assign Tutor</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>

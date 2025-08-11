@@ -22,7 +22,7 @@ const fetchUsers = async (params: {
 
   let query = supabase
     .from('profiles')
-    .select('id, email, role, first_name, last_name, avatar_url, department, register_number, created_at', { count: 'exact' });
+    .select('id, email, role, first_name, last_name, avatar_url, department, register_number, created_at, tutor_id', { count: 'exact' });
 
   if (searchQuery) {
     const searchPattern = `%${searchQuery}%`;
@@ -59,6 +59,7 @@ export const useUserManagement = () => {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [userToEditRole, setUserToEditRole] = useState<ManagedUser | null>(null);
   const [userToDelete, setUserToDelete] = useState<ManagedUser | null>(null);
+  const [userToAssignTutor, setUserToAssignTutor] = useState<ManagedUser | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -125,6 +126,11 @@ export const useUserManagement = () => {
   
   const handleInviteSent = () => {
     queryClient.invalidateQueries({ queryKey: ['users'] });
+  };
+
+  const handleAssignTutorSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+    setUserToAssignTutor(null);
   };
 
   const handleExport = async () => {
@@ -208,5 +214,8 @@ export const useUserManagement = () => {
     handleRoleUpdated,
     isExporting,
     handleExport,
+    userToAssignTutor,
+    setUserToAssignTutor,
+    handleAssignTutorSuccess,
   };
 };
