@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { BonafideStatus } from "@/types"; // Import BonafideStatus
+import { Profile } from "@/contexts/AuthContext";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -64,4 +65,9 @@ export const getStatusVariant = (status: BonafideStatus) => {
 
 export const formatStatus = (status: string) => {
   return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
+
+export const getApproveButtonTextForRole = (role: Profile['role'] | null | undefined) => {
+  if (role === 'admin') return 'Mark as Completed';
+  return 'Approve';
 };

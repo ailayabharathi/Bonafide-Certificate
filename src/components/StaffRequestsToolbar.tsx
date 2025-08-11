@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { departments } from "@/lib/departments"; // Import the departments list
+import { getApproveButtonTextForRole } from "@/lib/utils";
 
 interface TabInfo {
   value: string;
@@ -31,7 +32,6 @@ interface StaffRequestsToolbarProps {
   selectedIdsCount: number;
   onBulkAction: (type: 'approve' | 'reject') => void;
   onClearSelection: () => void;
-  getApproveButtonText: () => string;
   profile: Profile | null;
   onClearFilters: () => void;
 }
@@ -47,7 +47,6 @@ export const StaffRequestsToolbar = ({
   selectedIdsCount,
   onBulkAction,
   onClearSelection,
-  getApproveButtonText,
   profile,
   onClearFilters,
 }: StaffRequestsToolbarProps) => {
@@ -95,7 +94,7 @@ export const StaffRequestsToolbar = ({
       {selectedIdsCount > 0 && (
         <div className="flex items-center gap-4 p-2 bg-secondary rounded-md">
           <p className="text-sm font-medium">{selectedIdsCount} selected</p>
-          <Button size="sm" onClick={() => onBulkAction('approve')}>{getApproveButtonText()} Selected</Button>
+          <Button size="sm" onClick={() => onBulkAction('approve')}>{getApproveButtonTextForRole(profile?.role)} Selected</Button>
           {profile?.role !== 'admin' && <Button size="sm" variant="destructive" onClick={() => onBulkAction('reject')}>Reject Selected</Button>}
           <Button size="sm" variant="ghost" onClick={onClearSelection}>Clear selection</Button>
         </div>

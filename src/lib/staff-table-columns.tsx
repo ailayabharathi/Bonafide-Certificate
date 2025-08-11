@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BonafideRequestWithProfile, BonafideStatus, ColumnDef } from "@/types"; // Import ColumnDef from types
-import { cn, getStatusVariant, formatStatus } from "@/lib/utils"; // Import from utils
+import { cn, getStatusVariant, formatStatus, getApproveButtonTextForRole } from "@/lib/utils"; // Import from utils
 import { Profile } from "@/contexts/AuthContext";
 import { User, Eye } from "lucide-react";
 import {
@@ -17,14 +17,12 @@ interface GetStaffTableColumnsProps {
   profile: Profile | null;
   onViewProfile: (userId: string) => void;
   onOpenActionDialog: (type: 'approve' | 'reject' | 'revert', bulk: boolean, request?: BonafideRequestWithProfile) => void;
-  getApproveButtonText: () => string;
 }
 
 export const getStaffTableColumns = ({
   profile,
   onViewProfile,
   onOpenActionDialog,
-  getApproveButtonText,
 }: GetStaffTableColumnsProps): ColumnDef<BonafideRequestWithProfile>[] => {
   const getActionability = (status: BonafideStatus) => {
     if (profile?.role === 'tutor') return status === 'pending';
@@ -120,7 +118,7 @@ export const getStaffTableColumns = ({
           )}
           {getActionability(row.status) ? (
             <>
-              <Button size="sm" variant="outline" onClick={() => onOpenActionDialog('approve', false, row)}>{getApproveButtonText()}</Button>
+              <Button size="sm" variant="outline" onClick={() => onOpenActionDialog('approve', false, row)}>{getApproveButtonTextForRole(profile?.role)}</Button>
               {profile?.role !== 'admin' && <Button size="sm" variant="destructive" onClick={() => onOpenActionDialog('reject', false, row)}>Reject</Button>}
             </>
           ) : profile?.role === 'admin' && row.status === 'completed' ? (

@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { BonafideRequestWithProfile } from "@/types";
 import { Loader2 } from "lucide-react";
+import { Profile } from "@/contexts/AuthContext";
+import { getApproveButtonTextForRole } from "@/lib/utils";
 
 interface RequestActionDialogProps {
   isOpen: boolean;
@@ -23,7 +25,7 @@ interface RequestActionDialogProps {
   selectedIdsCount: number;
   onConfirm: (rejectionReason?: string) => void;
   isSubmitting: boolean;
-  getApproveButtonText: () => string;
+  profile: Profile | null;
 }
 
 export function RequestActionDialog({
@@ -35,7 +37,7 @@ export function RequestActionDialog({
   selectedIdsCount,
   onConfirm,
   isSubmitting,
-  getApproveButtonText,
+  profile,
 }: RequestActionDialogProps) {
   const [rejectionReason, setRejectionReason] = useState("");
 
@@ -56,7 +58,7 @@ export function RequestActionDialog({
   const getDialogTitle = () => {
     if (!actionType) return "";
     let title = "";
-    if (actionType === 'approve') title = getApproveButtonText();
+    if (actionType === 'approve') title = getApproveButtonTextForRole(profile?.role);
     else if (actionType === 'reject') title = 'Reject';
     else if (actionType === 'revert') title = 'Revert';
     return `Confirm Action: ${title} Request${isBulk ? 's' : ''}`;

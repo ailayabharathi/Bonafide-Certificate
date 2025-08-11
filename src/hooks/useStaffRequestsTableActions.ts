@@ -74,11 +74,6 @@ export const useStaffRequestsTableActions = ({
     setStudentUserIdToView(userId);
     setIsProfileDialogOpen(true);
   }, []);
-  
-  const getApproveButtonText = useCallback(() => {
-      if (profile?.role === 'admin') return 'Mark as Completed';
-      return 'Approve';
-  }, [profile]);
 
   return {
     actionRequest,
@@ -91,7 +86,6 @@ export const useStaffRequestsTableActions = ({
     closeActionDialog,
     handleConfirmAction,
     handleViewProfile,
-    getApproveButtonText,
     setIsProfileDialogOpen, // Expose setter for dialog control
   };
 };

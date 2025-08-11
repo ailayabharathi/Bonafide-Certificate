@@ -121,7 +121,6 @@ export function StaffRequestsManager({
     closeActionDialog,
     handleConfirmAction,
     handleViewProfile,
-    getApproveButtonText,
     setIsProfileDialogOpen,
   } = useStaffRequestsTableActions({
     profile,
@@ -135,8 +134,7 @@ export function StaffRequestsManager({
     profile,
     onViewProfile: handleViewProfile,
     onOpenActionDialog: openActionDialog,
-    getApproveButtonText,
-  }), [profile, handleViewProfile, openActionDialog, getApproveButtonText]);
+  }), [profile, handleViewProfile, openActionDialog]);
 
   return (
     <div className="border rounded-md bg-background">
@@ -152,7 +150,6 @@ export function StaffRequestsManager({
           selectedIdsCount={selectedIds.length}
           onBulkAction={(type) => openActionDialog(type, true)}
           onClearSelection={() => setSelectedIds([])}
-          getApproveButtonText={getApproveButtonText}
           profile={profile}
           onClearFilters={onClearFilters}
         />
@@ -186,7 +183,7 @@ export function StaffRequestsManager({
         selectedIdsCount={selectedIds.length}
         onConfirm={handleConfirmAction}
         isSubmitting={isSubmitting}
-        getApproveButtonText={getApproveButtonText}
+        profile={profile}
       />
 
       <StudentProfileDialog
