@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Profile, useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { showError, showSuccess } from "@/utils/toast";
+import { showError, showSuccess, showLoading, dismissToast } from "@/utils/toast";
 import { DeleteUserDialog } from "./DeleteUserDialog";
 import { EditUserRoleDialog } from "./EditUserRoleDialog";
 import { useUserManagementTableLogic } from "@/hooks/useUserManagementTableLogic";
@@ -43,13 +43,34 @@ export function UserManagementTable({ users, onUserUpdate }: UserManagementTable
     if (!userToDelete) return;
 
     setIsDeleting(true);
-    showError("Deleting users is temporarily disabled due to a system issue.");
-    setIsDeleting(false);
-    setUserToDelete(null);
+    try {
+      const { error } = await supabase.auth.admin.deleteUser(userToDelete.id);
+      if (error) throw error;
+      
+      showSuccess(`User ${userToDelete.email} has been deleted.`);
+      onUserUpdate();
+      setUserToDelete(null);
+    } catch (error: any) {
+      showError(error.message || "Failed to delete user.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleResendInvite = async (email: string) => {
-    showError("Resending invitations is temporarily disabled due to a system issue.");
+    if (!email) return;
+    const toastId = showLoading("Resending invitation...");
+    try {
+      const { error } = await supabase.auth.admin.inviteUserByEmail(email, {
+        redirectTo: window.location.origin,
+      });
+      if (error) throw error;
+      dismissToast(toastId);
+      showSuccess(`Invitation resent to ${email}.`);
+    } catch (error: any) {
+      dismissToast(toastId);
+      showError(error.message || "Failed to resend invitation.");
+    }
   };
 
   const columns = useMemo(() => getUserManagementTableColumns({

@@ -49,7 +49,35 @@ export const useInviteUserDialogLogic = ({ onOpenChange, onInviteSent }: UseInvi
       return;
     }
 
-    showError("Inviting users is temporarily disabled due to a system issue.");
+    const invitePromises = emailList.map(email =>
+      supabase.auth.admin.inviteUserByEmail(email, {
+        data: { role: values.role },
+        redirectTo: window.location.origin,
+      })
+    );
+
+    const results = await Promise.allSettled(invitePromises);
+
+    const successfulInvites = results.filter(r => r.status === 'fulfilled').length;
+    const failedInvites = results.filter(r => r.status === 'rejected');
+
+    if (successfulInvites > 0) {
+      showSuccess(`${successfulInvites} invitation(s) sent successfully.`);
+      onInviteSent();
+      onOpenChange(false);
+      form.reset();
+    }
+
+    if (failedInvites.length > 0) {
+      const errorDetails = failedInvites.map((r, index) => {
+        const emailIndex = results.findIndex(res => res === r);
+        const email = emailList[emailIndex];
+        const reason = (r as PromiseRejectedResult).reason?.message || 'Unknown error';
+        return `${email} (${reason})`;
+      }).join(', ');
+      showError(`Failed to send ${failedInvites.length} invitation(s): ${errorDetails}`);
+    }
+
     setIsSubmitting(false);
   }
 
