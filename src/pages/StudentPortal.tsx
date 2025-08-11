@@ -26,11 +26,9 @@ import { StatusDistributionChart } from "@/components/StatusDistributionChart";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ExportButton } from "@/components/ExportButton";
 import { useStudentPortalLogic } from "@/hooks/useStudentPortalLogic";
-import { useBonafideRequests } from "@/hooks/useBonafideRequests";
 
 const StudentPortal = () => {
   const {
-    user,
     isApplyDialogOpen,
     setIsApplyDialogOpen,
     requestToEdit,
@@ -40,7 +38,6 @@ const StudentPortal = () => {
     dashboardData,
     handleNewRequestClick,
     handleEditRequest,
-    handleRealtimeEvent,
     handleConfirmCancel,
     handleClearFilters,
     statusFilter,
@@ -49,13 +46,9 @@ const StudentPortal = () => {
     setSearchQuery,
     sortConfig,
     setSortConfig,
+    requests,
+    isLoading,
   } = useStudentPortalLogic();
-
-  const { requests, isLoading, deleteRequest } = useBonafideRequests(
-    `student-requests:${user?.id}`,
-    { userId: user?.id, statusFilter, searchQuery, sortConfig },
-    handleRealtimeEvent,
-  );
 
   const headerActions = (
     <div className="flex gap-2">
@@ -148,7 +141,7 @@ const StudentPortal = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isCancelling}>Back</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleConfirmCancel(deleteRequest)} disabled={isCancelling} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction onClick={handleConfirmCancel} disabled={isCancelling} className="bg-destructive hover:bg-destructive/90">
               {isCancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Yes, cancel request
             </AlertDialogAction>

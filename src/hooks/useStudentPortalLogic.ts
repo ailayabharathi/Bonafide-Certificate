@@ -5,21 +5,7 @@ import { BonafideRequest, SortConfig } from "@/types";
 import { showSuccess, showError } from "@/utils/toast";
 import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { useStudentDashboardData } from "@/hooks/useStudentDashboardData";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-
-// Fetch all requests for the dashboard stats, unfiltered.
-const fetchAllStudentRequests = async (userId: string) => {
-    const { data, error } = await supabase
-        .from('bonafide_requests')
-        .select('*')
-        .eq('user_id', userId);
-    if (error) {
-        showError("Could not load dashboard data.");
-        return [];
-    }
-    return data;
-};
+import { useBonafideRequests } from "@/hooks/useBonafideRequests";
 
 export const useStudentPortalLogic = () => {
   const { user } = useAuth();
@@ -31,26 +17,15 @@ export const useStudentPortalLogic = () => {
   const [requestToCancel, setRequestToCancel] = useState<BonafideRequest | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
 
-  // State for data filtering and sorting, to be passed to useBonafideRequests
+  // State for data filtering and sorting
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'created_at', direction: 'descending' });
 
-  // Fetch all requests for dashboard stats (unfiltered)
-  const { data: allRequestsForStats = [] } = useQuery<BonafideRequest[]>({
-    queryKey: ['allStudentRequests', user?.id],
-    queryFn: () => fetchAllStudentRequests(user!.id),
-    enabled: !!user,
-  });
-
-  // Dashboard data calculation
-  const dashboardData = useStudentDashboardData(allRequestsForStats);
-
   // Realtime event handler
   const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
-    // Invalidate queries to refetch data
+    // Invalidate ALL queries for bonafide_requests to ensure data consistency
     queryClient.invalidateQueries({ queryKey: ['bonafide_requests'] });
-    queryClient.invalidateQueries({ queryKey: ['allStudentRequests'] });
     
     if (payload.eventType !== 'UPDATE' || !user || payload.new.user_id !== user.id) return;
 
@@ -79,6 +54,22 @@ export const useStudentPortalLogic = () => {
     }
   };
 
+  // Fetch ALL requests for dashboard stats (unfiltered)
+  const { requests: allRequestsForStats } = useBonafideRequests(
+    `student-all-requests:${user?.id}`,
+    { userId: user?.id },
+    handleRealtimeEvent
+  );
+
+  // Fetch requests for the table (filtered and sorted)
+  const { requests, isLoading, deleteRequest: deleteRequestFn } = useBonafideRequests(
+    `student-filtered-requests:${user?.id}`,
+    { userId: user?.id, statusFilter, searchQuery, sortConfig }
+  );
+
+  // Dashboard data calculation
+  const dashboardData = useStudentDashboardData(allRequestsForStats);
+
   // Handlers for UI actions
   const handleNewRequestClick = () => {
     setRequestToEdit(null);
@@ -90,7 +81,7 @@ export const useStudentPortalLogic = () => {
     setIsApplyDialogOpen(true);
   };
 
-  const handleConfirmCancel = async (deleteRequestFn: (id: string) => Promise<void>) => {
+  const handleConfirmCancel = async () => {
     if (!requestToCancel) return;
     setIsCancelling(true);
     try {
@@ -109,7 +100,6 @@ export const useStudentPortalLogic = () => {
   };
 
   return {
-    user,
     isApplyDialogOpen,
     setIsApplyDialogOpen,
     requestToEdit,
@@ -119,15 +109,15 @@ export const useStudentPortalLogic = () => {
     dashboardData,
     handleNewRequestClick,
     handleEditRequest,
-    handleRealtimeEvent,
     handleConfirmCancel,
     handleClearFilters,
-    // Filter and sort state
     statusFilter,
     setStatusFilter,
     searchQuery,
     setSearchQuery,
     sortConfig,
     setSortConfig,
+    requests,
+    isLoading,
   };
 };
