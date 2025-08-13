@@ -248,7 +248,7 @@ export const useBonafideRequests = (
   return {
     requests: data?.data || [],
     count: data?.count || 0,
-    isLoading: isLoading && (!data?.data || data.data.length === 0),
+    isLoading: isLoading, // Fixed: Simplified isLoading check
     updateRequest: mutation.mutateAsync,
     bulkUpdateRequest: bulkUpdateMutation.mutateAsync,
     deleteRequest: deleteMutation.mutateAsync,

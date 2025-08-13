@@ -42,7 +42,7 @@ const fetchAnalyticsData = async (role: Profile['role'], dateRange?: DateRange) 
     const [requestsResult, usersResult] = await Promise.all([requestsPromise, usersPromise]);
     
     return {
-      requests: (requestsResult.data as AnalyticsRequest[]) || [],
+      requests: (requestsResult.data as unknown as AnalyticsRequest[]) || [], // Fixed: Added unknown cast
       users: (usersResult.data as AnalyticsUser[]) || [],
     };
   }
@@ -50,7 +50,7 @@ const fetchAnalyticsData = async (role: Profile['role'], dateRange?: DateRange) 
   const { data, error } = await requestsPromise;
   if (error) console.error("Failed to fetch analytics data", error);
   return {
-    requests: (data as AnalyticsRequest[]) || [],
+    requests: (data as unknown as AnalyticsRequest[]) || [], // Fixed: Added unknown cast
     users: [],
   };
 };

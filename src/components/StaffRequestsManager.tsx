@@ -138,8 +138,8 @@ export function StaffRequestsManager({
     setIsProfileDialogOpen,
   } = useStaffRequestsTableActions({
     profile,
-    onAction: updateRequest,
-    onBulkAction: bulkUpdateRequest,
+    onAction: (requestId, newStatus, rejectionReason) => updateRequest({ requestId, newStatus, rejectionReason }), // Fixed: Correctly pass arguments as object
+    onBulkAction: (requestIds, newStatus, rejectionReason) => bulkUpdateRequest({ requestIds, newStatus, rejectionReason }), // Fixed: Correctly pass arguments as object
     selectedIds,
     setSelectedIds,
   });
