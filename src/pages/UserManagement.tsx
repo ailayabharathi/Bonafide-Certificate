@@ -47,7 +47,7 @@ const UserManagement = () => {
                 {...tableProps}
                 isExporting={isExporting}
                 handleExport={handleExport}
-                isLoading={loading} {/* Pass isLoading prop */}
+                isLoading={loading}
               />
             )}
           </CardContent>
