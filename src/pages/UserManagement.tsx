@@ -9,7 +9,7 @@ import { useUserManagement } from "@/hooks/useUserManagement";
 
 const UserManagement = () => {
   const {
-    loading,
+    loading, // This is the isLoading from useUserManagement
     isInviteDialogOpen,
     setIsInviteDialogOpen,
     handleInviteSent,
@@ -47,6 +47,7 @@ const UserManagement = () => {
                 {...tableProps}
                 isExporting={isExporting}
                 handleExport={handleExport}
+                isLoading={loading} {/* Pass isLoading prop */}
               />
             )}
           </CardContent>

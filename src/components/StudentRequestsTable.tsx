@@ -18,6 +18,7 @@ interface StudentRequestsTableProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  isLoading: boolean; // New prop
 }
 
 export function StudentRequestsTable({
@@ -34,6 +35,7 @@ export function StudentRequestsTable({
   currentPage,
   totalPages,
   onPageChange,
+  isLoading, // Destructure new prop
 }: StudentRequestsTableProps) {
   const handleSort = (key: string) => {
     const direction = sortConfig.key === key && sortConfig.direction === 'ascending' ? 'descending' : 'ascending';
@@ -68,6 +70,7 @@ export function StudentRequestsTable({
         onPageChange={onPageChange}
         totalPages={totalPages}
         rowKey={(row) => row.id}
+        isLoading={isLoading} {/* Pass isLoading prop */}
       />
     </div>
   );

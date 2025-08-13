@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ColumnDef, SortConfig } from "@/types"; // Import from types
 
@@ -27,6 +27,7 @@ interface DataTableProps<TData> {
   onSelectAll?: (checked: boolean) => void;
   selectableRowIds?: string[];
   rowKey: (row: TData) => string; // Function to get a unique key for each row
+  isLoading?: boolean; // New prop for loading state
 }
 
 export function DataTable<TData>({
@@ -43,6 +44,7 @@ export function DataTable<TData>({
   onSelectAll,
   selectableRowIds = [],
   rowKey,
+  isLoading = false, // Default to false
 }: DataTableProps<TData>) {
 
   const numSelectedOnPage = selectedIds.filter(id => selectableRowIds.includes(id)).length;
@@ -87,7 +89,15 @@ export function DataTable<TData>({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.length > 0 ? (
+          {isLoading && data.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={columns.length + (enableRowSelection ? 1 : 0)} className="h-24 text-center">
+                <div className="flex items-center justify-center">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading data...
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : data.length > 0 ? (
             data.map((row) => (
               <TableRow key={rowKey(row)} data-state={enableRowSelection && selectedIds.includes(rowKey(row)) ? "selected" : undefined}>
                 {enableRowSelection && (

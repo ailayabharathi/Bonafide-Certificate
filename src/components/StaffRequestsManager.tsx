@@ -82,7 +82,7 @@ export function StaffRequestsManager({
     }
   };
 
-  const { requests, count, updateRequest, bulkUpdateRequest, exportData, isExporting } = useBonafideRequests(
+  const { requests, count, updateRequest, bulkUpdateRequest, exportData, isExporting, isLoading } = useBonafideRequests(
     `staff-requests-manager:${profile?.role}`,
     { 
       startDate: dateRange?.from, 
@@ -138,8 +138,8 @@ export function StaffRequestsManager({
     setIsProfileDialogOpen,
   } = useStaffRequestsTableActions({
     profile,
-    onAction: (requestId, newStatus, rejectionReason) => updateRequest({ requestId, newStatus, rejectionReason }), // Fixed: Correctly pass arguments as object
-    onBulkAction: (requestIds, newStatus, rejectionReason) => bulkUpdateRequest({ requestIds, newStatus, rejectionReason }), // Fixed: Correctly pass arguments as object
+    onAction: (requestId, newStatus, rejectionReason) => updateRequest({ requestId, newStatus, rejectionReason }),
+    onBulkAction: (requestIds, newStatus, rejectionReason) => bulkUpdateRequest({ requestIds, newStatus, rejectionReason }),
     selectedIds,
     setSelectedIds,
   });
@@ -184,6 +184,7 @@ export function StaffRequestsManager({
               onSelectAll={handleSelectAllOnPage}
               selectableRowIds={selectableRowIdsOnPage}
               rowKey={(row) => row.id}
+              isLoading={isLoading} {/* Pass isLoading prop */}
             />
           </TabsContent>
         ))}

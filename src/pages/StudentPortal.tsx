@@ -101,6 +101,7 @@ const StudentPortal = () => {
                     currentPage={currentPage}
                     totalPages={totalPages}
                     onPageChange={onPageChange}
+                    isLoading={isLoading} {/* Pass isLoading prop */}
                   />
                 </CardContent>
               </Card>

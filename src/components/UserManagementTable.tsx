@@ -48,6 +48,7 @@ interface UserManagementTableProps {
   userToAssignTutor: ManagedUser | null;
   setUserToAssignTutor: (user: ManagedUser | null) => void;
   handleAssignTutorSuccess: () => void;
+  isLoading: boolean; // New prop
 }
 
 export function UserManagementTable({
@@ -77,6 +78,7 @@ export function UserManagementTable({
   userToAssignTutor,
   setUserToAssignTutor,
   handleAssignTutorSuccess,
+  isLoading, // Destructure new prop
 }: UserManagementTableProps) {
   const { profile: currentUserProfile } = useAuth();
 
@@ -140,6 +142,7 @@ export function UserManagementTable({
           onPageChange={setCurrentPage}
           totalPages={totalPages}
           rowKey={(row) => row.id}
+          isLoading={isLoading} {/* Pass isLoading prop */}
         />
       </div>
 
