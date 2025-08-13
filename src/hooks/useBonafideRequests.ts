@@ -177,7 +177,7 @@ export const useBonafideRequests = (
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient, channelName, onRealtimeEvent, queryKey]);
+  }, [queryClient, channelName, onRealtimeEvent]);
 
   const { data, isLoading } = useQuery({
     queryKey,
