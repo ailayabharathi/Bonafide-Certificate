@@ -14,15 +14,13 @@ import { DepartmentDistributionChart } from "@/components/DepartmentDistribution
 import { StatusDistributionChart } from "@/components/StatusDistributionChart";
 import { format, parseISO, isWithinInterval, startOfYear, endOfYear } from "date-fns";
 import { DateRange } from "react-day-picker";
+import { ManagedUser } from "@/types";
 
 // Define the shape of the data we fetch
 type AnalyticsRequest = {
   status: string;
   created_at: string;
   profiles: { department: string | null } | null;
-};
-type AnalyticsUser = {
-  role: Profile['role'];
 };
 
 const fetchAnalyticsData = async (role: Profile['role'], dateRange?: DateRange) => {
@@ -38,19 +36,19 @@ const fetchAnalyticsData = async (role: Profile['role'], dateRange?: DateRange) 
   const requestsPromise = requestQuery;
 
   if (role === 'admin') {
-    const usersPromise = supabase.from("profiles").select("role");
+    const usersPromise = supabase.from("profiles").select("id, role, first_name, last_name, tutor_id");
     const [requestsResult, usersResult] = await Promise.all([requestsPromise, usersPromise]);
     
     return {
-      requests: (requestsResult.data as unknown as AnalyticsRequest[]) || [], // Fixed: Added unknown cast
-      users: (usersResult.data as AnalyticsUser[]) || [],
+      requests: (requestsResult.data as unknown as AnalyticsRequest[]) || [],
+      users: (usersResult.data as ManagedUser[]) || [],
     };
   }
 
   const { data, error } = await requestsPromise;
   if (error) console.error("Failed to fetch analytics data", error);
   return {
-    requests: (data as unknown as AnalyticsRequest[]) || [], // Fixed: Added unknown cast
+    requests: (data as unknown as AnalyticsRequest[]) || [],
     users: [],
   };
 };
@@ -153,8 +151,19 @@ export const useDashboardAnalytics = (profile: Profile | null, dateRange?: DateR
         value,
       }));
 
+      const tutors = users.filter(u => u.role === 'tutor');
+      const students = users.filter(u => u.role === 'student');
+      const tutorLoadCounts = tutors.map(tutor => {
+        const studentCount = students.filter(s => s.tutor_id === tutor.id).length;
+        return {
+          name: `${tutor.first_name || ''} ${tutor.last_name || ''}`.trim() || tutor.id,
+          total: studentCount,
+        };
+      }).sort((a, b) => b.total - a.total);
+
       return [
         { id: 'monthly', component: RequestsChart, props: { data: monthlyChartData }, card: { title: "Monthly Requests", description: "Total requests submitted per month in the selected range.", className: "lg:col-span-2", contentClassName: "pl-2" } },
+        { id: 'tutorLoad', component: RequestsChart, props: { data: tutorLoadCounts }, card: { title: "Tutor Workload", description: "Number of tutees assigned to each tutor.", className: "lg:col-span-2", contentClassName: "pl-2" } },
         { id: 'department', component: DepartmentDistributionChart, props: { data: departmentChartData }, card: { title: "Requests by Department", description: "Distribution of requests across departments." } },
         { id: 'roles', component: DepartmentDistributionChart, props: { data: roleChartData }, card: { title: "User Role Distribution", description: "A breakdown of all user roles in the system." } }
       ];
@@ -175,5 +184,5 @@ export const useDashboardAnalytics = (profile: Profile | null, dateRange?: DateR
     return [];
   }, [requests, profile, users, dateRange]);
 
-  return { stats, charts, isLoading };
+  return { stats, charts, isLoading, requests: allRequests };
 };
