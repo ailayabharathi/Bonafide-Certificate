@@ -68,7 +68,7 @@ export const StudentListView = ({ title, description, fetchMode }: StudentListVi
                   onPageChange={setCurrentPage}
                   totalPages={totalPages}
                   rowKey={(row) => row.id}
-                  isLoading={isLoading} {/* Pass isLoading prop */}
+                  isLoading={isLoading}
                 />
               </div>
             )}
