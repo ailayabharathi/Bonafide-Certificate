@@ -141,7 +141,7 @@ export function UserManagementTable({
           currentPage={currentPage}
           onPageChange={setCurrentPage}
           totalPages={totalPages}
-          rowKey={(row) => row.id}
+          rowKey={(row: ManagedUser) => row.id}
           isLoading={isLoading}
         />
       </div>

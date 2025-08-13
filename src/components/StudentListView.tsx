@@ -67,7 +67,7 @@ export const StudentListView = ({ title, description, fetchMode }: StudentListVi
                   currentPage={currentPage}
                   onPageChange={setCurrentPage}
                   totalPages={totalPages}
-                  rowKey={(row) => row.id}
+                  rowKey={(row: ManagedUser) => row.id}
                   isLoading={isLoading}
                 />
               </div>
