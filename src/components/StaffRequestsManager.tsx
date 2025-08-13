@@ -1,21 +1,10 @@
-import { useMemo, useCallback, useState, useEffect } from "react";
+import { useMemo, useCallback } from "react";
 import { BonafideRequestWithProfile, SortConfig } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { useStaffRequestsTableActions } from "@/hooks/useStaffRequestsTableActions";
 import { getStaffTableColumns } from "@/lib/staff-table-columns";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { DataTable } from "@/components/DataTable";
 import { StaffRequestsToolbar } from "./StaffRequestsToolbar";
-import { RequestActionDialog } from "./RequestActionDialog";
-import { StudentProfileDialog } from "./StudentProfileDialog";
-import { useBonafideRequests } from "@/hooks/useBonafideRequests";
-import { DateRange } from "react-day-picker";
-import { showSuccess } from "@/utils/toast";
-import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
-import { BonafideRequest } from "@/types";
-import { useDebounce } from "@/hooks/useDebounce";
-
-const ITEMS_PER_PAGE = 10;
 
 interface StaffRequestsManagerProps {
   tabsInfo: { value: string; label: string; count: number }[];
@@ -25,10 +14,21 @@ interface StaffRequestsManagerProps {
   onSearchChange: (query: string) => void;
   departmentFilter: string;
   onDepartmentFilterChange: (filter: string) => void;
-  onClearFilters: () => void;
+  handleClearFilters: () => void;
   sortConfig: SortConfig;
   onSortChange: (config: SortConfig) => void;
-  dateRange: DateRange | undefined;
+  requests: BonafideRequestWithProfile[];
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  selectedIds: string[];
+  setSelectedIds: (ids: string[]) => void;
+  selectableRowIds: string[];
+  openActionDialog: (type: 'approve' | 'reject' | 'revert', bulk: boolean, request?: BonafideRequestWithProfile) => void;
+  handleViewProfile: (userId: string) => void;
+  isExporting: boolean;
+  handleExport: () => void;
+  isLoading: boolean;
 }
 
 export function StaffRequestsManager({ 
@@ -39,64 +39,23 @@ export function StaffRequestsManager({
   onSearchChange,
   departmentFilter,
   onDepartmentFilterChange,
-  onClearFilters,
+  handleClearFilters,
   sortConfig,
   onSortChange,
-  dateRange,
+  requests,
+  currentPage,
+  totalPages,
+  onPageChange,
+  selectedIds,
+  setSelectedIds,
+  selectableRowIds,
+  openActionDialog,
+  handleViewProfile,
+  isExporting,
+  handleExport,
+  isLoading,
 }: StaffRequestsManagerProps) {
   const { profile } = useAuth();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const debouncedSearchQuery = useDebounce(searchQuery, 500);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    setSelectedIds([]);
-  }, [activeTab, debouncedSearchQuery, departmentFilter, sortConfig, dateRange]);
-
-  const statusFilter = useMemo(() => {
-    if (activeTab === 'actionable') {
-      if (profile?.role === 'tutor') return 'pending';
-      if (profile?.role === 'hod') return 'approved_by_tutor';
-      if (profile?.role === 'admin') return 'approved_by_hod';
-    }
-    if (activeTab === 'inProgress') return 'in_progress';
-    if (activeTab === 'rejected') return 'rejected';
-    if (activeTab === 'completed') return 'completed';
-    return 'all';
-  }, [activeTab, profile]);
-
-  const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
-    if (payload.eventType !== 'UPDATE' && payload.eventType !== 'INSERT') return;
-    const newStatus = payload.new.status;
-    let message = "";
-    if (profile?.role === 'tutor' && newStatus === 'pending' && payload.eventType === 'INSERT') {
-      message = "New request received for your review.";
-    } else if (profile?.role === 'hod' && newStatus === 'approved_by_tutor') {
-      message = "A request requires your approval.";
-    } else if (profile?.role === 'admin' && newStatus === 'approved_by_hod') {
-      message = "A request is ready for final processing.";
-    }
-    if (message) {
-      showSuccess(message);
-    }
-  };
-
-  const { requests, count, updateRequest, bulkUpdateRequest, exportData, isExporting, isLoading } = useBonafideRequests(
-    `staff-requests-manager:${profile?.role}`,
-    { 
-      startDate: dateRange?.from, 
-      endDate: dateRange?.to, 
-      searchQuery: debouncedSearchQuery, 
-      statusFilter, 
-      departmentFilter,
-      page: currentPage,
-      sortConfig, 
-    },
-    handleRealtimeEvent
-  );
-
-  const totalPages = Math.ceil(count / ITEMS_PER_PAGE);
 
   const isRowSelectable = useCallback((request: BonafideRequestWithProfile) => {
     if (profile?.role === 'tutor') return request.status === 'pending';
@@ -106,14 +65,12 @@ export function StaffRequestsManager({
   }, [profile]);
 
   const selectableRowIdsOnPage = useMemo(() => 
-    isRowSelectable 
-      ? requests.filter(isRowSelectable).map(r => r.id)
-      : [],
+    requests.filter(isRowSelectable).map(r => r.id),
     [requests, isRowSelectable]
   );
 
   const handleToggleSelect = (id: string, checked: boolean) => {
-    setSelectedIds(prev => checked ? [...prev, id] : prev.filter(item => item !== id));
+    setSelectedIds(checked ? [...selectedIds, id] : selectedIds.filter(item => item !== id));
   };
 
   const handleSelectAllOnPage = (checked: boolean) => {
@@ -123,26 +80,6 @@ export function StaffRequestsManager({
       setSelectedIds(prev => prev.filter(id => !selectableRowIdsOnPage.includes(id)));
     }
   };
-
-  const {
-    actionRequest,
-    actionType,
-    isBulk,
-    isSubmitting,
-    isProfileDialogOpen,
-    studentUserIdToView,
-    openActionDialog,
-    closeActionDialog,
-    handleConfirmAction,
-    handleViewProfile,
-    setIsProfileDialogOpen,
-  } = useStaffRequestsTableActions({
-    profile,
-    onAction: (requestId, newStatus, rejectionReason) => updateRequest({ requestId, newStatus, rejectionReason }),
-    onBulkAction: (requestIds, newStatus, rejectionReason) => bulkUpdateRequest({ requestIds, newStatus, rejectionReason }),
-    selectedIds,
-    setSelectedIds,
-  });
 
   const columns = useMemo(() => getStaffTableColumns({
     profile,
@@ -164,8 +101,8 @@ export function StaffRequestsManager({
           onBulkAction={(type) => openActionDialog(type, true)}
           onClearSelection={() => setSelectedIds([])}
           profile={profile}
-          onClearFilters={onClearFilters}
-          onExport={exportData}
+          onClearFilters={handleClearFilters}
+          onExport={handleExport}
           isExporting={isExporting}
         />
         {tabsInfo.map(tab => (
@@ -176,7 +113,7 @@ export function StaffRequestsManager({
               sortConfig={sortConfig as { key: string; direction: 'ascending' | 'descending' }}
               onSort={(key) => onSortChange({ key, direction: sortConfig.key === key && sortConfig.direction === 'ascending' ? 'descending' : 'ascending' })}
               currentPage={currentPage}
-              onPageChange={setCurrentPage}
+              onPageChange={onPageChange}
               totalPages={totalPages}
               enableRowSelection={true}
               selectedIds={selectedIds}
@@ -189,24 +126,6 @@ export function StaffRequestsManager({
           </TabsContent>
         ))}
       </Tabs>
-
-      <RequestActionDialog
-        isOpen={!!actionType}
-        onOpenChange={(open) => !open && closeActionDialog()}
-        actionType={actionType}
-        isBulk={isBulk}
-        request={actionRequest}
-        selectedIdsCount={selectedIds.length}
-        onConfirm={handleConfirmAction}
-        isSubmitting={isSubmitting}
-        profile={profile}
-      />
-
-      <StudentProfileDialog
-        isOpen={isProfileDialogOpen}
-        onOpenChange={setIsProfileDialogOpen}
-        userId={studentUserIdToView}
-      />
     </div>
   );
 }

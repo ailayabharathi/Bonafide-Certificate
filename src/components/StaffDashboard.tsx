@@ -8,9 +8,10 @@ import { SortConfig } from "@/types";
 import { LucideIcon } from "lucide-react";
 import { DateRangePicker } from "./DateRangePicker";
 import { DateRange } from "react-day-picker";
+import { RequestActionDialog } from "./RequestActionDialog";
+import { StudentProfileDialog } from "./StudentProfileDialog";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { BonafideRequestWithProfile } from "@/types";
 
 interface Stat {
   title: string;
@@ -35,7 +36,7 @@ interface StaffDashboardProps {
   headerActions?: ReactNode;
   stats: Stat[];
   charts: Chart[];
-  isAnalyticsLoading: boolean;
+  isLoading: boolean;
   dateRange: DateRange | undefined;
   onDateRangeChange: (date: DateRange | undefined) => void;
   searchQuery: string;
@@ -46,37 +47,28 @@ interface StaffDashboardProps {
   onTabChange: (tab: string) => void;
   sortConfig: SortConfig;
   onSortChange: (config: SortConfig) => void;
-}
-
-const fetchTabCounts = async (role: string, dateRange?: DateRange) => {
-    let query = supabase.from('bonafide_requests').select('status', { count: 'exact', head: true });
-    if (dateRange?.from) {
-        query = query.gte('created_at', dateRange.from.toISOString());
-    }
-    if (dateRange?.to) {
-        query = query.lte('created_at', dateRange.to.toISOString());
-    }
-
-    const getCountForStatuses = (statuses: string[]) => {
-        let statusQuery = query; // Important: create a new reference for each count
-        return statusQuery.in('status', statuses).then(res => res.count || 0);
-    }
-
-    const actionableStatuses = {
-        tutor: ['pending'],
-        hod: ['approved_by_tutor'],
-        admin: ['approved_by_hod'],
-    }[role] || [];
-
-    const [actionable, inProgress, completed, rejected, all] = await Promise.all([
-        actionableStatuses.length > 0 ? getCountForStatuses(actionableStatuses) : Promise.resolve(0),
-        getCountForStatuses(['pending', 'approved_by_tutor', 'approved_by_hod']),
-        getCountForStatuses(['completed']),
-        getCountForStatuses(['rejected_by_tutor', 'rejected_by_hod']),
-        supabase.from('bonafide_requests').select('status', { count: 'exact', head: true }).gte('created_at', dateRange?.from?.toISOString() || '1970-01-01').lte('created_at', dateRange?.to?.toISOString() || new Date().toISOString()).then(res => res.count || 0)
-    ]);
-
-    return { actionable, inProgress, completed, rejected, all };
+  handleClearFilters: () => void;
+  requests: BonafideRequestWithProfile[];
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  selectedIds: string[];
+  setSelectedIds: (ids: string[]) => void;
+  selectableRowIds: string[];
+  openActionDialog: (type: 'approve' | 'reject' | 'revert', bulk: boolean, request?: BonafideRequestWithProfile) => void;
+  handleViewProfile: (userId: string) => void;
+  isExporting: boolean;
+  handleExport: () => void;
+  tabsInfo: { value: string; label: string; count: number }[];
+  actionRequest: BonafideRequestWithProfile | null;
+  actionType: 'approve' | 'reject' | 'revert' | null;
+  isBulk: boolean;
+  isMutating: boolean;
+  closeActionDialog: () => void;
+  handleConfirmAction: (reason?: string) => void;
+  isProfileDialogOpen: boolean;
+  setIsProfileDialogOpen: (open: boolean) => void;
+  studentUserIdToView: string | null;
 }
 
 export const StaffDashboard = ({
@@ -84,42 +76,15 @@ export const StaffDashboard = ({
   headerActions,
   stats,
   charts,
-  isAnalyticsLoading,
+  isLoading,
   dateRange,
   onDateRangeChange,
-  searchQuery,
-  onSearchQueryChange,
-  departmentFilter,
-  onDepartmentFilterChange,
-  activeTab,
-  onTabChange,
-  sortConfig,
-  onSortChange,
+  // Pass all other props down to StaffRequestsManager
+  ...managerProps
 }: StaffDashboardProps) => {
   const { profile } = useAuth();
 
-  const { data: tabCounts } = useQuery({
-    queryKey: ['tabCounts', profile?.role, dateRange],
-    queryFn: () => fetchTabCounts(profile!.role, dateRange),
-    enabled: !!profile,
-  });
-
-  const tabsInfo = useMemo(() => [
-      { value: 'actionable', label: 'Action Required', count: tabCounts?.actionable ?? 0 },
-      { value: 'inProgress', label: 'In Progress', count: tabCounts?.inProgress ?? 0 },
-      { value: 'completed', label: 'Completed', count: tabCounts?.completed ?? 0 },
-      { value: 'rejected', label: 'Rejected', count: tabCounts?.rejected ?? 0 },
-      { value: 'all', label: 'All', count: tabCounts?.all ?? 0 },
-    ], [tabCounts]);
-
-  const handleClearFilters = () => {
-    onDateRangeChange(undefined);
-    onSearchQueryChange("");
-    onDepartmentFilterChange("all");
-    onTabChange("actionable");
-  };
-
-  if (isAnalyticsLoading) {
+  if (isLoading && managerProps.requests.length === 0) {
     return (
       <DashboardLayout title={title} headerActions={headerActions}>
         <div className="space-y-4">
@@ -132,47 +97,55 @@ export const StaffDashboard = ({
   }
 
   return (
-    <DashboardLayout title={title} headerActions={headerActions}>
-      <div className="space-y-8">
-        <div className="flex justify-end">
-          <DateRangePicker date={dateRange} setDate={onDateRangeChange} />
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat, index) => (
-            <StatsCard key={index} title={stat.title} value={stat.value} icon={stat.icon} />
-          ))}
-        </div>
-        
-        {charts.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
-            {charts.map((chart) => (
-              <Card key={chart.id} className={chart.card.className}>
-                <CardHeader>
-                  <CardTitle>{chart.card.title}</CardTitle>
-                  <CardDescription>{chart.card.description}</CardDescription>
-                </CardHeader>
-                <CardContent className={chart.card.contentClassName}>
-                  <chart.component {...chart.props} />
-                </CardContent>
-              </Card>
+    <>
+      <DashboardLayout title={title} headerActions={headerActions}>
+        <div className="space-y-8">
+          <div className="flex justify-end">
+            <DateRangePicker date={dateRange} setDate={onDateRangeChange} />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {stats.map((stat, index) => (
+              <StatsCard key={index} title={stat.title} value={stat.value} icon={stat.icon} />
             ))}
           </div>
-        )}
+          
+          {charts.length > 0 && (
+            <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
+              {charts.map((chart) => (
+                <Card key={chart.id} className={chart.card.className}>
+                  <CardHeader>
+                    <CardTitle>{chart.card.title}</CardTitle>
+                    <CardDescription>{chart.card.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className={chart.card.contentClassName}>
+                    <chart.component {...chart.props} />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
 
-        <StaffRequestsManager 
-          tabsInfo={tabsInfo}
-          activeTab={activeTab}
-          onTabChange={onTabChange}
-          searchQuery={searchQuery}
-          onSearchChange={onSearchQueryChange}
-          departmentFilter={departmentFilter}
-          onDepartmentFilterChange={onDepartmentFilterChange}
-          onClearFilters={handleClearFilters}
-          sortConfig={sortConfig}
-          onSortChange={onSortChange}
-          dateRange={dateRange}
-        />
-      </div>
-    </DashboardLayout>
+          <StaffRequestsManager {...managerProps} />
+        </div>
+      </DashboardLayout>
+
+      <RequestActionDialog
+        isOpen={!!managerProps.actionType}
+        onOpenChange={(open) => !open && managerProps.closeActionDialog()}
+        actionType={managerProps.actionType}
+        isBulk={managerProps.isBulk}
+        request={managerProps.actionRequest}
+        selectedIdsCount={managerProps.selectedIds.length}
+        onConfirm={managerProps.handleConfirmAction}
+        isSubmitting={managerProps.isMutating}
+        profile={profile}
+      />
+
+      <StudentProfileDialog
+        isOpen={managerProps.isProfileDialogOpen}
+        onOpenChange={managerProps.setIsProfileDialogOpen}
+        userId={managerProps.studentUserIdToView}
+      />
+    </>
   );
 };
