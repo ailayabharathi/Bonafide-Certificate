@@ -11,6 +11,7 @@ export interface Profile {
   email?: string | null;
   department?: string | null;
   register_number?: string | null;
+  tutor_id?: string | null;
 }
 
 interface AuthContextType {

@@ -2,6 +2,17 @@ import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Profile } from "@/contexts/AuthContext";
+import { ExportButton } from "./ExportButton";
+import { XCircle } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { departments } from "@/lib/departments";
+import { getApproveButtonTextForRole } from "@/lib/utils";
 
 interface TabInfo {
   value: string;
@@ -11,25 +22,37 @@ interface TabInfo {
 
 interface StaffRequestsToolbarProps {
   tabs: TabInfo[];
+  activeTab: string;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  departmentFilter: string;
+  onDepartmentFilterChange: (value: string) => void;
   selectedIdsCount: number;
   onBulkAction: (type: 'approve' | 'reject') => void;
   onClearSelection: () => void;
-  getApproveButtonText: () => string;
   profile: Profile | null;
+  onClearFilters: () => void;
+  onExport: () => void;
+  isExporting: boolean;
 }
 
 export const StaffRequestsToolbar = ({
   tabs,
+  activeTab,
   searchQuery,
   onSearchChange,
+  departmentFilter,
+  onDepartmentFilterChange,
   selectedIdsCount,
   onBulkAction,
   onClearSelection,
-  getApproveButtonText,
   profile,
+  onClearFilters,
+  onExport,
+  isExporting,
 }: StaffRequestsToolbarProps) => {
+  const showClearFilters = searchQuery !== "" || departmentFilter !== "all" || activeTab !== "actionable";
+
   return (
     <div className="p-4 border-b space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -40,17 +63,37 @@ export const StaffRequestsToolbar = ({
             </TabsTrigger>
           ))}
         </TabsList>
-        <Input
-          placeholder="Search by student name..."
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="max-w-xs"
-        />
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Search by name, reg no, dept, reason..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="max-w-xs"
+          />
+          <Select value={departmentFilter} onValueChange={onDepartmentFilterChange}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by department" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Departments</SelectItem>
+              {departments.map(dept => (
+                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <ExportButton onExport={onExport} isExporting={isExporting} />
+          {showClearFilters && (
+            <Button variant="outline" onClick={onClearFilters}>
+              <XCircle className="mr-2 h-4 w-4" />
+              Clear Filters
+            </Button>
+          )}
+        </div>
       </div>
       {selectedIdsCount > 0 && (
         <div className="flex items-center gap-4 p-2 bg-secondary rounded-md">
           <p className="text-sm font-medium">{selectedIdsCount} selected</p>
-          <Button size="sm" onClick={() => onBulkAction('approve')}>{getApproveButtonText()} Selected</Button>
+          <Button size="sm" onClick={() => onBulkAction('approve')}>{getApproveButtonTextForRole(profile?.role)} Selected</Button>
           {profile?.role !== 'admin' && <Button size="sm" variant="destructive" onClick={() => onBulkAction('reject')}>Reject Selected</Button>}
           <Button size="sm" variant="ghost" onClick={onClearSelection}>Clear selection</Button>
         </div>

@@ -21,9 +21,21 @@ export const navItems: NavItem[] = [
     roles: ["tutor"],
   },
   {
+    title: "My Tutees",
+    href: "/tutor/my-tutees",
+    icon: Users,
+    roles: ["tutor"],
+  },
+  {
     title: "Dashboard",
     href: "/hod/dashboard",
     icon: LayoutDashboard,
+    roles: ["hod"],
+  },
+  {
+    title: "Department Students",
+    href: "/hod/department-students",
+    icon: Users,
     roles: ["hod"],
   },
   {

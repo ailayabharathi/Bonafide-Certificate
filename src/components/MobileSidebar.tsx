@@ -29,7 +29,7 @@ export const MobileSidebar = () => {
         <SheetHeader className="p-4 border-b border-sidebar-border">
           <SheetTitle className="text-sidebar-foreground">
             <Link to="/" className="flex items-center space-x-2" onClick={() => setIsOpen(false)}>
-              <img src="/placeholder.svg" alt="College Logo" className="h-8 w-8" />
+              <img src="/logo.png" alt="College Logo" className="h-8 w-8" />
               <span className="inline-block font-bold">ACE Portal</span>
             </Link>
           </SheetTitle>

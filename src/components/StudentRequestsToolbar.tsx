@@ -6,12 +6,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { XCircle } from "lucide-react";
 
 interface StudentRequestsToolbarProps {
   statusFilter: string;
   onStatusChange: (value: string) => void;
   searchQuery: string;
   onSearchChange: (value: string) => void;
+  onClearFilters: () => void;
 }
 
 export const StudentRequestsToolbar = ({
@@ -19,6 +22,7 @@ export const StudentRequestsToolbar = ({
   onStatusChange,
   searchQuery,
   onSearchChange,
+  onClearFilters,
 }: StudentRequestsToolbarProps) => {
   return (
     <div className="p-4 border-b flex flex-wrap gap-4 items-center justify-between">
@@ -39,6 +43,12 @@ export const StudentRequestsToolbar = ({
         onChange={(e) => onSearchChange(e.target.value)}
         className="max-w-xs"
       />
+      {(statusFilter !== "all" || searchQuery !== "") && (
+        <Button variant="outline" onClick={onClearFilters} className="ml-auto">
+          <XCircle className="mr-2 h-4 w-4" />
+          Clear Filters
+        </Button>
+      )}
     </div>
   );
 };

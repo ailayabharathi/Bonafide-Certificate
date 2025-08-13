@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./components/ThemeProvider";
@@ -16,6 +15,10 @@ import NotFound from "./pages/NotFound";
 import ProfilePage from "./pages/ProfilePage";
 import CertificatePage from "./pages/CertificatePage";
 import UserManagement from "./pages/UserManagement";
+import VerifyCertificatePage from "./pages/VerifyCertificatePage";
+import MyTuteesPage from "./pages/MyTuteesPage";
+import DepartmentStudentsPage from "./pages/DepartmentStudentsPage";
+import UserEditPage from "./pages/UserEditPage";
 
 const queryClient = new QueryClient();
 
@@ -24,13 +27,13 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-          <Toaster />
           <Sonner />
           <BrowserRouter>
             <AuthProvider>
               <Routes>
                 <Route path="/" element={<HomeRedirect />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/verify/:requestId" element={<VerifyCertificatePage />} />
                 <Route
                   path="/profile"
                   element={
@@ -50,7 +53,7 @@ function App() {
                 <Route
                   path="/certificate/:requestId"
                   element={
-                    <ProtectedRoute allowedRoles={["student"]}>
+                    <ProtectedRoute allowedRoles={["student", "tutor", "hod", "admin"]}>
                       <CertificatePage />
                     </ProtectedRoute>
                   }
@@ -64,10 +67,26 @@ function App() {
                   }
                 />
                 <Route
+                  path="/tutor/my-tutees"
+                  element={
+                    <ProtectedRoute allowedRoles={["tutor"]}>
+                      <MyTuteesPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/hod/dashboard"
                   element={
                     <ProtectedRoute allowedRoles={["hod"]}>
                       <HodPortal />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/hod/department-students"
+                  element={
+                    <ProtectedRoute allowedRoles={["hod"]}>
+                      <DepartmentStudentsPage />
                     </ProtectedRoute>
                   }
                 />
@@ -84,6 +103,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={["admin"]}>
                       <UserManagement />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/user/:userId/edit"
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <UserEditPage />
                     </ProtectedRoute>
                   }
                 />

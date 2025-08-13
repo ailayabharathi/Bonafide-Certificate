@@ -1,6 +1,3 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -9,174 +6,76 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { showSuccess, showError } from "@/utils/toast";
-import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Loader2 } from "lucide-react";
-
-const formSchema = z.object({
-  first_name: z.string().min(2, {
-    message: "First name must be at least 2 characters.",
-  }),
-  last_name: z.string().min(2, {
-    message: "Last name must be at least 2 characters.",
-  }),
-  register_number: z.string().optional(),
-  department: z.string().optional(),
-});
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { departments } from "@/lib/departments";
+import { Profile } from "@/contexts/AuthContext";
+import { useProfileFormLogic } from "@/hooks/useProfileFormLogic"; // Import the new hook
+import { ManagedUser } from "@/types";
 
 interface ProfileFormProps {
   onSuccess: () => void;
+  profileToEdit?: Profile | ManagedUser; // If provided, we're in admin edit mode
 }
 
-export function ProfileForm({ onSuccess }: ProfileFormProps) {
-  const { user, profile } = useAuth();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(profile?.avatar_url || null);
-  const [isUploading, setIsUploading] = useState(false);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      first_name: profile?.first_name || "",
-      last_name: profile?.last_name || "",
-      register_number: profile?.register_number || "",
-      department: profile?.department || "",
-    },
-  });
-
-  useEffect(() => {
-    if (profile) {
-        form.reset({
-            first_name: profile.first_name || "",
-            last_name: profile.last_name || "",
-            register_number: profile.register_number || "",
-            department: profile.department || "",
-        });
-        if (profile.avatar_url) {
-            setAvatarPreview(profile.avatar_url);
-        }
-    }
-  }, [profile, form]);
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setAvatarFile(file);
-      setAvatarPreview(URL.createObjectURL(file));
-    }
-  };
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) {
-      showError("You must be logged in to update your profile.");
-      return;
-    }
-    setIsSubmitting(true);
-
-    try {
-      let avatarUrl = profile?.avatar_url;
-
-      if (avatarFile) {
-        setIsUploading(true);
-        const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `avatar.${fileExt}`;
-        const filePath = `${user.id}/${fileName}`;
-
-        const { data: files, error: listError } = await supabase.storage
-          .from('avatars')
-          .list(user.id);
-        
-        if (listError) console.error("Error listing old avatars:", listError);
-
-        if (files && files.length > 0) {
-            const filesToRemove = files.map(file => `${user.id}/${file.name}`);
-            const { error: removeError } = await supabase.storage
-                .from('avatars')
-                .remove(filesToRemove);
-            if (removeError) console.error("Error removing old avatars:", removeError);
-        }
-
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(filePath, avatarFile, { upsert: true });
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(filePath);
-        
-        avatarUrl = publicUrl;
-        setIsUploading(false);
-      }
-
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({
-          first_name: values.first_name,
-          last_name: values.last_name,
-          avatar_url: avatarUrl,
-          register_number: values.register_number,
-          department: values.department,
-        })
-        .eq("id", user.id);
-
-      if (updateError) throw updateError;
-
-      showSuccess("Profile updated successfully!");
-      onSuccess();
-    } catch (error: any) {
-      showError(error.message || "Failed to update profile.");
-    } finally {
-      setIsSubmitting(false);
-      setIsUploading(false);
-    }
-  }
-
-  const getInitials = () => {
-    const firstName = form.getValues().first_name || '';
-    const lastName = form.getValues().last_name || '';
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-  };
-
-  const isStudent = profile?.role === 'student';
+export function ProfileForm({ onSuccess, profileToEdit }: ProfileFormProps) {
+  const {
+    form,
+    isSubmitting,
+    avatarPreview,
+    handleAvatarChange,
+    isUploading,
+    onSubmit,
+    getInitials,
+    isEditingOwnProfile,
+    canEditRegisterNumber,
+    canEditDepartment,
+    targetProfile,
+    canEditSensitiveFields,
+  } = useProfileFormLogic({ onSuccess, profileToEdit });
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          name="avatar"
-          render={() => (
-            <FormItem className="flex flex-col items-center">
-              <FormLabel>
-                <Avatar className="h-24 w-24 cursor-pointer">
-                  <AvatarImage src={avatarPreview || undefined} alt="User avatar" />
-                  <AvatarFallback>{getInitials()}</AvatarFallback>
-                </Avatar>
-              </FormLabel>
-              <FormControl>
-                <Input
-                  type="file"
-                  className="hidden"
-                  id="avatar-upload"
-                  accept="image/png, image/jpeg"
-                  onChange={handleAvatarChange}
-                  disabled={isSubmitting}
-                />
-              </FormControl>
-              <Button asChild variant="link">
-                <label htmlFor="avatar-upload">Change Avatar</label>
-              </Button>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {isEditingOwnProfile && (
+          <FormField
+            name="avatar"
+            render={() => (
+              <FormItem className="flex flex-col items-center">
+                <FormLabel>
+                  <Avatar className="h-24 w-24 cursor-pointer">
+                    <AvatarImage src={avatarPreview || undefined} alt="User avatar" />
+                    <AvatarFallback>{getInitials()}</AvatarFallback>
+                  </Avatar>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type="file"
+                    className="hidden"
+                    id="avatar-upload"
+                    accept="image/png, image/jpeg"
+                    onChange={handleAvatarChange}
+                    disabled={isSubmitting}
+                  />
+                </FormControl>
+                <Button asChild variant="link">
+                  <label htmlFor="avatar-upload">Change Avatar</label>
+                </Button>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
         <FormField
           control={form.control}
           name="first_name"
@@ -184,7 +83,7 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
             <FormItem>
               <FormLabel>First Name</FormLabel>
               <FormControl>
-                <Input placeholder="Your first name" {...field} />
+                <Input placeholder="User's first name" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -197,7 +96,7 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
             <FormItem>
               <FormLabel>Last Name</FormLabel>
               <FormControl>
-                <Input placeholder="Your last name" {...field} />
+                <Input placeholder="User's last name" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -210,8 +109,13 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
             <FormItem>
               <FormLabel>Register Number</FormLabel>
               <FormControl>
-                <Input placeholder="Your register number" {...field} disabled={isStudent} />
+                <Input placeholder="User's register number" {...field} disabled={!canEditRegisterNumber} />
               </FormControl>
+              {isEditingOwnProfile && !canEditSensitiveFields && (
+                <FormDescription>
+                  {targetProfile?.register_number ? "This field can only be changed by an administrator." : "You can set this once. After that, only an administrator can change it."}
+                </FormDescription>
+              )}
               <FormMessage />
             </FormItem>
           )}
@@ -222,9 +126,25 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Department</FormLabel>
-              <FormControl>
-                <Input placeholder="Your department" {...field} disabled={isStudent} />
-              </FormControl>
+              <Select onValueChange={field.onChange} value={field.value} disabled={!canEditDepartment}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a department" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept} value={dept}>
+                      {dept}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {isEditingOwnProfile && !canEditSensitiveFields && (
+                <FormDescription>
+                  {targetProfile?.department ? "This field can only be changed by an administrator." : "You can set this once. After that, only an administrator can change it."}
+                </FormDescription>
+              )}
               <FormMessage />
             </FormItem>
           )}

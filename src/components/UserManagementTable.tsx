@@ -1,22 +1,10 @@
-import { useState, useMemo } from "react";
-import { Profile } from "@/contexts/AuthContext";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
+import { useMemo } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { DeleteUserDialog } from "./DeleteUserDialog";
+import { EditUserRoleDialog } from "./EditUserRoleDialog";
+import { AssignTutorDialog } from "./AssignTutorDialog";
+import { getUserManagementTableColumns } from "@/lib/user-management-table-columns";
+import { ManagedUser, SortConfig } from "@/types";
 import {
   Select,
   SelectContent,
@@ -25,265 +13,160 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
-import { showError, showSuccess } from "@/utils/toast";
-import { Pencil, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-
-interface UserManagementTableProps {
-  users: Profile[];
-  onUserUpdate: () => void;
-}
+import { Button } from "@/components/ui/button";
+import { XCircle } from "lucide-react";
+import { ExportButton } from "./ExportButton";
+import { DataTable } from "./DataTable";
+import { departments } from "@/lib/departments";
 
 type UserRole = 'student' | 'tutor' | 'hod' | 'admin';
-type SortableKey = 'name' | 'email' | 'role' | 'department' | 'register_number';
 
-export function UserManagementTable({ users, onUserUpdate }: UserManagementTableProps) {
-  const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
-  const [newRole, setNewRole] = useState<UserRole | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'ascending' | 'descending' }>({ key: 'name', direction: 'ascending' });
-  const ITEMS_PER_PAGE = 10;
+interface UserManagementTableProps {
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  roleFilter: 'all' | UserRole;
+  setRoleFilter: (role: 'all' | UserRole) => void;
+  departmentFilter: string;
+  setDepartmentFilter: (department: string) => void;
+  handleClearFilters: () => void;
+  showClearFilters: boolean;
+  paginatedUsers: ManagedUser[];
+  sortConfig: SortConfig;
+  handleSort: (key: string) => void;
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  totalPages: number;
+  userToEditRole: ManagedUser | null;
+  setUserToEditRole: (user: ManagedUser | null) => void;
+  userToDelete: ManagedUser | null;
+  setUserToDelete: (user: ManagedUser | null) => void;
+  isDeleting: boolean;
+  handleDeleteUser: () => void;
+  handleRoleUpdated: () => void;
+  isExporting: boolean;
+  handleExport: () => void;
+  userToAssignTutor: ManagedUser | null;
+  setUserToAssignTutor: (user: ManagedUser | null) => void;
+  handleAssignTutorSuccess: () => void;
+  isLoading: boolean;
+}
 
-  const handleSort = (key: SortableKey) => {
-    let direction: 'ascending' | 'descending' = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-    setCurrentPage(1);
-  };
+export function UserManagementTable({
+  searchQuery,
+  setSearchQuery,
+  roleFilter,
+  setRoleFilter,
+  departmentFilter,
+  setDepartmentFilter,
+  handleClearFilters,
+  showClearFilters,
+  paginatedUsers,
+  sortConfig,
+  handleSort,
+  currentPage,
+  setCurrentPage,
+  totalPages,
+  userToEditRole,
+  setUserToEditRole,
+  userToDelete,
+  setUserToDelete,
+  isDeleting,
+  handleDeleteUser,
+  handleRoleUpdated,
+  isExporting,
+  handleExport,
+  userToAssignTutor,
+  setUserToAssignTutor,
+  handleAssignTutorSuccess,
+  isLoading,
+}: UserManagementTableProps) {
+  const { profile: currentUserProfile } = useAuth();
 
-  const openDialog = (user: Profile) => {
-    setSelectedUser(user);
-    setNewRole(user.role);
-  };
-
-  const closeDialog = () => {
-    setSelectedUser(null);
-    setNewRole(null);
-  };
-
-  const handleUpdateRole = async () => {
-    if (!selectedUser || !newRole) return;
-
-    setIsSubmitting(true);
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ role: newRole })
-        .eq("id", selectedUser.id);
-
-      if (error) throw error;
-
-      showSuccess(`Successfully updated ${selectedUser.first_name}'s role to ${newRole}.`);
-      onUserUpdate();
-      closeDialog();
-    } catch (error: any) {
-      showError(error.message || "Failed to update user role.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const processedUsers = useMemo(() => {
-    let filteredUsers = users
-      .filter(user => {
-        const name = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
-        const email = user.email?.toLowerCase() || '';
-        const department = user.department?.toLowerCase() || '';
-        const registerNumber = user.register_number?.toLowerCase() || '';
-        const query = searchQuery.toLowerCase();
-        return name.includes(query) || email.includes(query) || department.includes(query) || registerNumber.includes(query);
-      })
-      .filter(user => {
-        if (roleFilter === "all") return true;
-        return user.role === roleFilter;
-      });
-
-    filteredUsers.sort((a, b) => {
-      let aValue: string, bValue: string;
-      switch (sortConfig.key) {
-        case 'name':
-          aValue = `${a.first_name || ''} ${a.last_name || ''}`.toLowerCase();
-          bValue = `${b.first_name || ''} ${b.last_name || ''}`.toLowerCase();
-          break;
-        case 'email':
-          aValue = a.email?.toLowerCase() || '';
-          bValue = b.email?.toLowerCase() || '';
-          break;
-        case 'role':
-          aValue = a.role.toLowerCase();
-          bValue = b.role.toLowerCase();
-          break;
-        case 'department':
-            aValue = a.department?.toLowerCase() || '';
-            bValue = b.department?.toLowerCase() || '';
-            break;
-        case 'register_number':
-            aValue = a.register_number?.toLowerCase() || '';
-            bValue = b.register_number?.toLowerCase() || '';
-            break;
-        default:
-          return 0;
-      }
-
-      if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
-      if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
-      return 0;
-    });
-
-    return filteredUsers;
-  }, [users, searchQuery, roleFilter, sortConfig]);
-
-  const totalPages = Math.ceil(processedUsers.length / ITEMS_PER_PAGE);
-  const paginatedUsers = processedUsers.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
-
-  const SortableHeader = ({ columnKey, title }: { columnKey: SortableKey, title: string }) => {
-    const isSorted = sortConfig.key === columnKey;
-    return (
-      <TableHead>
-        <Button variant="ghost" onClick={() => handleSort(columnKey)}>
-          {title}
-          {isSorted ? (
-            sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />
-          ) : (
-            <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />
-          )}
-        </Button>
-      </TableHead>
-    );
-  };
+  const columns = useMemo(() => getUserManagementTableColumns({
+    currentUserProfile,
+    setUserToEditRole,
+    setUserToDelete,
+    onAssignTutor: setUserToAssignTutor,
+  }), [currentUserProfile, setUserToEditRole, setUserToDelete, setUserToAssignTutor]);
 
   return (
     <>
-      <div className="p-4 border rounded-md bg-background">
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-          <Input
-            placeholder="Search by name, email, department..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="max-w-sm"
-          />
-          <Select value={roleFilter} onValueChange={(value: UserRole | "all") => {
-            setRoleFilter(value);
-            setCurrentPage(1);
-          }}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="student">Student</SelectItem>
-              <SelectItem value="tutor">Tutor</SelectItem>
-              <SelectItem value="hod">HOD</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="border rounded-md">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <SortableHeader columnKey="name" title="Name" />
-                <SortableHeader columnKey="email" title="Email" />
-                <SortableHeader columnKey="register_number" title="Register No." />
-                <SortableHeader columnKey="department" title="Department" />
-                <SortableHeader columnKey="role" title="Role" />
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedUsers.length > 0 ? (
-                paginatedUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.first_name} {user.last_name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.register_number}</TableCell>
-                    <TableCell>{user.department}</TableCell>
-                    <TableCell className="capitalize">{user.role}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="outline" size="sm" onClick={() => openDialog(user)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit Role
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
-                    No users found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <div className="flex-1 text-sm text-muted-foreground">
-            Page {currentPage} of {totalPages || 1}
-          </div>
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage >= totalPages}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
+        <Input
+          placeholder="Search by name, email, department..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="max-w-sm"
+        />
+        <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as 'all' | UserRole)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Roles</SelectItem>
+            <SelectItem value="student">Student</SelectItem>
+            <SelectItem value="tutor">Tutor</SelectItem>
+            <SelectItem value="hod">HOD</SelectItem>
+            <SelectItem value="admin">Admin</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by department" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Departments</SelectItem>
+            {departments.map(dept => (
+              <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <ExportButton 
+          onExport={handleExport}
+          isExporting={isExporting}
+        />
+        {showClearFilters && (
+          <Button variant="outline" onClick={handleClearFilters}>
+            <XCircle className="mr-2 h-4 w-4" />
+            Clear Filters
+          </Button>
+        )}
+      </div>
+      <div className="border rounded-md">
+        <DataTable
+          columns={columns}
+          data={paginatedUsers}
+          sortConfig={sortConfig}
+          onSort={handleSort}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+          totalPages={totalPages}
+          rowKey={(row: ManagedUser) => row.id}
+          isLoading={isLoading}
+        />
       </div>
 
-      <Dialog open={!!selectedUser} onOpenChange={closeDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit User Role</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="mb-2">
-              Editing role for: <span className="font-semibold">{selectedUser?.first_name} {selectedUser?.last_name}</span>
-            </p>
-            <Select value={newRole ?? undefined} onValueChange={(value: UserRole) => setNewRole(value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="student">Student</SelectItem>
-                <SelectItem value="tutor">Tutor</SelectItem>
-                <SelectItem value="hod">HOD</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button onClick={handleUpdateRole} disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save Changes"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteUserDialog
+        user={userToDelete}
+        isOpen={!!userToDelete}
+        onOpenChange={() => setUserToDelete(null)}
+        onConfirm={handleDeleteUser}
+        isDeleting={isDeleting}
+      />
+
+      <EditUserRoleDialog
+        user={userToEditRole}
+        isOpen={!!userToEditRole}
+        onOpenChange={() => setUserToEditRole(null)}
+        onRoleUpdated={handleRoleUpdated}
+      />
+
+      <AssignTutorDialog
+        student={userToAssignTutor}
+        isOpen={!!userToAssignTutor}
+        onOpenChange={() => setUserToAssignTutor(null)}
+        onSuccess={handleAssignTutorSuccess}
+      />
     </>
   );
 }

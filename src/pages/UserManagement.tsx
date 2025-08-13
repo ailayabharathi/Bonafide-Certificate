@@ -1,48 +1,64 @@
-import { useEffect, useState } from "react";
 import { UserManagementTable } from "@/components/UserManagementTable";
-import { supabase } from "@/integrations/supabase/client";
-import { Profile } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
-import { showError } from "@/utils/toast";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { Button } from "@/components/ui/button";
+import { UserPlus } from "lucide-react";
+import { InviteUserDialog } from "@/components/InviteUserDialog";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useUserManagement } from "@/hooks/useUserManagement";
 
 const UserManagement = () => {
-  const [users, setUsers] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*");
-
-      if (error) throw error;
-      setUsers(data || []);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      showError("Failed to fetch users. Ensure you have the correct permissions.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  const {
+    loading, // This is the isLoading from useUserManagement
+    isInviteDialogOpen,
+    setIsInviteDialogOpen,
+    handleInviteSent,
+    isExporting,
+    handleExport,
+    ...tableProps
+  } = useUserManagement();
 
   return (
-    <DashboardLayout title="User Management">
-      {loading ? (
-        <div className="space-y-2">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </div>
-      ) : (
-        <UserManagementTable users={users} onUserUpdate={fetchUsers} />
-      )}
-    </DashboardLayout>
+    <>
+      <DashboardLayout title="User Management">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Users</CardTitle>
+              <CardDescription>
+                Invite new users and manage existing user roles.
+              </CardDescription>
+            </div>
+            <Button onClick={() => setIsInviteDialogOpen(true)}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Invite User
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {loading && tableProps.paginatedUsers.length === 0 ? (
+              <div className="space-y-2 pt-4">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ) : (
+              <UserManagementTable
+                {...tableProps}
+                isExporting={isExporting}
+                handleExport={handleExport}
+                isLoading={loading}
+              />
+            )}
+          </CardContent>
+        </Card>
+      </DashboardLayout>
+      <InviteUserDialog
+        isOpen={isInviteDialogOpen}
+        onOpenChange={setIsInviteDialogOpen}
+        onInviteSent={handleInviteSent}
+      />
+    </>
   );
 };
 

@@ -5,106 +5,121 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ApplyCertificateForm } from "@/components/ApplyCertificateForm";
-import { RequestsTable } from "@/components/RequestsTable";
-import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { BonafideRequest } from "@/types";
+import { StudentRequestsTable } from "@/components/StudentRequestsTable";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, ClipboardList, Clock, CheckCircle, XCircle } from "lucide-react";
+import { PlusCircle, Loader2 } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { showSuccess, showError } from "@/utils/toast";
-import { useBonafideRequests } from "@/hooks/useBonafideRequests";
-import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { StatsCard } from "@/components/StatsCard";
+import { StatusDistributionChart } from "@/components/StatusDistributionChart";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ExportButton } from "@/components/ExportButton";
+import { useStudentPortalLogic } from "@/hooks/useStudentPortalLogic";
 
 const StudentPortal = () => {
-  const { user } = useAuth();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [requestToEdit, setRequestToEdit] = useState<BonafideRequest | null>(null);
-
-  const handleRealtimeEvent = (payload: RealtimePostgresChangesPayload<BonafideRequest>) => {
-    if (payload.eventType !== 'UPDATE' || !user || payload.new.user_id !== user.id) return;
-
-    const oldStatus = (payload.old as BonafideRequest)?.status;
-    const newStatus = payload.new.status;
-    const rejectionReason = payload.new.rejection_reason;
-
-    if (oldStatus !== newStatus) {
-        switch(newStatus) {
-            case 'approved_by_tutor':
-                showSuccess("Approved by Tutor! Your request is now with the HOD.");
-                break;
-            case 'rejected_by_tutor':
-                showError(`Request Rejected by Tutor. Reason: ${rejectionReason || 'No reason provided.'}`);
-                break;
-            case 'approved_by_hod':
-                showSuccess("Approved by HOD! Your request is being processed by the office.");
-                break;
-            case 'rejected_by_hod':
-                showError(`Request Rejected by HOD. Reason: ${rejectionReason || 'No reason provided.'}`);
-                break;
-            case 'completed':
-                showSuccess("Certificate Ready! Your bonafide certificate is now available.");
-                break;
-        }
-    }
-  };
-
-  const { requests, isLoading } = useBonafideRequests(
-    `student-requests:${user?.id}`,
-    user?.id,
-    handleRealtimeEvent,
-  );
-
-  const handleNewRequestClick = () => {
-    setRequestToEdit(null);
-    setIsDialogOpen(true);
-  };
-
-  const handleEditRequest = (request: BonafideRequest) => {
-    setRequestToEdit(request);
-    setIsDialogOpen(true);
-  };
+  const {
+    isApplyDialogOpen,
+    setIsApplyDialogOpen,
+    requestToEdit,
+    requestToCancel,
+    setRequestToCancel,
+    isCancelling,
+    dashboardData,
+    handleNewRequestClick,
+    handleEditRequest,
+    handleConfirmCancel,
+    handleClearFilters,
+    statusFilter,
+    setStatusFilter,
+    searchQuery,
+    setSearchQuery,
+    sortConfig,
+    setSortConfig,
+    requests,
+    isLoading,
+    currentPage,
+    totalPages,
+    onPageChange,
+    isExporting,
+    handleExport,
+  } = useStudentPortalLogic();
 
   const headerActions = (
-    <Button onClick={handleNewRequestClick}>
-      <PlusCircle className="mr-2 h-4 w-4" />
-      Apply for Certificate
-    </Button>
+    <div className="flex gap-2">
+      <ExportButton onExport={handleExport} isExporting={isExporting} />
+      <Button onClick={handleNewRequestClick}>
+        <PlusCircle className="mr-2 h-4 w-4" />
+        Apply for Certificate
+      </Button>
+    </div>
   );
 
-  const stats = {
-    total: requests.length,
-    inProgress: requests.filter(r => ['pending', 'approved_by_tutor', 'approved_by_hod'].includes(r.status)).length,
-    completed: requests.filter(r => r.status === 'completed').length,
-    rejected: requests.filter(r => ['rejected_by_tutor', 'rejected_by_hod'].includes(r.status)).length,
-  };
-
   return (
-    <DashboardLayout title="Student Dashboard" headerActions={headerActions}>
-      <div className="space-y-8">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatsCard title="Total Requests" value={stats.total} icon={ClipboardList} />
-            <StatsCard title="In Progress" value={stats.inProgress} icon={Clock} />
-            <StatsCard title="Completed" value={stats.completed} icon={CheckCircle} />
-            <StatsCard title="Rejected" value={stats.rejected} icon={XCircle} />
-        </div>
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold tracking-tight">Your Requests History</h2>
-          {isLoading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
+    <>
+      <DashboardLayout title="Student Dashboard" headerActions={headerActions}>
+        {isLoading && requests.length === 0 ? (
+          <div className="space-y-4">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        ) : (
+          <div className="space-y-8">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {dashboardData.stats.map((stat, index) => (
+                <StatsCard key={index} title={stat.title} value={stat.value} icon={stat.icon} />
+              ))}
             </div>
-          ) : (
-            <RequestsTable requests={requests} onEdit={handleEditRequest} />
-          )}
-        </div>
-      </div>
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-7">
+              <Card className="col-span-full lg:col-span-4">
+                <CardHeader>
+                  <CardTitle>Requests History</CardTitle>
+                  <CardDescription>A log of all your bonafide certificate requests.</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <StudentRequestsTable
+                    requests={requests}
+                    onEdit={handleEditRequest}
+                    onCancel={(request) => setRequestToCancel(request)}
+                    statusFilter={statusFilter}
+                    onStatusChange={setStatusFilter}
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    sortConfig={sortConfig}
+                    onSortChange={setSortConfig}
+                    onClearFilters={handleClearFilters}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={onPageChange}
+                    isLoading={isLoading}
+                  />
+                </CardContent>
+              </Card>
+              <Card className="col-span-full lg:col-span-3">
+                <CardHeader>
+                  <CardTitle>Status Overview</CardTitle>
+                  <CardDescription>A breakdown of your request statuses.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <StatusDistributionChart data={dashboardData.chartData} />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+      </DashboardLayout>
+
+      <Dialog open={isApplyDialogOpen} onOpenChange={setIsApplyDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>{requestToEdit ? 'Edit and Resubmit Request' : 'New Bonafide Certificate Request'}</DialogTitle>
@@ -113,13 +128,33 @@ const StudentPortal = () => {
             </DialogDescription>
           </DialogHeader>
           <ApplyCertificateForm 
-            onSuccess={() => setIsDialogOpen(false)} 
-            setOpen={setIsDialogOpen}
+            onSuccess={() => {
+              setIsApplyDialogOpen(false);
+            }} 
+            setOpen={setIsApplyDialogOpen}
             existingRequest={requestToEdit}
           />
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+
+      <AlertDialog open={!!requestToCancel} onOpenChange={(open) => !open && setRequestToCancel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently cancel your request. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCancelling}>Back</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmCancel} disabled={isCancelling} className="bg-destructive hover:bg-destructive/90">
+              {isCancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Yes, cancel request
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

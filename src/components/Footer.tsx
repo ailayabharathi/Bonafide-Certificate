@@ -1,33 +1,40 @@
-import { Facebook, Twitter, Linkedin } from "lucide-react";
+import { Facebook, Linkedin } from "lucide-react";
+import { XLogo } from "./icons/XLogo";
+import { Link } from "react-router-dom";
 
-const Footer = () => {
+export default function Footer() {
   return (
-    <footer className="bg-secondary text-secondary-foreground p-8">
-      <div className="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div>
-          <h3 className="text-lg font-bold mb-4">About ACE</h3>
-          <p className="text-muted-foreground">Adhiyamaan College of Engineering (ACE) is a premier institution dedicated to excellence in engineering education, research, and innovation.</p>
-        </div>
-        <div>
-          <h3 className="text-lg font-bold mb-4">Contact Us</h3>
-          <p className="text-muted-foreground">Dr. M.G.R. Nagar, Hosur, Krishnagiri District, Tamil Nadu, India.</p>
-          <p className="text-muted-foreground">Email: principal@adhiyamaan.ac.in</p>
-          <p className="text-muted-foreground">Phone: 04344 - 260570</p>
-        </div>
-        <div>
-          <h3 className="text-lg font-bold mb-4">Follow Us</h3>
-          <div className="flex space-x-4">
-            <a href="#" className="text-muted-foreground hover:text-foreground"><Facebook /></a>
-            <a href="#" className="text-muted-foreground hover:text-foreground"><Twitter /></a>
-            <a href="#" className="text-muted-foreground hover:text-foreground"><Linkedin /></a>
+    <footer className="bg-background border-t">
+      <div className="container mx-auto py-8 px-4 md:px-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="md:col-span-2">
+            <h2 className="text-2xl font-bold mb-2">Adhiyamaan College of Engineering</h2>
+            <p className="text-muted-foreground">Dr. M.G.R. Nagar, Hosur - 635130, Krishnagiri (Dt), Tamilnadu, India.</p>
+            <p className="text-muted-foreground mt-2">Phone: 04344-260570, 261002, 261020, 261034</p>
+            <p className="text-muted-foreground">Email: principal@adhiyamaan.ac.in</p>
+          </div>
+          <div>
+            <h3 className="text-lg font-bold mb-4">Quick Links</h3>
+            <ul className="space-y-2">
+              <li><Link to="/" className="text-muted-foreground hover:text-foreground">Home</Link></li>
+              <li><a href="https://www.adhiyamaan.ac.in/about-us/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">About Us</a></li>
+              <li><a href="https://www.adhiyamaan.ac.in/admissions/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">Admissions</a></li>
+              <li><a href="https://www.adhiyamaan.ac.in/contact-us/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">Contact</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="text-lg font-bold mb-4">Follow Us</h3>
+            <div className="flex space-x-4 items-center">
+              <a href="https://www.facebook.com/adhiyamaancollegeofengg/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground"><Facebook /></a>
+              <a href="https://twitter.com/adhiyamaanengg" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground"><XLogo /></a>
+              <a href="https://in.linkedin.com/company/adhiyamaan-college-of-engineering-ace" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground"><Linkedin /></a>
+            </div>
           </div>
         </div>
-      </div>
-      <div className="text-center text-muted-foreground mt-8 border-t border-border pt-4">
-        <p>&copy; {new Date().getFullYear()} Adhiyamaan College of Engineering. All Rights Reserved.</p>
+        <div className="border-t mt-8 pt-6 text-center text-muted-foreground text-sm">
+          <p>&copy; 2024 Adhiyamaan College of Engineering. All rights reserved.</p>
+        </div>
       </div>
     </footer>
   );
-};
-
-export default Footer;
+}

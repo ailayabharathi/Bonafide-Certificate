@@ -7,10 +7,13 @@ import { useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { MadeWithDyad } from '@/components/made-with-dyad';
+import { Card } from '@/components/ui/card';
+import { useTheme } from '@/components/ThemeProvider';
 
 const LoginPage = () => {
   const { session, loading } = useAuth();
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (!loading && session) {
@@ -22,20 +25,29 @@ const LoginPage = () => {
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
       <main className="flex-grow flex items-center justify-center p-4">
-        <div className="w-full max-w-md p-8 space-y-6 bg-card rounded-lg shadow-lg">
-           <div className="text-center">
+        <Card className="w-full max-w-4xl grid lg:grid-cols-2 shadow-2xl overflow-hidden">
+          <div className="p-8 flex flex-col justify-center">
+            <div className="text-center lg:text-left mb-8">
               <h1 className="text-2xl font-bold text-card-foreground">Student & Staff Portal</h1>
               <p className="text-muted-foreground">Sign in or create an account to continue</p>
-           </div>
-          <Auth
-            supabaseClient={supabase}
-            appearance={{ theme: ThemeSupa }}
-            theme="light"
-            providers={[]}
-            redirectTo={`${window.location.origin}/`}
-            showLinks={true}
-          />
-        </div>
+            </div>
+            <Auth
+              supabaseClient={supabase}
+              appearance={{ theme: ThemeSupa }}
+              theme={theme === 'dark' ? 'dark' : 'light'}
+              providers={[]}
+              redirectTo={`${window.location.origin}/`}
+              showLinks={true}
+            />
+          </div>
+          <div className="hidden lg:block">
+            <img
+              src="https://www.adhiyamaan.ac.in/wp-content/uploads/2023/08/DJI_0010-scaled.jpg"
+              alt="Adhiyamaan College of Engineering"
+              className="h-full w-full object-cover"
+            />
+          </div>
+        </Card>
       </main>
       <Footer />
       <MadeWithDyad />
