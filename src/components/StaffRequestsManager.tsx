@@ -89,9 +89,9 @@ export function StaffRequestsManager({
       endDate: dateRange?.to, 
       searchQuery: debouncedSearchQuery, 
       statusFilter, 
-      sortConfig, 
       departmentFilter,
       page: currentPage,
+      sortConfig, 
     },
     handleRealtimeEvent
   );
@@ -184,7 +184,7 @@ export function StaffRequestsManager({
               onSelectAll={handleSelectAllOnPage}
               selectableRowIds={selectableRowIdsOnPage}
               rowKey={(row) => row.id}
-              isLoading={isLoading} {/* Pass isLoading prop */}
+              isLoading={isLoading}
             />
           </TabsContent>
         ))}
